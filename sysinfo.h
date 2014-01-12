@@ -37,4 +37,6 @@ extern unsigned long kb_inactive;
 extern unsigned long kb_mapped;
 extern unsigned long kb_pagetables;
 
+extern void meminfo(void);
+
 #endif /* SYSINFO_H */
