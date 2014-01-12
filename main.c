@@ -35,8 +35,7 @@ int main(int argc, char *argv[])
 	printf("Physical RAM: %lu, currently available: %lu, minimum: %lu (kiB)\n",
 		kb_main_total, kb_avail, kb_min);
 	
-	unsigned long loops = 100000;
-	while(loops--)
+	while(1)
 	{
 		kb_avail = get_kb_avail();
 	
@@ -50,7 +49,7 @@ int main(int argc, char *argv[])
 			oom_cnt++;
 		}
 		
-		//usleep(100000);
+		usleep(100000);
 	}
 	
 	return 0;
