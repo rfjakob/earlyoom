@@ -244,6 +244,8 @@ nextline:
   }
   kb_swap_used = kb_swap_total - kb_swap_free;
   kb_main_used = kb_main_total - kb_main_free;
+  /* "Cached" includes "Shmem" - we want only the page cache here */
+  kb_main_cached -= kb_main_shared;
 }
 
 /*****************************************************************/
