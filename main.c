@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
 #include "sysinfo.h"
 
@@ -52,25 +53,19 @@ static int isnumeric(char* str)
  * Find the process with the largest RSS and kill -9 it.
  * See trigger_oom_killer() for the reason why this is done in userspace.
  */
-static void kill_by_rss()
+static void kill_by_rss(DIR *procdir)
 {
 	struct dirent * d;
-	DIR *proc = opendir(".");
 	char buf[PATH_MAX];
 	int pid;
-
 	int hog_pid=0;
 	unsigned long hog_rss=0;
+	char name[PATH_MAX];
 
-	if(proc==NULL)
-	{
-		printf("Error: Could not open /proc: %s\n", strerror(errno));
-		exit(5);
-	}
-
+	rewinddir(procdir);
 	while(1)
 	{
-		d=readdir(proc);
+		d=readdir(procdir);
 		if(d==NULL)
 			break;
 
@@ -112,7 +107,6 @@ static void kill_by_rss()
 		exit(9);
 	}
 
-	char name[PATH_MAX];
 	name[0]=0;
 	snprintf(buf, PATH_MAX, "%d/stat", hog_pid);
 	FILE * stat = fopen(buf, "r");
@@ -121,7 +115,7 @@ static void kill_by_rss()
 
 	printf("Killing process %d %s\n", hog_pid, name);
 
-	if(kill(hog_pid, 0)!=0)
+	if(kill(hog_pid, 9) != 0)
 	{
 		printf("Warning: Could not kill process: %s\n", strerror(errno));
 	}
@@ -158,10 +152,10 @@ void trigger_oom_killer(void)
 #endif
 
 
-void handle_oom(void)
+void handle_oom(DIR * procdir)
 {
 #ifndef USE_KERNEL_OOM_KILLER
-	kill_by_rss();
+	kill_by_rss(procdir);
 #else
 	trigger_oom_killer();
 #endif
@@ -172,10 +166,28 @@ int main(int argc, char *argv[])
 {
 	unsigned long kb_avail, kb_min, oom_cnt=0;
 
+	/* To be able to observe in real time what is happening when the
+	 * output is redirected we have to explicitely request line
+	 * buffering */
+	setvbuf(stdout , NULL , _IOLBF , 80);
+
 	if(chdir("/proc")!=0)
 	{
 		printf("Error: Could not cd to /proc: %s\n", strerror(errno));
 		exit(4);
+	}
+
+	DIR *procdir = opendir(".");
+	if(procdir==NULL)
+	{
+		printf("Error: Could not open /proc: %s\n", strerror(errno));
+		exit(5);
+	}
+
+	if(mlockall(MCL_FUTURE)!=0)
+	{
+		printf("Error: Could not lock memory: %s\n", strerror(errno));
+		exit(10);
 	}
 
 	kb_avail = get_kb_avail();
@@ -192,6 +204,9 @@ int main(int argc, char *argv[])
 		if(c % 10 == 0)
 		{
 			printf("kb_avail: %lu\n", kb_avail);
+			/*printf("kb_main_free: %lu kb_main_buffers: %lu kb_main_cached: %lu kb_main_shared: %lu\n",
+				kb_main_free, kb_main_buffers, kb_main_cached, kb_main_shared);
+			*/
 			c=0;
 		}
 		c++;
@@ -200,7 +215,7 @@ int main(int argc, char *argv[])
 		{
 			printf("OOM: Currently available: %lu < minimum: %lu (kiB)\n", 
 				kb_avail, kb_min);
-			handle_oom();
+			handle_oom(procdir);
 			oom_cnt++;
 		}
 		
