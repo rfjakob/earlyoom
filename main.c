@@ -50,10 +50,10 @@ static int isnumeric(char* str)
 
 #ifndef USE_KERNEL_OOM_KILLER
 /*
- * Find the process with the largest RSS and kill -9 it.
+ * Find the process with the largest RSS and kill it.
  * See trigger_oom_killer() for the reason why this is done in userspace.
  */
-static void kill_by_rss(DIR *procdir)
+static void kill_by_rss(DIR *procdir, int sig)
 {
 	struct dirent * d;
 	char buf[PATH_MAX];
@@ -113,9 +113,10 @@ static void kill_by_rss(DIR *procdir)
 	fscanf(stat, "%d %s", &pid, name);
 	fclose(stat);
 
-	fprintf(stderr, "Killing process %d %s\n", hog_pid, name);
+	if(sig!=0)
+		fprintf(stderr, "Killing process %d %s\n", hog_pid, name);
 
-	if(kill(hog_pid, 9) != 0)
+	if(kill(hog_pid, sig) != 0)
 	{
 		fprintf(stderr, "Warning: Could not kill process: %s\n", strerror(errno));
 	}
@@ -134,7 +135,7 @@ static void kill_by_rss(DIR *procdir)
  *    See https://code.google.com/p/chromium/issues/detail?id=333617 for more info
  * Because of these issues, kill_by_rss() is used instead by default.
  */
-void trigger_oom_killer(void)
+void trigger_oom_killer(int sig)
 {
 	int trig_fd;
 	trig_fd = open("sysrq-trigger", O_WRONLY);
@@ -143,6 +144,8 @@ void trigger_oom_killer(void)
 		fprintf(stderr, "Warning: Cannot open /proc/sysrq-trigger: %s. ");
 		return;
 	}
+	if(sig!=9)
+		return;
 	fprintf(stderr, "Invoking oom killer: ");
 	if(write(trig_fd, "f", 1) == -1)
 		fprintf("%s\n", strerror(errno));
@@ -152,12 +155,12 @@ void trigger_oom_killer(void)
 #endif
 
 
-void handle_oom(DIR * procdir)
+void handle_oom(DIR * procdir, int sig)
 {
 #ifndef USE_KERNEL_OOM_KILLER
-	kill_by_rss(procdir);
+	kill_by_rss(procdir, sig);
 #else
-	trigger_oom_killer();
+	trigger_oom_killer(sig);
 #endif
 	sleep(2);
 }
@@ -170,6 +173,8 @@ int main(int argc, char *argv[])
 	 * output is redirected we have to explicitely request line
 	 * buffering */
 	setvbuf(stdout , NULL , _IOLBF , 80);
+
+	fprintf(stderr, "earlyoomd %s\n", GITVERSION);
 
 	if(chdir("/proc")!=0)
 	{
@@ -184,17 +189,22 @@ int main(int argc, char *argv[])
 		exit(5);
 	}
 
+	kb_avail = get_kb_avail();
+	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
+
+	fprintf(stderr, "kb_main_total: %lu, kb_min: %lu\n",
+		kb_main_total, kb_min);
+
+	/* Dry-run oom kill to make sure stack grows to maximum size before
+	 * calling mlockall()
+	 */
+	handle_oom(procdir, 0);
+
 	if(mlockall(MCL_FUTURE)!=0)
 	{
 		fprintf(stderr, "Error: Could not lock memory: %s\n", strerror(errno));
 		exit(10);
 	}
-
-	kb_avail = get_kb_avail();
-	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
-	
-	fprintf(stderr, "earlyoomd %s. kb_main_total: %lu, kb_avail: %lu, kb_min: %lu\n",
-		GITVERSION, kb_main_total, kb_avail, kb_min);
 
 	unsigned char c=0;
 	while(1)
@@ -215,7 +225,7 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "OOM: Currently available: %lu < minimum: %lu (kiB)\n",
 				kb_avail, kb_min);
-			handle_oom(procdir);
+			handle_oom(procdir, 9);
 			oom_cnt++;
 		}
 		
