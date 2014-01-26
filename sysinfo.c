@@ -227,9 +227,6 @@ void meminfo(void){
     head = tail+1;
     if(!found) goto nextline;
     *(found->slot) = (unsigned long)strtoull(head,&tail,10);
-    /* In earlyoomd, we only need the data up to "Cached" from /proc/meminfo -
-       stop here to save a bit of CPU time. */
-    if(found->slot == &kb_main_cached) break;
 nextline:
     tail = strchr(head, '\n');
     if(!tail) break;
