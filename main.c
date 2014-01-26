@@ -162,7 +162,6 @@ void handle_oom(DIR * procdir, int sig)
 #else
 	trigger_oom_killer(sig);
 #endif
-	sleep(2);
 }
 
 int main(int argc, char *argv[])
