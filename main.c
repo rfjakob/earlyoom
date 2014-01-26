@@ -181,14 +181,20 @@ int main(int argc, char *argv[])
 	kb_avail = get_kb_avail();
 	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
 	
-	printf("Physical RAM: %lu, currently available: %lu, minimum: %lu (kiB)\n",
-		kb_main_total, kb_avail, kb_min);
+	printf("earlyoomd %s. kb_main_total: %lu, kb_avail: %lu, kb_min: %lu\n",
+		GITVERSION, kb_main_total, kb_avail, kb_min);
 
+	unsigned char c=0;
 	while(1)
 	{
 		kb_avail = get_kb_avail();
 
-		//printf("kb_avail: %lu\n", kb_avail);
+		if(c % 10 == 0)
+		{
+			printf("kb_avail: %lu\n", kb_avail);
+			c=0;
+		}
+		c++;
 
 		if(kb_avail < kb_min)
 		{
@@ -198,7 +204,7 @@ int main(int argc, char *argv[])
 			oom_cnt++;
 		}
 		
-		usleep(100000);
+		usleep(100000); // 100ms
 	}
 	
 	return 0;
