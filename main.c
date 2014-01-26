@@ -191,8 +191,8 @@ int main(int argc, char *argv[])
 	kb_avail = get_kb_avail();
 	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
 
-	fprintf(stderr, "kb_main_total: %lu, kb_min: %lu\n",
-		kb_main_total, kb_min);
+	fprintf(stderr, "kb_total: %8lu\n", kb_main_total);
+	fprintf(stderr, "kb_min:   %8lu\n",	kb_min);
 
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 
 		if(c % 10 == 0)
 		{
-			printf("kb_avail: %lu\n", kb_avail);
+			printf("kb_avail: %8lu\n", kb_avail);
 			/*printf("kb_main_free: %lu kb_main_buffers: %lu kb_main_cached: %lu kb_main_shared: %lu\n",
 				kb_main_free, kb_main_buffers, kb_main_cached, kb_main_shared);
 			*/
