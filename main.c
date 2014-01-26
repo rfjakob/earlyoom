@@ -82,14 +82,14 @@ static void kill_by_rss(DIR *procdir)
 		FILE * statm = fopen(buf, "r");
 		if(statm == 0)
 		{
-			printf("Error: Could not open %s: %s\n", buf, strerror(errno));
+			fprintf(stderr, "Error: Could not open %s: %s\n", buf, strerror(errno));
 			exit(7);
 		}
 
 		long VmSize=0, VmRSS=0;
 		if(fscanf(statm, "%lu %lu", &VmSize, &VmRSS) < 2)
 		{
-			printf("Error: Could not parse %s\n", buf);
+			fprintf(stderr, "Error: Could not parse %s\n", buf);
 			exit(8);
 		}
 		fclose(statm);
@@ -103,7 +103,7 @@ static void kill_by_rss(DIR *procdir)
 
 	if(hog_pid==0)
 	{
-		printf("Error: Could not find a process to kill\n");
+		fprintf(stderr, "Error: Could not find a process to kill\n");
 		exit(9);
 	}
 
@@ -113,11 +113,11 @@ static void kill_by_rss(DIR *procdir)
 	fscanf(stat, "%d %s", &pid, name);
 	fclose(stat);
 
-	printf("Killing process %d %s\n", hog_pid, name);
+	fprintf(stderr, "Killing process %d %s\n", hog_pid, name);
 
 	if(kill(hog_pid, 9) != 0)
 	{
-		printf("Warning: Could not kill process: %s\n", strerror(errno));
+		fprintf(stderr, "Warning: Could not kill process: %s\n", strerror(errno));
 	}
 }
 #else
@@ -140,14 +140,14 @@ void trigger_oom_killer(void)
 	trig_fd = open("sysrq-trigger", O_WRONLY);
 	if(trig_fd == -1)
 	{
-		printf("Warning: Cannot open /proc/sysrq-trigger: %s. ");
+		fprintf(stderr, "Warning: Cannot open /proc/sysrq-trigger: %s. ");
 		return;
 	}
-	printf("Invoking oom killer: ");
+	fprintf(stderr, "Invoking oom killer: ");
 	if(write(trig_fd, "f", 1) == -1)
-		printf("%s\n", strerror(errno));
+		fprintf("%s\n", strerror(errno));
 	else
-		printf("done\n");
+		fprintf(stderr, "done\n");
 }
 #endif
 
@@ -173,27 +173,27 @@ int main(int argc, char *argv[])
 
 	if(chdir("/proc")!=0)
 	{
-		printf("Error: Could not cd to /proc: %s\n", strerror(errno));
+		fprintf(stderr, "Error: Could not cd to /proc: %s\n", strerror(errno));
 		exit(4);
 	}
 
 	DIR *procdir = opendir(".");
 	if(procdir==NULL)
 	{
-		printf("Error: Could not open /proc: %s\n", strerror(errno));
+		fprintf(stderr, "Error: Could not open /proc: %s\n", strerror(errno));
 		exit(5);
 	}
 
 	if(mlockall(MCL_FUTURE)!=0)
 	{
-		printf("Error: Could not lock memory: %s\n", strerror(errno));
+		fprintf(stderr, "Error: Could not lock memory: %s\n", strerror(errno));
 		exit(10);
 	}
 
 	kb_avail = get_kb_avail();
 	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
 	
-	printf("earlyoomd %s. kb_main_total: %lu, kb_avail: %lu, kb_min: %lu\n",
+	fprintf(stderr, "earlyoomd %s. kb_main_total: %lu, kb_avail: %lu, kb_min: %lu\n",
 		GITVERSION, kb_main_total, kb_avail, kb_min);
 
 	unsigned char c=0;
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 
 		if(kb_avail < kb_min)
 		{
-			printf("OOM: Currently available: %lu < minimum: %lu (kiB)\n", 
+			fprintf(stderr, "OOM: Currently available: %lu < minimum: %lu (kiB)\n",
 				kb_avail, kb_min);
 			handle_oom(procdir);
 			oom_cnt++;
