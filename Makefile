@@ -6,3 +6,7 @@ earlyoomd: main.c sysinfo.c
 
 clean:
 	rm -f earlyoom
+
+install:
+	cp earlyoom /usr/local/bin
+	cp earlyoom.service /etc/systemd/system/earlyoom.service

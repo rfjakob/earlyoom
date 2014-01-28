@@ -1,0 +1,4 @@
+[Service]
+StandardOutput=null
+StandardError=syslog
+ExecStart=/usr/local/bin/earlyoom
