@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 	 * buffering */
 	setvbuf(stdout , NULL , _IOLBF , 80);
 
-	fprintf(stderr, "earlyoomd %s\n", GITVERSION);
+	fprintf(stderr, "earlyoom %s\n", GITVERSION);
 
 	if(chdir("/proc")!=0)
 	{
