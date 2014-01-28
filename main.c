@@ -69,9 +69,6 @@ static void kill_by_rss(DIR *procdir, int sig)
 		if(d==NULL)
 			break;
 
-		if(strcmp(".", d->d_name) == 0 || strcmp("..", d->d_name) == 0)
-			continue;
-
 		if(!isnumeric(d->d_name))
 			continue;
 
@@ -82,8 +79,9 @@ static void kill_by_rss(DIR *procdir, int sig)
 		FILE * statm = fopen(buf, "r");
 		if(statm == 0)
 		{
-			fprintf(stderr, "Error: Could not open %s: %s\n", buf, strerror(errno));
-			exit(7);
+			// Process may have died in the meantime
+			fprintf(stderr, "Warning: Could not open /proc/%s: %s\n", buf, strerror(errno));
+			continue;
 		}
 
 		long VmSize=0, VmRSS=0;
