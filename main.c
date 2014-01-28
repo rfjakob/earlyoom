@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
 
 	fprintf(stderr, "kb_total: %8lu\n", kb_main_total);
 	fprintf(stderr, "kb_min:   %8lu\n",	kb_min);
+	fprintf(stderr, "kb_avail: %8lu\n", kb_avail);
 
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
@@ -203,7 +204,7 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
-	unsigned char c=0;
+	unsigned char c=1; // So we do not print another status line immediately
 	while(1)
 	{
 		kb_avail = get_kb_avail();
