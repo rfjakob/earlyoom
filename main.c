@@ -80,7 +80,7 @@ static void kill_by_rss(DIR *procdir, int sig)
 		if(statm == 0)
 		{
 			// Process may have died in the meantime
-			fprintf(stderr, "Warning: Could not open /proc/%s: %s\n", buf, strerror(errno));
+			//fprintf(stderr, "Info: Could not open /proc/%s: %s\n", buf, strerror(errno));
 			continue;
 		}
 
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 
 		if(kb_avail < kb_min)
 		{
-			fprintf(stderr, "OOM: Currently available: %lu < minimum: %lu (kiB)\n",
+			fprintf(stderr, "Out of memory! kb_avail: %lu < kb_min: %lu\n",
 				kb_avail, kb_min);
 			handle_oom(procdir, 9);
 			oom_cnt++;
