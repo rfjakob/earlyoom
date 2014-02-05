@@ -189,9 +189,9 @@ int main(int argc, char *argv[])
 	kb_avail = get_kb_avail();
 	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
 
-	fprintf(stderr, "kb_total: %8lu\n", kb_main_total);
-	fprintf(stderr, "kb_min:   %8lu\n",	kb_min);
-	fprintf(stderr, "kb_avail: %8lu\n", kb_avail);
+	fprintf(stderr, "total: %5lu MiB\n", kb_main_total/1024);
+	fprintf(stderr, "min:   %5lu MiB\n", kb_min/1024);
+	fprintf(stderr, "avail: %5lu MiB\n", kb_avail/1024);
 
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 
 		if(c % 10 == 0)
 		{
-			printf("kb_avail: %8lu\n", kb_avail);
+			printf("avail: %5lu MiB\n", kb_avail/1024);
 			/*printf("kb_main_free: %lu kb_main_buffers: %lu kb_main_cached: %lu kb_main_shared: %lu\n",
 				kb_main_free, kb_main_buffers, kb_main_cached, kb_main_shared);
 			*/
@@ -221,8 +221,8 @@ int main(int argc, char *argv[])
 
 		if(kb_avail < kb_min)
 		{
-			fprintf(stderr, "Out of memory! kb_avail: %lu < kb_min: %lu\n",
-				kb_avail, kb_min);
+			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
+				kb_avail/1024, kb_min/1024);
 			handle_oom(procdir, 9);
 			oom_cnt++;
 		}
