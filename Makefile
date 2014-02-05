@@ -10,3 +10,4 @@ clean:
 install:
 	cp earlyoom /usr/local/bin
 	cp earlyoom.service /etc/systemd/system/earlyoom.service
+	systemctl enable earlyoom
