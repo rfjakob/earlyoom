@@ -8,6 +8,11 @@ clean:
 	rm -f earlyoom
 
 install:
-	cp earlyoom /usr/local/bin
+	cp earlyoom -f /usr/local/bin/earlyoom
 	cp earlyoom.service /etc/systemd/system/earlyoom.service
 	systemctl enable earlyoom
+
+uninstall:
+	rm -f /usr/local/bin/earlyoom
+	systemctl disable earlyoom
+	rm -f /etc/systemd/system/earlyoom.service
