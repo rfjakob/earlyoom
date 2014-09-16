@@ -91,19 +91,17 @@ using
 
 	systemctl status earlyoom
 
-Note that warnings like
-
-	Warning: Could not open /proc/17419/statm: No such file or directory
-
-are harmless unless you get lots of them.
-
 Contribute
 ----------
 Bug reports and pull requests are welcome via github. In particular, I am glad to
 accept
-* An init script that works on Debian/Ubuntu
+
+* <del>An init script that works on Debian/Ubuntu</del> Thanks joeytwiddle!
 * Use case reports and feedback
+* An update to use the new `MemAvailable` from `/proc/meminfo`
+  when available (Linux 3.14+, [commit][4])
 
 [1]: http://www.freelists.org/post/procps/library-properly-handle-memory-used-by-tmpfs
 [2]: http://superuser.com/questions/406101/is-it-possible-to-make-the-oom-killer-intervent-earlier
 [3]: http://unix.stackexchange.com/questions/38507/is-it-possible-to-trigger-oom-killer-on-forced-swapping
+[4]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
