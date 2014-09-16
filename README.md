@@ -36,7 +36,7 @@ That number is checked 10 times a second.
 	Swap:            0          0          0
 
 When that number drops below 10% of your total physical RAM, it will kill -9 the
-process that has the most resident memory ("VmRSS" in /proc/*/status).
+process that has the most resident memory ("VmRSS" in `/proc/*/status`).
 
 Note that swap is not taken into account at all. That means that processes
 may get killed before swap is used. This, however, is the point of
@@ -48,8 +48,8 @@ Why not trigger the kernel oom killer?
 Earlyoom does not use "echo f > /proc/sysrq-trigger" because the Chrome people made
 their browser always be the first (innocent!) victim by setting oom_score_adj
 very high ( https://code.google.com/p/chromium/issues/detail?id=333617 ).
-Instead, earlyoom finds out itself by reading trough /proc/*/status
-(actually /proc/*/statm, which contains the same information but is easier to
+Instead, earlyoom finds out itself by reading trough `/proc/*/status`
+(actually `/proc/*/statm`, which contains the same information but is easier to
 parse programmatically).
 
 How much memory does earlyoom use?
