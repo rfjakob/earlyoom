@@ -82,7 +82,7 @@ available and what the minimum amount of available memory is:
 	kb_avail:  5389276
 	kb_avail:  5385316
 	kb_avail:  5381848
-	(etc)
+	[...]
 
 If the available memory drops below the minimum, processes are killed until it
 is above the minimum again. Every action is logged to stderr. If you are on
