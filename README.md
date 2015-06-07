@@ -76,12 +76,12 @@ Just start the executable you have just compiled:
 It will inform you how much physical RAM you have, how much is currently
 available and what the minimum amount of available memory is:
 
-	earlyoom v0.1-11-gce9a323
-	kb_total:  7894480
-	kb_min:     789440
-	kb_avail:  5389276
-	kb_avail:  5385316
-	kb_avail:  5381848
+	earlyoom v0.4
+	total:  7842 MiB
+	min:     784 MiB
+	avail:  5071 MiB
+	avail:  5071 MiB
+	avail:  5071 MiB
 	[...]
 
 If the available memory drops below the minimum, processes are killed until it
@@ -98,10 +98,12 @@ accept
 
 * <del>An init script that works on Debian/Ubuntu</del> Thanks joeytwiddle!
 * Use case reports and feedback
-* An update to use the new `MemAvailable` from `/proc/meminfo`
-  when available (Linux 3.14+, [commit][4])
+* <del>An update to use the new `MemAvailable` from `/proc/meminfo`
+  when available (Linux 3.14+, [commit][4])</del> Added in commit
+  [b6395872a049be78d636a9515f1c18c6997ea8a8][5].
 
 [1]: http://www.freelists.org/post/procps/library-properly-handle-memory-used-by-tmpfs
 [2]: http://superuser.com/questions/406101/is-it-possible-to-make-the-oom-killer-intervent-earlier
 [3]: http://unix.stackexchange.com/questions/38507/is-it-possible-to-trigger-oom-killer-on-forced-swapping
 [4]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
+[5]: https://github.com/rfjakob/earlyoom/commit/b6395872a049be78d636a9515f1c18c6997ea8a8
