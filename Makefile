@@ -1,8 +1,8 @@
 GITVERSION=\"$(shell git describe --tags --dirty)\"
 CFLAGS=-Wall -DGITVERSION=$(GITVERSION)
 
-earlyoomd: main.c sysinfo.c
-	$(CC) $(CFLAGS) -o earlyoom main.c sysinfo.c
+earlyoomd: main.c meminfo.c
+	$(CC) $(CFLAGS) -o earlyoom main.c meminfo.c
 
 clean:
 	rm -f earlyoom

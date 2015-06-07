@@ -18,15 +18,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 
-#include "sysinfo.h"
-
-/* "free -/+ buffers/cache"
- * Memory that is actually available to applications */
-static unsigned long get_kb_avail(void)
-{
-	meminfo();
-	return kb_main_free + kb_main_buffers + kb_main_cached;
-}
+#include "meminfo.h"
 
 static int isnumeric(char* str)
 {
@@ -186,10 +178,11 @@ int main(int argc, char *argv[])
 		exit(5);
 	}
 
-	kb_avail = get_kb_avail();
-	kb_min = kb_main_total/100*MIN_AVAIL_PERCENT;
+	struct meminfo m = parse_meminfo();
+	kb_avail = m.MemAvailable;
+	kb_min = m.MemTotal*MIN_AVAIL_PERCENT/100;
 
-	fprintf(stderr, "total: %5lu MiB\n", kb_main_total/1024);
+	fprintf(stderr, "total: %5lu MiB\n", m.MemTotal/1024);
 	fprintf(stderr, "min:   %5lu MiB\n", kb_min/1024);
 	fprintf(stderr, "avail: %5lu MiB\n", kb_avail/1024);
 
@@ -200,21 +193,19 @@ int main(int argc, char *argv[])
 
 	if(mlockall(MCL_FUTURE)!=0)
 	{
-		fprintf(stderr, "Error: Could not lock memory: %s\n", strerror(errno));
+		perror("Could not lock memory");
 		exit(10);
 	}
 
 	unsigned char c=1; // So we do not print another status line immediately
 	while(1)
 	{
-		kb_avail = get_kb_avail();
+		m = parse_meminfo();
+		kb_avail = m.MemAvailable;
 
 		if(c % 10 == 0)
 		{
 			printf("avail: %5lu MiB\n", kb_avail/1024);
-			/*printf("kb_main_free: %lu kb_main_buffers: %lu kb_main_cached: %lu kb_main_shared: %lu\n",
-				kb_main_free, kb_main_buffers, kb_main_cached, kb_main_shared);
-			*/
 			c=0;
 		}
 		c++;
