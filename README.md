@@ -1,5 +1,8 @@
 The Early OOM Daemon
 ====================
+
+[![Build Status](https://api.travis-ci.org/rfjakob/earlyoom.svg)](https://travis-ci.org/rfjakob/earlyoom)
+
 The oom-killer generally has a bad reputation among Linux users. This may be
 part of the reason Linux invokes it only when it has absolutely no other choice.
 It will swap out the desktop environment, drop the whole page cache and empty
