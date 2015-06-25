@@ -1,4 +1,5 @@
-/* Parse /proc/meminfo */
+/* Parse /proc/meminfo
+ * Returned values are in kiB */
 
 #include <string.h>
 #include <errno.h>

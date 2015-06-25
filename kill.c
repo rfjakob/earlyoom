@@ -62,7 +62,6 @@ static void kill_by_rss(DIR *procdir, int sig)
 		if(statm == 0)
 		{
 			// Process may have died in the meantime
-			//fprintf(stderr, "Info: Could not open /proc/%s: %s\n", buf, strerror(errno));
 			continue;
 		}
 

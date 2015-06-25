@@ -15,7 +15,8 @@
 
 int main(int argc, char *argv[])
 {
-	unsigned long kb_avail, kb_min, oom_cnt=0;
+	unsigned long mem_min, swap_min; // kiB
+	unsigned long oom_cnt=0;
 
 	/* To be able to observe in real time what is happening when the
 	 * output is redirected we have to explicitely request line
@@ -38,12 +39,13 @@ int main(int argc, char *argv[])
 	}
 
 	struct meminfo m = parse_meminfo();
-	kb_avail = m.MemAvailable;
-	kb_min = m.MemTotal*MIN_AVAIL_PERCENT/100;
+	mem_min = m.MemTotal * MIN_AVAIL_PERCENT / 100;
+	swap_min = m.SwapTotal * MIN_AVAIL_PERCENT / 100;
 
-	fprintf(stderr, "total: %5lu MiB\n", m.MemTotal/1024);
-	fprintf(stderr, "min:   %5lu MiB\n", kb_min/1024);
-	fprintf(stderr, "avail: %5lu MiB\n", kb_avail/1024);
+	fprintf(stderr, "mem total: %lu MiB, min: %lu MiB\n",
+		m.MemTotal / 1024, mem_min / 1024);
+	fprintf(stderr, "swap total: %lu MiB, min: %lu MiB\n",
+		m.SwapTotal / 1024, swap_min / 1024);
 
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
@@ -60,19 +62,19 @@ int main(int argc, char *argv[])
 	while(1)
 	{
 		m = parse_meminfo();
-		kb_avail = m.MemAvailable;
 
 		if(c % 10 == 0)
 		{
-			printf("avail: %5lu MiB\n", kb_avail/1024);
+			printf("mem avail: %5lu MiB, swap free: %5lu MiB\n",
+				m.MemAvailable / 1024, m.SwapFree / 1024);
 			c=0;
 		}
 		c++;
 
-		if(kb_avail < kb_min)
+		if(m.MemAvailable <= mem_min && m.SwapFree <= swap_min)
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
-				kb_avail/1024, kb_min/1024);
+				m.MemAvailable / 1024, mem_min / 1024);
 			handle_oom(procdir, 9);
 			oom_cnt++;
 		}
