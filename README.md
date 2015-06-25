@@ -28,23 +28,34 @@ In the user space however, we can do whatever we want.
 
 What does it do
 ---------------
-earlyoom monitors the amount of available memory. "Available memory" is what
-free(1) calls "free -/+ buffers/cache", corrected for tmpfs memory usage
-[(more info)][1]. In the "free" output below, the available memory is 5918376 kiB.
-That number is checked 10 times a second.
+earlyoom checks the amount of available memory and (since version 0.5)
+free swap 10 times a second. If both are below 10%, it will kill the
+largest process.
 
-		         total       used       free     shared    buffers     cached
-	Mem:       7894520    5887116    2007404    1519648     245436    3665536
-	-/+ buffers/cache:    1976144    5918376
-	Swap:            0          0          0
+In the `free -m` output below, the available memory is 2170 MiB and
+the free swap is 231 Mib.
 
-When that number drops below 10% of your total physical RAM, it will kill -9 the
-process that has the most resident memory ("VmRSS" in `/proc/*/status`).
+                  total        used        free      shared  buff/cache   available
+    Mem:           7842        4523         137         841        3182        2170
+    Swap:          1023         792         231
 
-Note that swap is not taken into account at all. That means that processes
-may get killed before swap is used. This, however, is the point of
-earlyoom: To keep the system responsive at all costs. earlyoom is designed
-for systems with lots of RAM (6 GB or more) and with swap disabled.
+Why is "available" memory is checked as opposed to "free" memory?
+On a healthy Linux system, "free" memory is supposed to be close to zero,
+because Linux uses all available physical memory to cache disk access.
+These caches can be dropped any time the memory is needed for something
+else.
+
+The "available" memory accounts for that. It sums up all memory that
+is unused or can be freed immediately.
+
+Note that you need a recent version of
+`free` and Linux kernel 3.14+ to see the "available" column. If you have
+a recent kernel, but an old version of `free`, you can get the value
+from `/proc/meminfo`.
+
+When both your available memory and free swap drop below 10% of the total,
+it will kill -9 the process that has the most resident memory
+("VmRSS" in `/proc/*/status`).
 
 Why not trigger the kernel oom killer?
 --------------------------------------
@@ -76,18 +87,18 @@ Just start the executable you have just compiled:
 
 	./earlyoom
 
-It will inform you how much physical RAM you have, how much is currently
-available and what the minimum amount of available memory is:
+It will inform you how much memory and swap you have, what the minimum
+is, how much memory is available and how much swap is free.
 
-	earlyoom v0.4
-	total:  7842 MiB
-	min:     784 MiB
-	avail:  5071 MiB
-	avail:  5071 MiB
-	avail:  5071 MiB
+    earlyoom v0.4.1-2-g39183c0-dirty
+    mem total: 7842 MiB, min: 784 MiB
+    swap total: 1023 MiB, min: 102 MiB
+    mem avail:  2251 MiB, swap free:   231 MiB
+    mem avail:  2251 MiB, swap free:   231 MiB
+    mem avail:  2252 MiB, swap free:   231 MiB
 	[...]
 
-If the available memory drops below the minimum, processes are killed until it
+If the values drop below the minimum, processes are killed until it
 is above the minimum again. Every action is logged to stderr. If you are on
 Fedora and running earlyoom as a service, you can view the last 10 lines
 using
@@ -101,12 +112,17 @@ accept
 
 * <del>An init script that works on Debian/Ubuntu</del> Thanks joeytwiddle!
 * Use case reports and feedback
-* <del>An update to use the new `MemAvailable` from `/proc/meminfo`
-  when available (Linux 3.14+, [commit][4])</del> Added in commit
-  [b6395872a049be78d636a9515f1c18c6997ea8a8][5].
+* <del>An update to u
+
+Changelog
+---------
+* v0.5: Add swap support
+* v0.4: Add SysV init script, use the new `MemAvailable` from `/proc/meminfo`
+  (needs Linux 3.14+, [commit][4])
+* v0.2: Add systemd unit file
+* v0.1: Initial release
 
 [1]: http://www.freelists.org/post/procps/library-properly-handle-memory-used-by-tmpfs
 [2]: http://superuser.com/questions/406101/is-it-possible-to-make-the-oom-killer-intervent-earlier
 [3]: http://unix.stackexchange.com/questions/38507/is-it-possible-to-trigger-oom-killer-on-forced-swapping
 [4]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
-[5]: https://github.com/rfjakob/earlyoom/commit/b6395872a049be78d636a9515f1c18c6997ea8a8
