@@ -33,13 +33,13 @@ free swap 10 times a second. If both are below 10%, it will kill the
 largest process.
 
 In the `free -m` output below, the available memory is 2170 MiB and
-the free swap is 231 Mib.
+the free swap is 231 MiB.
 
                   total        used        free      shared  buff/cache   available
     Mem:           7842        4523         137         841        3182        2170
     Swap:          1023         792         231
 
-Why is "available" memory is checked as opposed to "free" memory?
+Why is "available" memory checked as opposed to "free" memory?
 On a healthy Linux system, "free" memory is supposed to be close to zero,
 because Linux uses all available physical memory to cache disk access.
 These caches can be dropped any time the memory is needed for something
@@ -112,7 +112,6 @@ accept
 
 * <del>An init script that works on Debian/Ubuntu</del> Thanks joeytwiddle!
 * Use case reports and feedback
-* <del>An update to u
 
 Changelog
 ---------
