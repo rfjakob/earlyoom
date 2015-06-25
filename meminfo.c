@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>                     // for size_t
 
 #include "meminfo.h"
 
@@ -45,6 +46,8 @@ struct meminfo parse_meminfo() {
 
 	m.MemTotal = get_entry("MemTotal:", buf);
 	m.MemAvailable = get_entry("MemAvailable:", buf);
+	m.SwapTotal = get_entry("SwapTotal:", buf);
+	m.SwapFree = get_entry("SwapFree:", buf);
 
 	return m;
 }
