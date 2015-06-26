@@ -9,8 +9,6 @@
 #include <ctype.h>
 #include <limits.h>                     // for PATH_MAX
 
-#ifndef USE_KERNEL_OOM_KILLER
-
 static int isnumeric(char* str)
 {
 	int i=0;
@@ -65,7 +63,7 @@ static void kill_by_rss(DIR *procdir, int sig)
 			continue;
 		}
 
-		long VmSize=0, VmRSS=0;
+		unsigned long VmSize=0, VmRSS=0;
 		if(fscanf(statm, "%lu %lu", &VmSize, &VmRSS) < 2)
 		{
 			fprintf(stderr, "Error: Could not parse %s\n", buf);
@@ -101,8 +99,6 @@ static void kill_by_rss(DIR *procdir, int sig)
 	}
 }
 
-#else
-
 /*
  * Invoke the kernel oom killer by writing "f" into /proc/sysrq-trigger
  *
@@ -116,31 +112,30 @@ static void kill_by_rss(DIR *procdir, int sig)
  *    See https://code.google.com/p/chromium/issues/detail?id=333617 for more info
  * Because of these issues, kill_by_rss() is used instead by default.
  */
-void trigger_oom_killer(int sig)
+void trigger_kernel_oom(int sig)
 {
-	int trig_fd;
-	trig_fd = open("sysrq-trigger", O_WRONLY);
-	if(trig_fd == -1)
+	FILE * trig_fd;
+	trig_fd = fopen("sysrq-trigger", "w");
+	if(trig_fd == NULL)
 	{
-		fprintf(stderr, "Warning: Cannot open /proc/sysrq-trigger: %s. ");
-		return;
+		perror("Cannot open /proc/sysrq-trigger");
+		exit(7);
 	}
-	if(sig!=9)
-		return;
-	fprintf(stderr, "Invoking oom killer: ");
-	if(write(trig_fd, "f", 1) == -1)
-		fprintf("%s\n", strerror(errno));
-	else
-		fprintf(stderr, "done\n");
+	if(sig == 9)
+	{
+		fprintf(stderr, "Invoking oom killer: ");
+		if(fprintf(trig_fd, "f\n") != 2)
+			perror("failed");
+		else
+			fprintf(stderr, "done\n");
+	}
+	fclose(trig_fd);
 }
-#endif
 
-
-void handle_oom(DIR * procdir, int sig)
+void handle_oom(DIR * procdir, int sig, int kernel_oom_killer)
 {
-#ifndef USE_KERNEL_OOM_KILLER
-	kill_by_rss(procdir, sig);
-#else
-	trigger_oom_killer(sig);
-#endif
+	if(kernel_oom_killer)
+		trigger_kernel_oom(sig);
+	else
+		kill_by_rss(procdir, sig);
 }

@@ -1,6 +1,5 @@
-/* If the available memory goes below this percentage, we start killing
- * processes. 10 is a good start. */
-#define MIN_AVAIL_PERCENT 10
+/* Check available memory and swap in a loop and start killing
+ * processes if they get too low */
 
 #include <stdio.h>
 #include <errno.h>
@@ -15,42 +14,73 @@
 
 int main(int argc, char *argv[])
 {
-	unsigned long mem_min, swap_min; // kiB
-	unsigned long oom_cnt=0;
+	int kernel_oom_killer = 0;
+	unsigned long oom_cnt = 0;
+	/* If the available memory goes below this percentage, we start killing
+	 * processes. 10 is a good start. */
+	int mem_min_percent = 10, swap_min_percent = 10;
+	unsigned long mem_min, swap_min; /* Same thing in kiB */
 
-	/* To be able to observe in real time what is happening when the
-	 * output is redirected we have to explicitely request line
-	 * buffering */
-	setvbuf(stdout , NULL , _IOLBF , 80);
+	/* request line buffering for stdout - otherwise the output
+	 * may lag behind stderr */
+	setlinebuf(stdout);
 
 	fprintf(stderr, "earlyoom %s\n", GITVERSION);
 
 	if(chdir("/proc")!=0)
 	{
-		fprintf(stderr, "Error: Could not cd to /proc: %s\n", strerror(errno));
+		perror("Could not cd to /proc");
 		exit(4);
 	}
 
 	DIR *procdir = opendir(".");
 	if(procdir==NULL)
 	{
-		fprintf(stderr, "Error: Could not open /proc: %s\n", strerror(errno));
+		perror("Could not open /proc");
 		exit(5);
 	}
 
-	struct meminfo m = parse_meminfo();
-	mem_min = m.MemTotal * MIN_AVAIL_PERCENT / 100;
-	swap_min = m.SwapTotal * MIN_AVAIL_PERCENT / 100;
+	int c;
+	while((c = getopt (argc, argv, "m:s:k")) != -1)
+	{
+		switch(c)
+		{
+			case 'm':
+				mem_min_percent = strtol(optarg, NULL, 10);
+				if(mem_min_percent <= 0) {
+					fprintf(stderr, "-m: Invalid percentage\n");
+					exit(15);
+				}
+				break;
+			case 's':
+				swap_min_percent = strtol(optarg, NULL, 10);
+				if(swap_min_percent <= 0 || swap_min_percent > 100) {
+					fprintf(stderr, "-s: Invalid percentage\n");
+					exit(16);
+				}
+				break;
+			case 'k':
+				kernel_oom_killer = 1;
+				fprintf(stderr, "Using kernel oom killer\n");
+				break;
+			case '?':
+				exit(13);
+		}
+	}
 
-	fprintf(stderr, "mem total: %lu MiB, min: %lu MiB\n",
-		m.MemTotal / 1024, mem_min / 1024);
-	fprintf(stderr, "swap total: %lu MiB, min: %lu MiB\n",
-		m.SwapTotal / 1024, swap_min / 1024);
+	struct meminfo m = parse_meminfo();
+	mem_min = m.MemTotal * mem_min_percent / 100;
+	swap_min = m.SwapTotal * swap_min_percent / 100;
+
+	fprintf(stderr, "mem total: %lu MiB, min: %lu MiB (%d %%)\n",
+		m.MemTotal / 1024, mem_min / 1024, mem_min_percent);
+	fprintf(stderr, "swap total: %lu MiB, min: %lu MiB (%d %%)\n",
+		m.SwapTotal / 1024, swap_min / 1024, swap_min_percent);
 
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
 	 */
-	handle_oom(procdir, 0);
+	handle_oom(procdir, 0, kernel_oom_killer);
 
 	if(mlockall(MCL_FUTURE)!=0)
 	{
@@ -58,7 +88,7 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
-	unsigned char c=1; // init to 1 so we do not print another status line immediately
+	c = 1; // Start at 1 so we do not print another status line immediately
 	while(1)
 	{
 		m = parse_meminfo();
@@ -75,7 +105,7 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
-			handle_oom(procdir, 9);
+			handle_oom(procdir, 9, kernel_oom_killer);
 			oom_cnt++;
 		}
 		
