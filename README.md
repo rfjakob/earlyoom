@@ -124,6 +124,7 @@ accept
 
 Changelog
 ---------
+* v0.6: Add command-line options -m, -s, -k
 * v0.5: Add swap support
 * v0.4: Add SysV init script, use the new `MemAvailable` from `/proc/meminfo`
   (needs Linux 3.14+, [commit][4])
