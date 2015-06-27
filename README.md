@@ -97,12 +97,12 @@ Just start the executable you have just compiled:
 It will inform you how much memory and swap you have, what the minimum
 is, how much memory is available and how much swap is free.
 
-    earlyoom v0.4.1-2-g39183c0-dirty
-    mem total: 7842 MiB, min: 784 MiB
-    swap total: 1023 MiB, min: 102 MiB
-    mem avail:  2251 MiB, swap free:   231 MiB
-    mem avail:  2251 MiB, swap free:   231 MiB
-    mem avail:  2252 MiB, swap free:   231 MiB
+    earlyoom v0.6
+    mem total: 7842 MiB, min: 784 MiB (10 %)
+    swap total: 1023 MiB, min: 102 MiB (10 %)
+    mem avail:  5840 MiB, swap free:   404 MiB
+    mem avail:  5840 MiB, swap free:   404 MiB
+    mem avail:  5840 MiB, swap free:   404 MiB
 	[...]
 
 If the values drop below the minimum, processes are killed until it
