@@ -105,6 +105,15 @@ using
 
 	systemctl status earlyoom
 
+Command line options
+--------------------
+
+    Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k] [-h]
+    -m ... set available memory minimum to PERCENT of total (default 10 %)
+    -s ... set free swap minimum to PERCENT of total (default 10 %)
+    -k ... use kernel oom killer instead of own user-space implmentation
+    -h ... this help text
+
 Contribute
 ----------
 Bug reports and pull requests are welcome via github. In particular, I am glad to

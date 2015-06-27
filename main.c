@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:k")) != -1)
+	while((c = getopt (argc, argv, "m:s:kh")) != -1)
 	{
 		switch(c)
 		{
@@ -63,6 +63,14 @@ int main(int argc, char *argv[])
 				kernel_oom_killer = 1;
 				fprintf(stderr, "Using kernel oom killer\n");
 				break;
+			case 'h':
+				fprintf(stderr,
+					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k] [-h]\n"
+					"-m ... set available memory minimum to PERCENT of total (default 10 %)\n"
+					"-s ... set free swap minimum to PERCENT of total (default 10 %)\n"
+					"-k ... use kernel oom killer instead of own user-space implmentation\n"
+					"-h ... this help text\n");
+				exit(1);
 			case '?':
 				exit(13);
 		}
