@@ -59,12 +59,19 @@ it will kill -9 the process that has the most resident memory
 
 Why not trigger the kernel oom killer?
 --------------------------------------
-Earlyoom does not use "echo f > /proc/sysrq-trigger" because the Chrome people made
+Earlyoom does not use `echo f > /proc/sysrq-trigger` because the Chrome people made
 their browser always be the first (innocent!) victim by setting oom_score_adj
 very high ( https://code.google.com/p/chromium/issues/detail?id=333617 ).
 Instead, earlyoom finds out itself by reading trough `/proc/*/status`
 (actually `/proc/*/statm`, which contains the same information but is easier to
 parse programmatically).
+
+Additionally, in recent kernels (tested on 4.0.5), triggering the kernel
+oom killer manually may not work at all.
+That is, it may only free some graphics
+memory (that will be allocated immediately again) and not acutally kill
+any process. At https://gist.github.com/rfjakob/346b7dc611fc3cdf4011 you
+can see how this looks like on my machine (Intel integrated graphics).
 
 How much memory does earlyoom use?
 ----------------------------------
