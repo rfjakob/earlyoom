@@ -12,6 +12,8 @@
 #include "meminfo.h"
 #include "kill.h"
 
+int enable_debug = 0;
+
 int main(int argc, char *argv[])
 {
 	int kernel_oom_killer = 0;
@@ -20,6 +22,7 @@ int main(int argc, char *argv[])
 	 * processes. 10 is a good start. */
 	int mem_min_percent = 10, swap_min_percent = 10;
 	unsigned long mem_min, swap_min; /* Same thing in kiB */
+	int ignore_oom_score_adj = 0;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -41,7 +44,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:kh")) != -1)
+	while((c = getopt (argc, argv, "m:s:kidh")) != -1)
 	{
 		switch(c)
 		{
@@ -63,17 +66,30 @@ int main(int argc, char *argv[])
 				kernel_oom_killer = 1;
 				fprintf(stderr, "Using kernel oom killer\n");
 				break;
+			case 'i':
+				ignore_oom_score_adj = 1;
+				break;
+			case 'd':
+				enable_debug = 1;
+				break;
 			case 'h':
 				fprintf(stderr,
-					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k] [-h]\n"
+					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
 					"-m ... set available memory minimum to PERCENT of total (default 10 %)\n"
 					"-s ... set free swap minimum to PERCENT of total (default 10 %)\n"
-					"-k ... use kernel oom killer instead of own user-space implmentation\n"
+					"-k ... use kernel oom killer instead of own user-space implementation\n"
+					"-i ... user-space oom killer should ignore positive oom_score_adj\n"
+					"-d ... enable debugging messages\n"
 					"-h ... this help text\n");
 				exit(1);
 			case '?':
 				exit(13);
 		}
+	}
+
+	if(kernel_oom_killer && ignore_oom_score_adj) {
+		fprintf(stderr, "Kernel oom killer does not support -i\n");
+		exit(2);
 	}
 
 	struct meminfo m = parse_meminfo();
@@ -88,7 +104,7 @@ int main(int argc, char *argv[])
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
 	 */
-	handle_oom(procdir, 0, kernel_oom_killer);
+	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj);
 
 	if(mlockall(MCL_FUTURE)!=0)
 	{
@@ -113,7 +129,7 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
-			handle_oom(procdir, 9, kernel_oom_killer);
+			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj);
 			oom_cnt++;
 		}
 		

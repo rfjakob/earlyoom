@@ -30,7 +30,8 @@ What does it do
 ---------------
 earlyoom checks the amount of available memory and (since version 0.5)
 free swap 10 times a second. If both are below 10%, it will kill the
-largest process.
+largest process. The percentage value is configureable via command line
+arguments.
 
 In the `free -m` output below, the available memory is 2170 MiB and
 the free swap is 231 MiB.
@@ -51,11 +52,13 @@ is unused or can be freed immediately.
 Note that you need a recent version of
 `free` and Linux kernel 3.14+ to see the "available" column. If you have
 a recent kernel, but an old version of `free`, you can get the value
-from `/proc/meminfo`.
+from `cat /proc/meminfo | grep MemAvailable`.
 
 When both your available memory and free swap drop below 10% of the total,
-it will kill -9 the process that has the most resident memory
-("VmRSS" in `/proc/*/status`).
+it will kill -9 the process that uses the most memory in the opinon of
+the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
+any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
+victims (see below).
 
 Why not trigger the kernel oom killer?
 --------------------------------------
@@ -115,10 +118,13 @@ using
 Command line options
 --------------------
 
-    Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k] [-h]
+    earlyoom v0.7
+    Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
     -m ... set available memory minimum to PERCENT of total (default 10 %)
     -s ... set free swap minimum to PERCENT of total (default 10 %)
-    -k ... use kernel oom killer instead of own user-space implmentation
+    -k ... use kernel oom killer instead of own user-space implementation
+    -i ... user-space oom killer should ignore positive oom_score_adj
+    -d ... enable debugging messages
     -h ... this help text
 
 Contribute
@@ -126,14 +132,14 @@ Contribute
 Bug reports and pull requests are welcome via github. In particular, I am glad to
 accept
 
-* <del>An init script that works on Debian/Ubuntu</del> Thanks joeytwiddle!
 * Use case reports and feedback
 
 Changelog
 ---------
-* v0.6: Add command-line options -m, -s, -k
+* v0.7: Select victim by oom_score instead of VmRSS, add options `-i` and `-d`
+* v0.6: Add command-line options `-m`, `-s`, `-k`
 * v0.5: Add swap support
-* v0.4: Add SysV init script, use the new `MemAvailable` from `/proc/meminfo`
+* v0.4: Add SysV init script (thanks joeytwiddle), use the new `MemAvailable` from `/proc/meminfo`
   (needs Linux 3.14+, [commit][4])
 * v0.2: Add systemd unit file
 * v0.1: Initial release

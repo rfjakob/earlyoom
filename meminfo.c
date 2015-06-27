@@ -9,7 +9,7 @@
 
 #include "meminfo.h"
 
-unsigned long get_entry(char *name, char *buf) {
+static unsigned long get_entry(char *name, char *buf) {
 	char *hit = strstr(buf, name);
 	if(hit == NULL) {
 		fprintf(stderr, "Could not find \"%s\"\n", name);

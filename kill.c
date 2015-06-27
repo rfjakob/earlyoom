@@ -9,6 +9,16 @@
 #include <ctype.h>
 #include <limits.h>                     // for PATH_MAX
 
+#include "kill.h"
+
+extern int enable_debug;
+
+struct procinfo {
+	int oom_score;
+	int oom_score_adj;
+	int exited;
+};
+
 static int isnumeric(char* str)
 {
 	int i=0;
@@ -29,74 +39,102 @@ static int isnumeric(char* str)
 	}
 }
 
-/*
- * Find the process with the largest RSS and kill it.
- * See trigger_oom_killer() for the reason why this is done in userspace.
+/* Read /proc/pid/{oom_score, oom_score_adj, statm}
+ * Caller must ensure that we are already in the /proc/ directory
  */
-static void kill_by_rss(DIR *procdir, int sig)
+static struct procinfo get_process_stats(int pid)
+{
+	char buf[256];
+	FILE * f;
+	struct procinfo p = {0, 0, 0};
+
+	snprintf(buf, sizeof(buf), "%d/oom_score", pid);
+	f = fopen(buf, "r");
+	if(f == NULL) {
+		p.exited = 1;
+		return p;
+	}
+	fscanf(f, "%d", &(p.oom_score));
+	fclose(f);
+
+	snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
+	f = fopen(buf, "r");
+	if(f == NULL) {
+		p.exited = 1;
+		return p;
+	}
+	fscanf(f, "%d", &(p.oom_score_adj));
+	fclose(f);
+
+	return p;
+}
+
+/*
+ * Find the process with the largest oom_score and kill it.
+ * See trigger_kernel_oom() for the reason why this is done in userspace.
+ */
+static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 {
 	struct dirent * d;
-	char buf[PATH_MAX];
+	char buf[256];
 	int pid;
-	int hog_pid=0;
-	unsigned long hog_rss=0;
+	int victim_pid = 0;
+	int victim_points = 0;
 	char name[PATH_MAX];
+	struct procinfo p;
+	int badness;
 
 	rewinddir(procdir);
 	while(1)
 	{
-		d=readdir(procdir);
-		if(d==NULL)
+		d = readdir(procdir);
+		if(d == NULL)
 			break;
 
 		if(!isnumeric(d->d_name))
 			continue;
 
-		pid=strtoul(d->d_name, NULL, 10);
+		pid = strtoul(d->d_name, NULL, 10);
 
-		snprintf(buf, PATH_MAX, "%d/statm", pid);
+		p = get_process_stats(pid);
 
-		FILE * statm = fopen(buf, "r");
-		if(statm == 0)
-		{
+		if(p.exited == 1)
 			// Process may have died in the meantime
 			continue;
-		}
 
-		unsigned long VmSize=0, VmRSS=0;
-		if(fscanf(statm, "%lu %lu", &VmSize, &VmRSS) < 2)
-		{
-			fprintf(stderr, "Error: Could not parse %s\n", buf);
-			exit(8);
-		}
-		fclose(statm);
+		badness = p.oom_score;
+		if(ignore_oom_score_adj && p.oom_score_adj > 0)
+			badness -= p.oom_score_adj;
 
-		if(VmRSS > hog_rss)
+		if(enable_debug)
+			printf("pid %5d: badness %3d\n", pid, badness);
+
+		if(badness > victim_points)
 		{
-			hog_pid=pid;
-			hog_rss=VmRSS;
+			victim_pid = pid;
+			victim_points = badness;
+			if(enable_debug)
+				printf("    ^ new victim\n");
 		}
 	}
 
-	if(hog_pid==0)
+	if(victim_pid == 0)
 	{
 		fprintf(stderr, "Error: Could not find a process to kill\n");
 		exit(9);
 	}
 
 	name[0]=0;
-	snprintf(buf, PATH_MAX, "%d/stat", hog_pid);
+	snprintf(buf, sizeof(buf), "%d/stat", victim_pid);
 	FILE * stat = fopen(buf, "r");
-	fscanf(stat, "%d %s", &pid, name);
+	fscanf(stat, "%*d %s", name);
 	fclose(stat);
 
-	if(sig!=0)
-		fprintf(stderr, "Killing process %d %s\n", hog_pid, name);
+	if(sig != 0)
+		fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
 
-	if(kill(hog_pid, sig) != 0)
-	{
-		fprintf(stderr, "Warning: Could not kill process: %s\n", strerror(errno));
-	}
+	if(kill(victim_pid, sig) != 0)
+		perror("Could not kill process");
 }
 
 /*
@@ -110,6 +148,8 @@ static void kill_by_rss(DIR *procdir, int sig)
  *    processes. On an 8GB RAM machine, this means 2400MB, and will lead to every
  *    tab being killed before the actual memory hog
  *    See https://code.google.com/p/chromium/issues/detail?id=333617 for more info
+ * 3) It is broken in 4.0.5 - see
+ *    https://github.com/rfjakob/earlyoom/commit/f7e2cedce8e9605c688d0c6d7dc26b7e81817f02
  * Because of these issues, kill_by_rss() is used instead by default.
  */
 void trigger_kernel_oom(int sig)
@@ -132,10 +172,10 @@ void trigger_kernel_oom(int sig)
 	fclose(trig_fd);
 }
 
-void handle_oom(DIR * procdir, int sig, int kernel_oom_killer)
+void handle_oom(DIR * procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj)
 {
 	if(kernel_oom_killer)
 		trigger_kernel_oom(sig);
 	else
-		kill_by_rss(procdir, sig);
+		userspace_kill(procdir, sig, ignore_oom_score_adj);
 }
