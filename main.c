@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 	/* If the available memory goes below this percentage, we start killing
 	 * processes. 10 is a good start. */
 	int mem_min_percent = 10, swap_min_percent = 10;
-	unsigned long mem_min, swap_min; /* Same thing in kiB */
+	long mem_min, swap_min; /* Same thing in kiB */
 	int ignore_oom_score_adj = 0;
 
 	/* request line buffering for stdout - otherwise the output

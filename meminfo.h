@@ -1,8 +1,9 @@
 struct meminfo {
-  unsigned long MemTotal;
-  unsigned long MemAvailable;
-  unsigned long SwapTotal;
-  unsigned long SwapFree;
+	long MemTotal;
+	long MemAvailable;
+	long SwapTotal;
+	long SwapFree;
+	/* -1 means no data available */
 };
 
 struct meminfo parse_meminfo();
