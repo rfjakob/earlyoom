@@ -40,8 +40,9 @@ static long available_guesstimate(const char *buf) {
 	long Cached = get_entry_fatal("Cached:", buf);
 	long MemFree = get_entry_fatal("MemFree:", buf);
 	long Buffers = get_entry_fatal("Buffers:", buf);
+	long Shmem =  get_entry_fatal("Shmem:", buf);
 
-    return MemFree + Cached + Buffers;
+    return MemFree + Cached + Buffers - Shmem;
 }
 
 struct meminfo parse_meminfo() {
