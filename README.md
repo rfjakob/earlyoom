@@ -123,7 +123,7 @@ Command line options
     -m ... set available memory minimum to PERCENT of total (default 10 %)
     -s ... set free swap minimum to PERCENT of total (default 10 %)
     -k ... use kernel oom killer instead of own user-space implementation
-    -i ... user-space oom killer should ignore positive oom_score_adj
+    -i ... user-space oom killer should ignore positive oom_score_adj values
     -d ... enable debugging messages
     -h ... this help text
 

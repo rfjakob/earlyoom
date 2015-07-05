@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 					"-m ... set available memory minimum to PERCENT of total (default 10 %)\n"
 					"-s ... set free swap minimum to PERCENT of total (default 10 %)\n"
 					"-k ... use kernel oom killer instead of own user-space implementation\n"
-					"-i ... user-space oom killer should ignore positive oom_score_adj\n"
+					"-i ... user-space oom killer should ignore positive oom_score_adj values\n"
 					"-d ... enable debugging messages\n"
 					"-h ... this help text\n");
 				exit(1);
