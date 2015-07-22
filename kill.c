@@ -121,7 +121,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 	if(victim_pid == 0)
 	{
 		fprintf(stderr, "Error: Could not find a process to kill\n");
-		exit(9);
+		return;
 	}
 
 	name[0]=0;
