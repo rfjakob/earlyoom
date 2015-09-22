@@ -85,47 +85,56 @@ Download and compile
 --------------------
 Easy:
 
-	git clone https://github.com/rfjakob/earlyoom.git
-	cd earlyoom
-	make
-	sudo make install # Optional, if you want earlyoom to start
-	                  # automatically as a service (works on Fedora)
+```bash
+git clone https://github.com/rfjakob/earlyoom.git
+cd earlyoom
+make
+sudo make install # Optional, if you want earlyoom to start
+                  # automatically as a service (works on Fedora)
+```
 
 Use
 ---
 Just start the executable you have just compiled:
 
-	./earlyoom
+```bash
+./earlyoom
+```
 
 It will inform you how much memory and swap you have, what the minimum
 is, how much memory is available and how much swap is free.
 
-    earlyoom v0.6
-    mem total: 7842 MiB, min: 784 MiB (10 %)
-    swap total: 1023 MiB, min: 102 MiB (10 %)
-    mem avail:  5840 MiB, swap free:   404 MiB
-    mem avail:  5840 MiB, swap free:   404 MiB
-    mem avail:  5840 MiB, swap free:   404 MiB
-	[...]
+```
+earlyoom v0.6
+mem total: 7842 MiB, min: 784 MiB (10 %)
+swap total: 1023 MiB, min: 102 MiB (10 %)
+mem avail:  5840 MiB, swap free:   404 MiB
+mem avail:  5840 MiB, swap free:   404 MiB
+mem avail:  5840 MiB, swap free:   404 MiB
+[...]
+```
 
 If the values drop below the minimum, processes are killed until it
 is above the minimum again. Every action is logged to stderr. If you are on
 Fedora and running earlyoom as a service, you can view the last 10 lines
 using
 
-	systemctl status earlyoom
+```bash
+systemctl status earlyoom
+```
 
 Command line options
 --------------------
-
-    earlyoom v0.7
-    Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
-    -m ... set available memory minimum to PERCENT of total (default 10 %)
-    -s ... set free swap minimum to PERCENT of total (default 10 %)
-    -k ... use kernel oom killer instead of own user-space implementation
-    -i ... user-space oom killer should ignore positive oom_score_adj values
-    -d ... enable debugging messages
-    -h ... this help text
+```
+earlyoom v0.7
+Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
+-m ... set available memory minimum to PERCENT of total (default 10 %)
+-s ... set free swap minimum to PERCENT of total (default 10 %)
+-k ... use kernel oom killer instead of own user-space implementation
+-i ... user-space oom killer should ignore positive oom_score_adj values
+-d ... enable debugging messages
+-h ... this help text
+```
 
 Contribute
 ----------
