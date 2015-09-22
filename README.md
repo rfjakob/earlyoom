@@ -17,7 +17,7 @@ If you want to see what I mean, open something like
 http://www.unrealengine.com/html5/
 in a few Firefox windows. Save your work to disk beforehand, though.
 
-The downside of the reset button is that it kills all processes, whereas it 
+The downside of the reset button is that it kills all processes, whereas it
 would probably have been enough to kill a single one. This made people wonder
 if the oom-killer could be configured to step in earlier: [superuser.com][2]
 , [unix.stackexchange.com][3].
@@ -30,7 +30,7 @@ What does it do
 ---------------
 earlyoom checks the amount of available memory and (since version 0.5)
 free swap 10 times a second. If both are below 10%, it will kill the
-largest process. The percentage value is configureable via command line
+largest process. The percentage value is configurable via command line
 arguments.
 
 In the `free -m` output below, the available memory is 2170 MiB and
@@ -55,30 +55,30 @@ a recent kernel, but an old version of `free`, you can get the value
 from `cat /proc/meminfo | grep MemAvailable`.
 
 When both your available memory and free swap drop below 10% of the total,
-it will kill -9 the process that uses the most memory in the opinon of
+it will `kill -9` the process that uses the most memory in the opinion of
 the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
 any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
 victims (see below).
 
 Why not trigger the kernel oom killer?
 --------------------------------------
-Earlyoom does not use `echo f > /proc/sysrq-trigger` because the Chrome people made
-their browser always be the first (innocent!) victim by setting oom_score_adj
-very high ( https://code.google.com/p/chromium/issues/detail?id=333617 ).
-Instead, earlyoom finds out itself by reading trough `/proc/*/status`
+Earlyoom does not use `echo f > /proc/sysrq-trigger` because [the Chrome people made
+their browser always be the first (innocent!) victim by setting `oom_score_adj`
+very high]( https://code.google.com/p/chromium/issues/detail?id=333617).
+Instead, earlyoom finds out itself by reading through `/proc/*/status`
 (actually `/proc/*/statm`, which contains the same information but is easier to
 parse programmatically).
 
 Additionally, in recent kernels (tested on 4.0.5), triggering the kernel
 oom killer manually may not work at all.
 That is, it may only free some graphics
-memory (that will be allocated immediately again) and not acutally kill
-any process. At https://gist.github.com/rfjakob/346b7dc611fc3cdf4011 you
+memory (that will be allocated immediately again) and not actually kill
+any process. [Here](https://gist.github.com/rfjakob/346b7dc611fc3cdf4011) you
 can see how this looks like on my machine (Intel integrated graphics).
 
 How much memory does earlyoom use?
 ----------------------------------
-About 0.6MB RSS. All memory is locked using mlockall() to make sure
+About `0.6MB RSS`. All memory is locked using `mlockall()` to make sure
 earlyoom does not slow down in low memory situations.
 
 Download and compile
@@ -148,7 +148,7 @@ Changelog
 * v0.7: Select victim by oom_score instead of VmRSS, add options `-i` and `-d`
 * v0.6: Add command-line options `-m`, `-s`, `-k`
 * v0.5: Add swap support
-* v0.4: Add SysV init script (thans joeytwiddle), use the new `MemAvailable` from `/proc/meminfo`
+* v0.4: Add SysV init script (thanks @joeytwiddle), use the new `MemAvailable` from `/proc/meminfo`
   (needs Linux 3.14+, [commit][4])
 * v0.2: Add systemd unit file
 * v0.1: Initial release
