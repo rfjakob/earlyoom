@@ -148,7 +148,7 @@ Changelog
 * v0.7: Select victim by oom_score instead of VmRSS, add options `-i` and `-d`
 * v0.6: Add command-line options `-m`, `-s`, `-k`
 * v0.5: Add swap support
-* v0.4: Add SysV init script (thanks @joeytwiddle), use the new `MemAvailable` from `/proc/meminfo`
+* v0.4: Add SysV init script (thanks [@joeytwiddle](https://github.com/joeytwiddle)), use the new `MemAvailable` from `/proc/meminfo`
   (needs Linux 3.14+, [commit][4])
 * v0.2: Add systemd unit file
 * v0.1: Initial release
