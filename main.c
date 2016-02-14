@@ -106,11 +106,8 @@ int main(int argc, char *argv[])
 	 */
 	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj);
 
-	if(mlockall(MCL_FUTURE)!=0)
-	{
-		perror("Could not lock memory");
-		exit(10);
-	}
+	if(mlockall(MCL_CURRENT|MCL_FUTURE) !=0 )
+		perror("Could not lock memory - continuing anyway");
 
 	c = 1; // Start at 1 so we do not print another status line immediately
 	while(1)
