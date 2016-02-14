@@ -116,8 +116,13 @@ int main(int argc, char *argv[])
 
 		if(c % 10 == 0)
 		{
-			printf("mem avail: %5lu MiB, swap free: %5lu MiB\n",
-				m.MemAvailable / 1024, m.SwapFree / 1024);
+			int swap_free_percent = 0;
+			if (m.SwapTotal > 0)
+				swap_free_percent = m.SwapFree * 100 / m.SwapTotal;
+
+			printf("mem avail: %lu MiB (%d %%), swap free: %lu MiB (%d %%)\n",
+				m.MemAvailable / 1024, m.MemAvailable * 100 / m.MemTotal,
+				m.SwapFree / 1024, swap_free_percent);
 			c=0;
 		}
 		c++;
