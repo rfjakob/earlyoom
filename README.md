@@ -145,6 +145,7 @@ accept
 
 Changelog
 ---------
+* v0.9: If oom_score of all processes is 0, use VmRss to find a victim
 * v0.8: Use a guesstimate if the kernel does not provide MemAvailable
 * v0.7: Select victim by oom_score instead of VmRSS, add options `-i` and `-d`
 * v0.6: Add command-line options `-m`, `-s`, `-k`
