@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <limits.h>                     // for PATH_MAX
+#include <unistd.h>
 
 #include "kill.h"
 
@@ -16,6 +17,7 @@ extern int enable_debug;
 struct procinfo {
 	int oom_score;
 	int oom_score_adj;
+	unsigned long vm_rss;
 	int exited;
 };
 
@@ -46,24 +48,40 @@ static struct procinfo get_process_stats(int pid)
 {
 	char buf[256];
 	FILE * f;
-	struct procinfo p = {0, 0, 0};
+	struct procinfo p = {0, 0, 0, 0};
 
+	// Read /proc/[pid]/oom_score
 	snprintf(buf, sizeof(buf), "%d/oom_score", pid);
 	f = fopen(buf, "r");
 	if(f == NULL) {
+		perror("get_process_stats: fopen failed");
 		p.exited = 1;
 		return p;
 	}
 	fscanf(f, "%d", &(p.oom_score));
 	fclose(f);
 
+	// Read /proc/[pid]/oom_score_adj
 	snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
 	f = fopen(buf, "r");
 	if(f == NULL) {
+		perror("get_process_stats: fopen failed");
 		p.exited = 1;
 		return p;
 	}
 	fscanf(f, "%d", &(p.oom_score_adj));
+	fclose(f);
+
+	// Read VmRss from /proc/[pid]/statm
+	snprintf(buf, sizeof(buf), "%d/statm", pid);
+	f = fopen(buf, "r");
+	if(f == NULL)
+	{
+		perror("get_process_stats: fopen failed");
+		p.exited = 1;
+		return p;
+	}
+	fscanf(f, "%*lu %lu", &(p.vm_rss));
 	fclose(f);
 
 	return p;
@@ -79,7 +97,8 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 	char buf[256];
 	int pid;
 	int victim_pid = 0;
-	int victim_points = 0;
+	int victim_badness = 0;
+	unsigned long victim_vm_rss = 0;
 	char name[PATH_MAX];
 	struct procinfo p;
 	int badness;
@@ -87,14 +106,26 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 	rewinddir(procdir);
 	while(1)
 	{
+		errno = 0;
 		d = readdir(procdir);
 		if(d == NULL)
-			break;
+		{
+			if(errno != 0)
+				perror("readdir returned error");
 
+			break;
+		}
+
+		// proc contains lots of directories not related to processes,
+		// skip them
 		if(!isnumeric(d->d_name))
 			continue;
 
 		pid = strtoul(d->d_name, NULL, 10);
+
+		if(pid == 1)
+			// Let's not kill init.
+			continue;
 
 		p = get_process_stats(pid);
 
@@ -107,21 +138,27 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 			badness -= p.oom_score_adj;
 
 		if(enable_debug)
-			printf("pid %5d: badness %3d\n", pid, badness);
+			printf("pid %5d: badness %3d vm_rss %6lu\n", pid, badness, p.vm_rss);
 
-		if(badness > victim_points)
+		if(badness > victim_badness)
 		{
 			victim_pid = pid;
-			victim_points = badness;
+			victim_badness = badness;
 			if(enable_debug)
-				printf("    ^ new victim\n");
+				printf("    ^ new victim (higher badness)\n");
+		} else if(badness == victim_badness && p.vm_rss > victim_vm_rss) {
+			victim_pid = pid;
+			victim_vm_rss = p.vm_rss;
+			if(enable_debug)
+				printf("    ^ new victim (higher vm_rss)\n");
 		}
 	}
 
 	if(victim_pid == 0)
 	{
-		fprintf(stderr, "Error: Could not find a process to kill\n");
-		exit(9);
+		fprintf(stderr, "Error: Could not find a process to kill. Sleeping 10 seconds.\n");
+		sleep(10);
+		return;
 	}
 
 	name[0]=0;
@@ -134,7 +171,14 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 		fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
 
 	if(kill(victim_pid, sig) != 0)
+	{
 		perror("Could not kill process");
+		// Killing the process may have failed because we are not running as root.
+		// In that case, trying again in 100ms will just yield the same error.
+		// Throttle ourselves to not spam the log.
+		fprintf(stderr, "Sleeping 10 seconds\n");
+		sleep(10);
+	}
 }
 
 /*
