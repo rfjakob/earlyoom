@@ -1,5 +1,5 @@
 GITVERSION=\"$(shell git describe --tags --dirty)\"
-CFLAGS=-Wextra -DGITVERSION=$(GITVERSION)
+CFLAGS=-Wextra -DGITVERSION=$(GITVERSION) -g
 
 earlyoomd: main.c meminfo.c kill.c
 	$(CC) $(CFLAGS) -o earlyoom main.c meminfo.c kill.c
