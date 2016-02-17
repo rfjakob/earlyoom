@@ -1,18 +1,19 @@
 GITVERSION=\"$(shell git describe --tags --dirty)\"
 CFLAGS=-Wextra -DGITVERSION=$(GITVERSION) -g
 
-earlyoomd: main.c meminfo.c kill.c
+.PHONY: earlyoom
+earlyoom:
 	$(CC) $(CFLAGS) -o earlyoom main.c meminfo.c kill.c
 
 clean:
 	rm -f earlyoom
 
-install:
+install: earlyoom
 	cp earlyoom -f /usr/local/bin/earlyoom
 	cp earlyoom.service /etc/systemd/system/earlyoom.service
 	systemctl enable earlyoom
 
-install-initscript:
+install-initscript: earlyoom
 	cp earlyoom -f /usr/local/bin/earlyoom
 	cp earlyoom.initscript /etc/init.d/earlyoom
 	chmod a+x /etc/init.d/earlyoom
