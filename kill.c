@@ -41,6 +41,8 @@ static int isnumeric(char* str)
 	}
 }
 
+const char * const fopen_msg = "fopen %s failed: %s\n";
+
 /* Read /proc/pid/{oom_score, oom_score_adj, statm}
  * Caller must ensure that we are already in the /proc/ directory
  */
@@ -54,7 +56,7 @@ static struct procinfo get_process_stats(int pid)
 	snprintf(buf, sizeof(buf), "%d/oom_score", pid);
 	f = fopen(buf, "r");
 	if(f == NULL) {
-		perror("get_process_stats: fopen failed");
+		printf(fopen_msg, buf, strerror(errno));
 		p.exited = 1;
 		return p;
 	}
@@ -65,7 +67,7 @@ static struct procinfo get_process_stats(int pid)
 	snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
 	f = fopen(buf, "r");
 	if(f == NULL) {
-		perror("get_process_stats: fopen failed");
+		printf(fopen_msg, buf, strerror(errno));
 		p.exited = 1;
 		return p;
 	}
@@ -77,7 +79,7 @@ static struct procinfo get_process_stats(int pid)
 	f = fopen(buf, "r");
 	if(f == NULL)
 	{
-		perror("get_process_stats: fopen failed");
+		printf(fopen_msg, buf, strerror(errno));
 		p.exited = 1;
 		return p;
 	}
