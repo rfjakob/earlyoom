@@ -89,8 +89,9 @@ Easy:
 git clone https://github.com/rfjakob/earlyoom.git
 cd earlyoom
 make
-sudo make install # Optional, if you want earlyoom to start
-                  # automatically as a service (works on Fedora)
+sudo make install
+sudo systemctl enable earlyoom    # Optional, if you want earlyoom to start
+                                  # automatically as a systemd service
 ```
 
 Use
