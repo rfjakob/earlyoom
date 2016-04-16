@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	 * may lag behind stderr */
 	setlinebuf(stdout);
 
-	fprintf(stderr, "earlyoom %s\n", GITVERSION);
+	fprintf(stderr, "earlyoom %s\n", VERSION);
 
 	if(chdir("/proc")!=0)
 	{

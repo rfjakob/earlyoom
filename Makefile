@@ -1,5 +1,5 @@
-GITVERSION=\"$(shell git describe --tags --dirty)\"
-CFLAGS=-Wextra -DGITVERSION=$(GITVERSION) -g
+VERSION ?= $(shell git describe --tags --dirty)
+CFLAGS = -Wextra -DVERSION=\"$(VERSION)\" -g
 
 .PHONY: earlyoom
 earlyoom:
