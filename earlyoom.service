@@ -1,7 +1,7 @@
 [Service]
 StandardOutput=null
 StandardError=syslog
-ExecStart=/usr/local/bin/earlyoom
+ExecStart=${PREFIX}/bin/earlyoom
 
 [Install]
 WantedBy=multi-user.target
