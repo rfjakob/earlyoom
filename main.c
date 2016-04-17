@@ -28,7 +28,11 @@ int main(int argc, char *argv[])
 	 * may lag behind stderr */
 	setlinebuf(stdout);
 
-	fprintf(stderr, "earlyoom %s\n", VERSION);
+	char *v = VERSION;
+	if(strcmp(v, "")==0) {
+		v = "(unknown version)";
+	}
+	fprintf(stderr, "earlyoom %s\n", v);
 
 	if(chdir("/proc")!=0)
 	{
@@ -44,7 +48,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:kidh")) != -1)
+	while((c = getopt (argc, argv, "m:s:kidvh")) != -1)
 	{
 		switch(c)
 		{
@@ -72,6 +76,9 @@ int main(int argc, char *argv[])
 			case 'd':
 				enable_debug = 1;
 				break;
+			case 'v':
+				// The version has already been printed above
+				exit(0);
 			case 'h':
 				fprintf(stderr,
 					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
@@ -80,6 +87,7 @@ int main(int argc, char *argv[])
 					"-k ... use kernel oom killer instead of own user-space implementation\n"
 					"-i ... user-space oom killer should ignore positive oom_score_adj values\n"
 					"-d ... enable debugging messages\n"
+					"-v ... print version information and exit\n"
 					"-h ... this help text\n");
 				exit(1);
 			case '?':
