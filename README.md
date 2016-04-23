@@ -93,6 +93,13 @@ sudo make install # Optional, if you want earlyoom to start
                   # automatically as a service (works on Fedora)
 ```
 
+For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/):
+```bash
+yaourt -S earlyoom
+sudo systemctl enable earlyoom
+sudo systemctl start earlyoom
+```
+
 Use
 ---
 Just start the executable you have just compiled:
