@@ -126,13 +126,15 @@ systemctl status earlyoom
 Command line options
 --------------------
 ```
-earlyoom v0.7
+$ ./earlyoom -h
+earlyoom v0.10
 Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
 -m ... set available memory minimum to PERCENT of total (default 10 %)
 -s ... set free swap minimum to PERCENT of total (default 10 %)
 -k ... use kernel oom killer instead of own user-space implementation
 -i ... user-space oom killer should ignore positive oom_score_adj values
 -d ... enable debugging messages
+-v ... print version information and exit
 -h ... this help text
 ```
 
@@ -145,6 +147,8 @@ accept
 
 Changelog
 ---------
+* v0.10: Allow to override Makefile's VERSION variable to make packaging easier,
+  add `-v` command-line option
 * v0.9: If oom_score of all processes is 0, use VmRss to find a victim
 * v0.8: Use a guesstimate if the kernel does not provide MemAvailable
 * v0.7: Select victim by oom_score instead of VmRSS, add options `-i` and `-d`
