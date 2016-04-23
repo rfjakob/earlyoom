@@ -116,7 +116,7 @@ mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
 
 If the values drop below the minimum, processes are killed until it
 is above the minimum again. Every action is logged to stderr. If you are on
-Fedora and running earlyoom as a service, you can view the last 10 lines
+running earlyoom as a systemd service, you can view the last 10 lines
 using
 
 ```bash
