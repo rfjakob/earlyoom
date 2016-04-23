@@ -105,12 +105,12 @@ It will inform you how much memory and swap you have, what the minimum
 is, how much memory is available and how much swap is free.
 
 ```
-earlyoom v0.6
+earlyoom v0.10
 mem total: 7842 MiB, min: 784 MiB (10 %)
 swap total: 1023 MiB, min: 102 MiB (10 %)
-mem avail:  5840 MiB, swap free:   404 MiB
-mem avail:  5840 MiB, swap free:   404 MiB
-mem avail:  5840 MiB, swap free:   404 MiB
+mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
+mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
+mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
 [...]
 ```
 
