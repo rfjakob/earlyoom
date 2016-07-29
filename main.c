@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 			if (m.SwapTotal > 0)
 				swap_free_percent = m.SwapFree * 100 / m.SwapTotal;
 
-			printf("mem avail: %lu MiB (%d %%), swap free: %lu MiB (%d %%)\n",
+			printf("mem avail: %lu MiB (%ld %%), swap free: %lu MiB (%d %%)\n",
 				m.MemAvailable / 1024, m.MemAvailable * 100 / m.MemTotal,
 				m.SwapFree / 1024, swap_free_percent);
 			c=0;

@@ -83,7 +83,7 @@ static struct procinfo get_process_stats(int pid)
 		p.exited = 1;
 		return p;
 	}
-	fscanf(f, "%*lu %lu", &(p.vm_rss));
+	fscanf(f, "%*u %lu", &(p.vm_rss));
 	fclose(f);
 
 	return p;

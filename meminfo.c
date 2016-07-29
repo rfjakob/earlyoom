@@ -32,6 +32,7 @@ static long get_entry_fatal(const char *name, const char *buf) {
 		fprintf(stderr, "Could not find \"%s\"\n", name);
 		exit(104);
 	}
+	return val;
 }
 
 /* If the kernel does not provide MemAvailable (introduced in Linux 3.14),
