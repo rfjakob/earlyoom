@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
@@ -46,21 +47,22 @@ const char * const fopen_msg = "fopen %s failed: %s\n";
 /* Read /proc/pid/{oom_score, oom_score_adj, statm}
  * Caller must ensure that we are already in the /proc/ directory
  */
-static struct procinfo get_process_stats(int pid)
+static void get_process_stats(int pid, struct procinfo *pi)
 {
 	char buf[256];
 	FILE * f;
-	struct procinfo p = {0, 0, 0, 0};
+
+	memset (pi, 0, sizeof (struct procinfo));
 
 	// Read /proc/[pid]/oom_score
 	snprintf(buf, sizeof(buf), "%d/oom_score", pid);
 	f = fopen(buf, "r");
 	if(f == NULL) {
 		printf(fopen_msg, buf, strerror(errno));
-		p.exited = 1;
-		return p;
+		pi->exited = 1;
+		return;
 	}
-	fscanf(f, "%d", &(p.oom_score));
+	fscanf(f, "%d", &(pi->oom_score));
 	fclose(f);
 
 	// Read /proc/[pid]/oom_score_adj
@@ -68,10 +70,10 @@ static struct procinfo get_process_stats(int pid)
 	f = fopen(buf, "r");
 	if(f == NULL) {
 		printf(fopen_msg, buf, strerror(errno));
-		p.exited = 1;
-		return p;
+		pi->exited = 1;
+		return;
 	}
-	fscanf(f, "%d", &(p.oom_score_adj));
+	fscanf(f, "%d", &(pi->oom_score_adj));
 	fclose(f);
 
 	// Read VmRss from /proc/[pid]/statm
@@ -80,13 +82,13 @@ static struct procinfo get_process_stats(int pid)
 	if(f == NULL)
 	{
 		printf(fopen_msg, buf, strerror(errno));
-		p.exited = 1;
-		return p;
+		pi->exited = 1;
+		return;
 	}
-	fscanf(f, "%*u %lu", &(p.vm_rss));
+	fscanf(f, "%*u %lu", &(pi->vm_rss));
 	fclose(f);
 
-	return p;
+	return;
 }
 
 /*
@@ -129,7 +131,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 			// Let's not kill init.
 			continue;
 
-		p = get_process_stats(pid);
+		get_process_stats(pid, &p);
 
 		if(p.exited == 1)
 			// Process may have died in the meantime
