@@ -146,6 +146,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 		{
 			victim_pid = pid;
 			victim_badness = badness;
+			victim_vm_rss = p.vm_rss;
 			if(enable_debug)
 				printf("    ^ new victim (higher badness)\n");
 		} else if(badness == victim_badness && p.vm_rss > victim_vm_rss) {
