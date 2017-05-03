@@ -100,7 +100,8 @@ int main(int argc, char *argv[])
 		exit(2);
 	}
 
-	struct meminfo m = parse_meminfo();
+	struct meminfo m;
+	parse_meminfo(&m);
 	mem_min = m.MemTotal * mem_min_percent / 100;
 	swap_min = m.SwapTotal * swap_min_percent / 100;
 
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
 	c = 1; // Start at 1 so we do not print another status line immediately
 	while(1)
 	{
-		m = parse_meminfo();
+		parse_meminfo(&m);
 
 		if(c % 10 == 0)
 		{
@@ -142,9 +143,9 @@ int main(int argc, char *argv[])
 			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj);
 			oom_cnt++;
 		}
-		
+
 		usleep(100000); // 100ms
 	}
-	
+
 	return 0;
 }

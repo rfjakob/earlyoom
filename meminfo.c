@@ -46,11 +46,12 @@ static long available_guesstimate(const char *buf) {
     return MemFree + Cached + Buffers - Shmem;
 }
 
-struct meminfo parse_meminfo() {
+void parse_meminfo(struct meminfo *pmi) {
 	static FILE* fd;
 	static char buf[8192];
     static int guesstimate_warned = 0;
-	struct meminfo m;
+
+	memset (pmi, 0, sizeof (struct meminfo));
 
 	if(fd == NULL)
 		fd = fopen("/proc/meminfo", "r");
@@ -67,13 +68,13 @@ struct meminfo parse_meminfo() {
 	}
 	buf[len] = 0; // Make sure buf is zero-terminated
 
-	m.MemTotal = get_entry_fatal("MemTotal:", buf);
-	m.SwapTotal = get_entry_fatal("SwapTotal:", buf);
-	m.SwapFree = get_entry_fatal("SwapFree:", buf);
+	pmi->MemTotal = get_entry_fatal("MemTotal:", buf);
+	pmi->SwapTotal = get_entry_fatal("SwapTotal:", buf);
+	pmi->SwapFree = get_entry_fatal("SwapFree:", buf);
 
-	m.MemAvailable = get_entry("MemAvailable:", buf);
-	if(m.MemAvailable == -1) {
-		m.MemAvailable = available_guesstimate(buf);
+	pmi->MemAvailable = get_entry("MemAvailable:", buf);
+	if(pmi->MemAvailable == -1) {
+		pmi->MemAvailable = available_guesstimate(buf);
         if(guesstimate_warned == 0) {
 			fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
 			                "         Falling back to guesstimate\n");
@@ -81,5 +82,5 @@ struct meminfo parse_meminfo() {
         }
     }
 
-	return m;
+	return;
 }

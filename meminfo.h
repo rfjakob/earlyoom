@@ -6,4 +6,4 @@ struct meminfo {
 	/* -1 means no data available */
 };
 
-struct meminfo parse_meminfo();
+void parse_meminfo(struct meminfo * pmi);
