@@ -8,9 +8,12 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 
 #include "meminfo.h"
 #include "kill.h"
+
+int set_oom_score_adj(int);
 
 int enable_debug = 0;
 
@@ -24,6 +27,7 @@ int main(int argc, char *argv[])
 	long mem_min = 0, swap_min = 0; /* Same thing in KiB */
 	int ignore_oom_score_adj = 0;
 	int report_interval = 1;
+	int set_my_priority = 0;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -49,7 +53,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kidvr:h")) != -1)
+	while((c = getopt (argc, argv, "m:s:M:S:kidvr:ph")) != -1)
 	{
 		switch(c)
 		{
@@ -101,6 +105,9 @@ int main(int argc, char *argv[])
 					exit(15);
 				}
 				break;
+			case 'p':
+				set_my_priority = 1;
+				break;
 			case 'h':
 				fprintf(stderr,
 					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
@@ -113,6 +120,7 @@ int main(int argc, char *argv[])
 					"-d ... enable debugging messages\n"
 					"-v ... print version information and exit\n"
 					"-r ... memory report interval in seconds (default 1), set to 0 to disable completely\n"
+					"-p ... set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
 					"-h ... this help text\n");
 				exit(1);
 			case '?':
@@ -168,6 +176,14 @@ int main(int argc, char *argv[])
 	if(mlockall(MCL_CURRENT|MCL_FUTURE) !=0 )
 		perror("Could not lock memory - continuing anyway");
 
+	if (set_my_priority) {
+		if(setpriority(PRIO_PROCESS, 0, -20) !=0 )
+			perror("Could not set priority - continuing anyway");
+
+		if(set_oom_score_adj(-1000) !=0 )
+			perror("Could not set oom_score_adj to -1000 for earlyoom process - continuing anyway");
+	}
+
 	c = 1; // Start at 1 so we do not print another status line immediately
 	report_interval = report_interval * 10; // convert seconds to tenth of second
 	while(1)
@@ -198,5 +214,22 @@ int main(int argc, char *argv[])
 		usleep(100000); // 100ms
 	}
 	
+	return 0;
+}
+
+int set_oom_score_adj (int oom_score_adj)
+{
+	char buf[256];
+	pid_t pid = getpid();
+
+	snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
+	FILE * f = fopen(buf, "w");
+	if(f == NULL) {
+		return -1;
+	}
+
+	fprintf(f, "%d", oom_score_adj);
+	fclose(f);
+
 	return 0;
 }
