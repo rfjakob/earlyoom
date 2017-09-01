@@ -20,8 +20,8 @@ int main(int argc, char *argv[])
 	unsigned long oom_cnt = 0;
 	/* If the available memory goes below this percentage, we start killing
 	 * processes. 10 is a good start. */
-	int mem_min_percent = 10, swap_min_percent = 10;
-	long mem_min, swap_min; /* Same thing in kiB */
+	int mem_min_percent = 0, swap_min_percent = 0;
+	long mem_min = 0, swap_min = 0; /* Same thing in KiB */
 	int ignore_oom_score_adj = 0;
 
 	/* request line buffering for stdout - otherwise the output
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:kidvh")) != -1)
+	while((c = getopt (argc, argv, "m:s:M:S:kidvh")) != -1)
 	{
 		switch(c)
 		{
@@ -63,6 +63,20 @@ int main(int argc, char *argv[])
 				swap_min_percent = strtol(optarg, NULL, 10);
 				if(swap_min_percent <= 0 || swap_min_percent > 100) {
 					fprintf(stderr, "-s: Invalid percentage\n");
+					exit(16);
+				}
+				break;
+			case 'M':
+				mem_min = strtol(optarg, NULL, 10);
+				if(mem_min <= 0) {
+					fprintf(stderr, "-M: Invalid KiB value\n");
+					exit(15);
+				}
+				break;
+			case 'S':
+				swap_min = strtol(optarg, NULL, 10);
+				if(swap_min <= 0) {
+					fprintf(stderr, "-S: Invalid KiB value\n");
 					exit(16);
 				}
 				break;
@@ -84,6 +98,8 @@ int main(int argc, char *argv[])
 					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
 					"-m ... set available memory minimum to PERCENT of total (default 10 %%)\n"
 					"-s ... set free swap minimum to PERCENT of total (default 10 %%)\n"
+					"-M ... set available memory minimum to KiB\n"
+					"-S ... set free swap minimum to KiB\n"
 					"-k ... use kernel oom killer instead of own user-space implementation\n"
 					"-i ... user-space oom killer should ignore positive oom_score_adj values\n"
 					"-d ... enable debugging messages\n"
@@ -95,14 +111,40 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if(mem_min_percent && mem_min) {
+		fprintf(stderr, "Can't use -m with -M\n");
+		exit(2);
+	}
+
+	if(swap_min_percent && swap_min) {
+		fprintf(stderr, "Can't use -s with -S\n");
+		exit(2);
+	}
+
 	if(kernel_oom_killer && ignore_oom_score_adj) {
 		fprintf(stderr, "Kernel oom killer does not support -i\n");
 		exit(2);
 	}
 
 	struct meminfo m = parse_meminfo();
-	mem_min = m.MemTotal * mem_min_percent / 100;
-	swap_min = m.SwapTotal * swap_min_percent / 100;
+
+	if (mem_min) {
+		mem_min_percent = 100 * mem_min / m.MemTotal;
+	} else {
+		if (!mem_min_percent) {
+			mem_min_percent = 10;
+		}
+		mem_min = m.MemTotal * mem_min_percent / 100;
+	}
+
+	if (swap_min) {
+		swap_min_percent = 100 * swap_min / m.SwapTotal;
+	} else {
+		if (!swap_min_percent) {
+			swap_min_percent = 10;
+		}
+		swap_min = m.SwapTotal * swap_min_percent / 100;
+	}
 
 	fprintf(stderr, "mem total: %lu MiB, min: %lu MiB (%d %%)\n",
 		m.MemTotal / 1024, mem_min / 1024, mem_min_percent);
