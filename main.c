@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 	int mem_min_percent = 0, swap_min_percent = 0;
 	long mem_min = 0, swap_min = 0; /* Same thing in KiB */
 	int ignore_oom_score_adj = 0;
+	int report_interval = 1;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kidvh")) != -1)
+	while((c = getopt (argc, argv, "m:s:M:S:kidvr:h")) != -1)
 	{
 		switch(c)
 		{
@@ -93,6 +94,13 @@ int main(int argc, char *argv[])
 			case 'v':
 				// The version has already been printed above
 				exit(0);
+			case 'r':
+				report_interval = strtol(optarg, NULL, 10);
+				if(report_interval < 0) {
+					fprintf(stderr, "-r: Invalid interval\n");
+					exit(15);
+				}
+				break;
 			case 'h':
 				fprintf(stderr,
 					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
@@ -104,6 +112,7 @@ int main(int argc, char *argv[])
 					"-i ... user-space oom killer should ignore positive oom_score_adj values\n"
 					"-d ... enable debugging messages\n"
 					"-v ... print version information and exit\n"
+					"-r ... memory report interval in seconds (default 1), set to 0 to disable completely\n"
 					"-h ... this help text\n");
 				exit(1);
 			case '?':
@@ -160,11 +169,12 @@ int main(int argc, char *argv[])
 		perror("Could not lock memory - continuing anyway");
 
 	c = 1; // Start at 1 so we do not print another status line immediately
+	report_interval = report_interval * 10; // convert seconds to tenth of second
 	while(1)
 	{
 		m = parse_meminfo();
 
-		if(c % 10 == 0)
+		if(report_interval && c % report_interval == 0)
 		{
 			int swap_free_percent = 0;
 			if (m.SwapTotal > 0)

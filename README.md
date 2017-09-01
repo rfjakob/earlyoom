@@ -144,6 +144,7 @@ Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
 -i ... user-space oom killer should ignore positive oom_score_adj values
 -d ... enable debugging messages
 -v ... print version information and exit
+-r ... memory report interval in seconds (default 1), set to 0 to disable completely
 -h ... this help text
 ```
 
