@@ -138,10 +138,14 @@ earlyoom v0.10
 Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
 -m ... set available memory minimum to PERCENT of total (default 10 %)
 -s ... set free swap minimum to PERCENT of total (default 10 %)
+-M ... set available memory minimum to KiB
+-S ... set free swap minimum to KiB
 -k ... use kernel oom killer instead of own user-space implementation
 -i ... user-space oom killer should ignore positive oom_score_adj values
 -d ... enable debugging messages
 -v ... print version information and exit
+-r ... memory report interval in seconds (default 1), set to 0 to disable completely
+-p ... set niceness of earlyoom to -20 and oom_score_adj to -1000
 -h ... this help text
 ```
 
