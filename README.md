@@ -145,6 +145,7 @@ Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
 -d ... enable debugging messages
 -v ... print version information and exit
 -r ... memory report interval in seconds (default 1), set to 0 to disable completely
+-p ... set niceness of earlyoom to -20 and oom_score_adj to -1000
 -h ... this help text
 ```
 
