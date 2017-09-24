@@ -3,7 +3,9 @@ CFLAGS += -Wall -Wextra -DVERSION=\"$(VERSION)\" -g
 
 DESTDIR ?=
 PREFIX ?= /usr/local
+BINDIR ?= /bin
 SYSCONFDIR ?= /etc
+SYSTEMDDIR ?= $(SYSCONFDIR)/systemd
 
 VERSION ?= "(unknown version)"
 
@@ -15,30 +17,33 @@ earlyoom: $(wildcard *.c)
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	rm -f earlyoom
+	rm -f earlyoom earlyoom.service earlyoom.initscript
 
-install: install-bin earlyoom.service
-	install -d $(DESTDIR)$(SYSCONFDIR)/systemd/system/
-	install -m 644 earlyoom.service $(DESTDIR)$(SYSCONFDIR)/systemd/system/
+install: earlyoom.service install-bin
+	install -d $(DESTDIR)$(SYSTEMDDIR)/system/
+	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/system/
 	systemctl enable earlyoom
 
-install-initscript: install-bin earlyoom.initscript
+install-initscript: earlyoom.initscript install-bin
 	install -d $(DESTDIR)$(SYSCONFDIR)/init.d/
-	cp earlyoom.initscript $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
+	cp $< $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	chmod a+x $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	update-rc.d earlyoom start 18 2 3 4 5 . stop 20 0 1 6 .
 
+earlyoom.%: earlyoom.%.in
+	sed "s|:TARGET:|$(PREFIX)$(BINDIR)|g;s|:SYSCONFDIR:|$(SYSCONFDIR)|g" $< > $@
+
 install-bin: earlyoom
-	install -d $(DESTDIR)$(PREFIX)/bin
-	install -m 755 $< $(DESTDIR)$(PREFIX)/bin
+	install -d $(DESTDIR)$(PREFIX)$(BINDIR)
+	install -m 755 $< $(DESTDIR)$(PREFIX)$(BINDIR)
 
 uninstall: uninstall-bin
 	systemctl disable earlyoom
-	rm -f $(DESTDIR)$(SYSCONFDIR)/systemd/system/earlyoom.service
+	rm -f $(DESTDIR)$(SYSTEMDDIR)/system/earlyoom.service
 
 uninstall-initscript: uninstall-bin
 	rm -f $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	update-rc.d earlyoom remove
 
 uninstall-bin:
-	rm -f $(DESTDIR)$(PREFIX)/bin/earlyoom
+	rm -f $(DESTDIR)$(PREFIX)$(BINDIR)/earlyoom

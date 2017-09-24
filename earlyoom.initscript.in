@@ -18,18 +18,17 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Description of the service"
 NAME=earlyoom
-#DAEMON=/usr/sbin/$NAME
-DAEMON=/usr/local/bin/$NAME
+DAEMON=:TARGET:/$NAME
 #DAEMON_ARGS="--options args"
 LOGFILE=/var/log/earlyoom.log
 PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
+SCRIPTNAME=:SYSCONFDIR:/init.d/$NAME
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
 # Read configuration variable file if it is present
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+[ -r :SYSCONFDIR:/default/$NAME ] && . :SYSCONFDIR:/default/$NAME
 
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
@@ -50,7 +49,7 @@ do_start()
 	#   2 if daemon could not be started
 	start-stop-daemon --start --quiet --background --pidfile $PIDFILE --exec /bin/bash --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --background --pidfile $PIDFILE --exec /bin/bash -- -c "exec $DAEMON $DAEMON_ARGS 2> \"$LOGFILE\"" \
+	start-stop-daemon --start --quiet --background --pidfile $PIDFILE --exec /bin/bash -- -c "exec $DAEMON $EARLYOOM_ARGS 2> \"$LOGFILE\"" \
 		|| return 2
 	# Add code here, if necessary, that waits for the process to be ready
 	# to handle requests from services started subsequently which depend
