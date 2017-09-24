@@ -5,6 +5,8 @@ DESTDIR ?=
 PREFIX ?= /usr/local
 SYSCONFDIR ?= /etc
 
+VERSION ?= "(unknown version)"
+
 .PHONY: all clean install uninstall
 
 all: earlyoom
