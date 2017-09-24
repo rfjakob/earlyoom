@@ -19,12 +19,12 @@ earlyoom: $(wildcard *.c)
 clean:
 	rm -f earlyoom earlyoom.service earlyoom.initscript
 
-install: earlyoom.service install-bin
+install: earlyoom.service install-bin install-default
 	install -d $(DESTDIR)$(SYSTEMDDIR)/system/
 	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/system/
 	systemctl enable earlyoom
 
-install-initscript: earlyoom.initscript install-bin
+install-initscript: earlyoom.initscript install-bin install-default
 	install -d $(DESTDIR)$(SYSCONFDIR)/init.d/
 	cp $< $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	chmod a+x $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
@@ -32,6 +32,10 @@ install-initscript: earlyoom.initscript install-bin
 
 earlyoom.%: earlyoom.%.in
 	sed "s|:TARGET:|$(PREFIX)$(BINDIR)|g;s|:SYSCONFDIR:|$(SYSCONFDIR)|g" $< > $@
+
+install-default: earlyoom.default
+	install -d $(DESTDIR)$(SYSCONFDIR)/default/
+	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/default/
 
 install-bin: earlyoom
 	install -d $(DESTDIR)$(PREFIX)$(BINDIR)
