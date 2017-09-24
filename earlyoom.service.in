@@ -1,0 +1,11 @@
+[Unit]
+Description=Early OOM Daemon
+
+[Service]
+EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
+StandardOutput=null
+StandardError=syslog
+ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
+
+[Install]
+WantedBy=multi-user.target
