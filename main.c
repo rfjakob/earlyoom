@@ -33,11 +33,7 @@ int main(int argc, char *argv[])
 	 * may lag behind stderr */
 	setlinebuf(stdout);
 
-	char *v = VERSION;
-	if(strcmp(v, "")==0) {
-		v = "(unknown version)";
-	}
-	fprintf(stderr, "earlyoom %s\n", v);
+	fprintf(stderr, "earlyoom " VERSION "\n");
 
 	if(chdir("/proc")!=0)
 	{
@@ -210,10 +206,10 @@ int main(int argc, char *argv[])
 			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj);
 			oom_cnt++;
 		}
-		
+
 		usleep(100000); // 100ms
 	}
-	
+
 	return 0;
 }
 
