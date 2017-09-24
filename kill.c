@@ -205,7 +205,7 @@ void trigger_kernel_oom(int sig)
 	trig_fd = fopen("sysrq-trigger", "w");
 	if(trig_fd == NULL)
 	{
-		perror("Cannot open /proc/sysrq-trigger");
+		perror("Could not open /proc/sysrq-trigger");
 		exit(7);
 	}
 	if(sig == 9)
