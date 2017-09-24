@@ -1,0 +1,18 @@
+# Default settings for earlyoom. This file is sourced by /bin/sh from
+# /etc/init.d/earlyoom.
+
+# Options to pass to earlyoom
+EARLYOOM_ARGS=""
+
+# Examples:
+
+# Available minimum memory 5%
+# EARLYOOM_ARGS="-m 5"
+
+# Available minimum memory 15% and free minimum swap 5%
+# EARLYOOM_ARGS="-m 15 -s 5"
+
+# Use kernel oom killer
+# EARLYOOM_ARGS="-k"
+
+# See more at `earlyoom -h'
