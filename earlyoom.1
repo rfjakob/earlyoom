@@ -1,0 +1,137 @@
+.TH earlyoom 1
+.SH NAME
+earlyoom \- Early OOM Daemon
+
+
+.SH SYNOPSIS
+.B earlyoom
+.RB [ "\-m \fIPERCENT\fB" "] [" "\-s \fIPERCENT\fB" "] [" \-k | \-i "] [" \-h ]
+
+
+.SH DESCRIPTION
+The oom\-killer generally has a bad reputation among Linux users. One may have
+to sit in front of an unresponsive system, listening to the grinding disk for
+minutes, and press the reset button and get back to what was doing quickly
+after running out of patience.
+
+.B earlyoom
+checks the amount of available memory and free swap 10 times a second.
+If both are below 10%, it will kill the largest process. The percentage value
+is configurable via command line arguments.
+
+
+.SH OPTIONS
+.TP
+.BI \-m " PERCENT"
+set available memory minimum to
+.I PERCENT
+of total (default 10 %)
+.TP
+.BI \-s " PERCENT"
+set free swap minimum to
+.I PERCENT
+of total (default 10 %)
+.TP
+.B \-k
+use kernel oom killer instead of own user\-space implementation
+.TP
+.B \-i
+user\-space oom killer should ignore positive
+.I oom_score_adj
+values
+.TP
+.B \-d
+enable debugging messages
+.TP
+.B \-v
+print version information and exit
+.TP
+.B \-h
+this help text
+
+
+.SH EXIT STATUS
+.TP
+.B 0
+Successful program execution.
+.TP
+.B 1
+Usage printed (using
+.BR \-h ).
+.TP
+.B 2
+Switch conflict.
+.TP
+.B 4
+Could not cd to
+.I /proc
+.TP
+.B 5
+Could not open
+.I proc
+.TP
+.B 7
+Could not open
+.I /proc/sysrq-trigger
+.TP
+.B 13
+Unknown options.
+.TP
+.B 15
+Wrong parameters for memory threshold.
+.TP
+.B 16
+Wrong parameters for swap threshold.
+.TP
+.B 102
+Could not open
+.I /proc/meminfo
+.TP
+.B 103
+Could not read
+.I /proc/meminfo
+.TP
+.B 104
+Could not find a specific entry in
+.I /proc/meminfo
+.TP
+.B 105
+Could not convert number when parse the contents of
+.I /proc/meminfo
+
+
+.SH Why not trigger the kernel oom killer?
+Earlyoom does not use
+.I echo f > /proc/sysrq-trigger
+because the Chrome people made their browser always be the first (innocent!)
+victim by setting
+.I oom_score_adj
+very high. Instead, earlyoom finds out itself by reading through
+.I /proc/*/status
+(actually
+.I /proc/*/statm
+, which contains the same information but is easier to parse programmatically).
+
+Additionally, in recent kernels (tested on 4.0.5), triggering the kernel oom
+killer manually may not work at all. That is, it may only free some graphics
+memory (that will be allocated immediately again) and not actually kill any
+process.
+
+
+.SH MEMORY USAGE
+About 0.6MB RSS. All memory is locked using
+.I mlockall()
+to make sure earlyoom does not slow down in low memory situations.
+
+
+.SH AUTHOR
+The author of earlyoom is
+.MT jakobunt@gmail.com
+Jakob Unterwurzacher
+.ME .
+
+This manual page was written by
+.MT mmyangfl@gmail.com
+Yangfl
+.ME ,
+for the Debian project (and may be used by others).
