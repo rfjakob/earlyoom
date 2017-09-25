@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 				report_interval = strtol(optarg, NULL, 10);
 				if(report_interval < 0) {
 					fprintf(stderr, "-r: Invalid interval\n");
-					exit(15);
+					exit(14);
 				}
 				break;
 			case 'p':
@@ -106,18 +106,20 @@ int main(int argc, char *argv[])
 				break;
 			case 'h':
 				fprintf(stderr,
-					"Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]\n"
-					"-m ... set available memory minimum to PERCENT of total (default 10 %%)\n"
-					"-s ... set free swap minimum to PERCENT of total (default 10 %%)\n"
-					"-M ... set available memory minimum to KiB\n"
-					"-S ... set free swap minimum to KiB\n"
-					"-k ... use kernel oom killer instead of own user-space implementation\n"
-					"-i ... user-space oom killer should ignore positive oom_score_adj values\n"
-					"-d ... enable debugging messages\n"
-					"-v ... print version information and exit\n"
-					"-r ... memory report interval in seconds (default 1), set to 0 to disable completely\n"
-					"-p ... set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
-					"-h ... this help text\n");
+"Usage: earlyoom [OPTION]...\n"
+"\n"
+"  -m PERCENT   set available memory minimum to PERCENT of total (default 10 %%)\n"
+"  -s PERCENT   set free swap minimum to PERCENT of total (default 10 %%)\n"
+"  -M SIZE      set available memory minimum to SIZE KiB\n"
+"  -S SIZE      set free swap minimum to SIZE KiB\n"
+"  -k           use kernel oom killer instead of own user-space implementation\n"
+"  -i           user-space oom killer should ignore positive oom_score_adj values\n"
+"  -d           enable debugging messages\n"
+"  -v           print version information and exit\n"
+"  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to\n"
+"               disable completely\n"
+"  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+"  -h           this help text\n");
 				exit(1);
 			case '?':
 				exit(13);
