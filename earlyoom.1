@@ -5,7 +5,7 @@ earlyoom \- Early OOM Daemon
 
 .SH SYNOPSIS
 .B earlyoom
-.RB [ "\-m \fIPERCENT\fB" "] [" "\-s \fIPERCENT\fB" "] [" \-k | \-i "] [" \-h ]
+.RB [ OPTION ]...
 
 
 .SH DESCRIPTION
@@ -32,6 +32,16 @@ set free swap minimum to
 .I PERCENT
 of total (default 10 %)
 .TP
+.BI \-M " SIZE"
+set available memory minimum to
+.I SIZE
+KiB
+.TP
+.BI \-S " SIZE"
+set free swap minimum to
+.I SIZE
+KiB
+.TP
 .B \-k
 use kernel oom killer instead of own user\-space implementation
 .TP
@@ -45,6 +55,14 @@ enable debugging messages
 .TP
 .B \-v
 print version information and exit
+.TP
+.BI \-r " INTERVAL"
+memory report interval in seconds (default 1), set to 0 to disable completely
+.TP
+.B \-p
+set niceness of earlyoom to -20 and
+.I oom_score_adj
+to -1000
 .TP
 .B \-h
 this help text
@@ -76,6 +94,9 @@ Could not open
 .TP
 .B 13
 Unknown options.
+.TP
+.B 14
+Wrong parameters for other options.
 .TP
 .B 15
 Wrong parameters for memory threshold.
