@@ -1,5 +1,6 @@
 *~
 /earlyoom
 
-# generated from earlyoom.service.in
+# generated service files
 /earlyoom.service
+/earlyoom.initscript
