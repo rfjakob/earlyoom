@@ -13,8 +13,8 @@ VERSION ?= "(unknown version)"
 
 all: earlyoom
 
-earlyoom: $(wildcard *.c)
-	$(CC) $(CFLAGS) -o $@ $^
+earlyoom: $(wildcard *.c *.h)
+	$(CC) $(CFLAGS) -o $@ $(wildcard *.c)
 
 clean:
 	rm -f earlyoom earlyoom.service earlyoom.initscript
@@ -38,8 +38,8 @@ install-default: earlyoom.default
 	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/default/
 
 install-bin: earlyoom
-	install -d $(DESTDIR)$(PREFIX)$(BINDIR)
-	install -m 755 $< $(DESTDIR)$(PREFIX)$(BINDIR)
+	install -d $(DESTDIR)$(PREFIX)$(BINDIR)/
+	install -m 755 $< $(DESTDIR)$(PREFIX)$(BINDIR)/
 
 uninstall: uninstall-bin
 	systemctl disable earlyoom
