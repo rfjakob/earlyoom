@@ -1,4 +1,4 @@
-VERSION ?= $(shell git describe --tags --dirty)
+VERSION ?= $(shell git describe --tags --dirty 2> /dev/null)
 CFLAGS += -Wall -Wextra -DVERSION=\"$(VERSION)\" -g
 
 DESTDIR ?=
@@ -7,7 +7,9 @@ BINDIR ?= /bin
 SYSCONFDIR ?= /etc
 SYSTEMDDIR ?= $(SYSCONFDIR)/systemd
 
-VERSION ?= "(unknown version)"
+ifeq ($(VERSION),)
+VERSION := "(unknown version)"
+endif
 
 .PHONY: all clean install uninstall
 
