@@ -24,20 +24,20 @@ clean:
 install: earlyoom.service install-bin install-default
 	install -d $(DESTDIR)$(SYSTEMDDIR)/system/
 	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/system/
-	systemctl enable earlyoom
+	-systemctl enable earlyoom
 
 install-initscript: earlyoom.initscript install-bin install-default
 	install -d $(DESTDIR)$(SYSCONFDIR)/init.d/
 	cp $< $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	chmod a+x $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
-	update-rc.d earlyoom start 18 2 3 4 5 . stop 20 0 1 6 .
+	-update-rc.d earlyoom start 18 2 3 4 5 . stop 20 0 1 6 .
 
 earlyoom.%: earlyoom.%.in
 	sed "s|:TARGET:|$(PREFIX)$(BINDIR)|g;s|:SYSCONFDIR:|$(SYSCONFDIR)|g" $< > $@
 
 install-default: earlyoom.default
 	install -d $(DESTDIR)$(SYSCONFDIR)/default/
-	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/default/
+	install -m 644 $< $(DESTDIR)$(SYSCONFDIR)/default/
 
 install-bin: earlyoom
 	install -d $(DESTDIR)$(PREFIX)$(BINDIR)/
