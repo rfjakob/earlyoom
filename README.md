@@ -14,8 +14,10 @@ disk for minutes, I usually press the reset button and get back to what I was
 doing quickly.
 
 If you want to see what I mean, open something like
-http://www.unrealengine.com/html5/
-in a few Firefox windows. Save your work to disk beforehand, though.
+the Epic Citatel HTML5 Demo in a few Firefox windows (the
+demo is now offline, it looked like
+[this](https://blog.mozilla.org/blog/2014/03/12/mozilla-and-epic-preview-unreal-engine-4-running-in-firefox/)).
+Save your work to disk beforehand, though.
 
 The downside of the reset button is that it kills all processes, whereas it
 would probably have been enough to kill a single one. This made people wonder
@@ -133,20 +135,22 @@ systemctl status earlyoom
 Command line options
 --------------------
 ```
-$ ./earlyoom -h
-earlyoom v0.10
-Usage: earlyoom [-m PERCENT] [-s PERCENT] [-k|-i] [-h]
--m ... set available memory minimum to PERCENT of total (default 10 %)
--s ... set free swap minimum to PERCENT of total (default 10 %)
--M ... set available memory minimum to KiB
--S ... set free swap minimum to KiB
--k ... use kernel oom killer instead of own user-space implementation
--i ... user-space oom killer should ignore positive oom_score_adj values
--d ... enable debugging messages
--v ... print version information and exit
--r ... memory report interval in seconds (default 1), set to 0 to disable completely
--p ... set niceness of earlyoom to -20 and oom_score_adj to -1000
--h ... this help text
+./earlyoom -h
+earlyoom v0.12
+Usage: earlyoom [OPTION]...
+
+  -m PERCENT   set available memory minimum to PERCENT of total (default 10 %)
+  -s PERCENT   set free swap minimum to PERCENT of total (default 10 %)
+  -M SIZE      set available memory minimum to SIZE KiB
+  -S SIZE      set free swap minimum to SIZE KiB
+  -k           use kernel oom killer instead of own user-space implementation
+  -i           user-space oom killer should ignore positive oom_score_adj values
+  -d           enable debugging messages
+  -v           print version information and exit
+  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to
+               disable completely
+  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000
+  -h           this help text
 ```
 
 Contribute
@@ -158,6 +162,7 @@ accept
 
 Changelog
 ---------
+* v0.12: Add `-M` and `-S` options (@nailgun); add man page, parameterize Makefile (@yangfl)
 * v0.11: Fix undefined behavoir in get_entry_fatal (missing return, [commit](https://github.com/rfjakob/earlyoom/commit/9251d25618946723eb8a829404ebf1a65d99dbb0))
 * v0.10: Allow to override Makefile's VERSION variable to make packaging easier,
   add `-v` command-line option
