@@ -16,7 +16,7 @@ endif
 all: earlyoom
 
 earlyoom: $(wildcard *.c *.h)
-	$(CC) $(CFLAGS) -o $@ $(wildcard *.c)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 clean:
 	rm -f earlyoom earlyoom.service earlyoom.initscript
@@ -28,8 +28,7 @@ install: earlyoom.service install-bin install-default
 
 install-initscript: earlyoom.initscript install-bin install-default
 	install -d $(DESTDIR)$(SYSCONFDIR)/init.d/
-	cp $< $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
-	chmod a+x $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
+	install -m 755 $< $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	-update-rc.d earlyoom start 18 2 3 4 5 . stop 20 0 1 6 .
 
 earlyoom.%: earlyoom.%.in
@@ -37,7 +36,7 @@ earlyoom.%: earlyoom.%.in
 
 install-default: earlyoom.default
 	install -d $(DESTDIR)$(SYSCONFDIR)/default/
-	install -m 644 $< $(DESTDIR)$(SYSCONFDIR)/default/
+	install -m 644 $< $(DESTDIR)$(SYSCONFDIR)/default/earlyoom
 
 install-bin: earlyoom
 	install -d $(DESTDIR)$(PREFIX)$(BINDIR)/
