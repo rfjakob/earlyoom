@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 	int mem_min_percent = 0, swap_min_percent = 0;
 	long mem_min = 0, swap_min = 0; /* Same thing in KiB */
 	int ignore_oom_score_adj = 0;
+	char *notif_command = NULL;
 	int report_interval = 1;
 	int set_my_priority = 0;
 
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kidvr:ph")) != -1)
+	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:ph")) != -1)
 	{
 		switch(c)
 		{
@@ -88,6 +89,12 @@ int main(int argc, char *argv[])
 			case 'i':
 				ignore_oom_score_adj = 1;
 				break;
+			case 'n':
+				notif_command = "notify-send";
+				break;
+			case 'N':
+				notif_command = optarg;
+				break;
 			case 'd':
 				enable_debug = 1;
 				break;
@@ -114,6 +121,8 @@ int main(int argc, char *argv[])
 "  -S SIZE      set free swap minimum to SIZE KiB\n"
 "  -k           use kernel oom killer instead of own user-space implementation\n"
 "  -i           user-space oom killer should ignore positive oom_score_adj values\n"
+"  -n           enable notifications using \"notify-send\"\n"
+"  -N COMMAND   enable notifications using COMMAND\n"
 "  -d           enable debugging messages\n"
 "  -v           print version information and exit\n"
 "  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to\n"
@@ -166,10 +175,13 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "swap total: %lu MiB, min: %lu MiB (%d %%)\n",
 		m.SwapTotal / 1024, swap_min / 1024, swap_min_percent);
 
+	if (notif_command)
+		fprintf(stderr, "notifications enabled using command: %s\n", notif_command);
+
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
 	 */
-	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj);
+	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj, notif_command);
 
 	if(mlockall(MCL_CURRENT|MCL_FUTURE) !=0 )
 		perror("Could not lock memory - continuing anyway");
@@ -205,7 +217,7 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
-			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj);
+			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj, notif_command);
 			oom_cnt++;
 		}
 
