@@ -16,11 +16,11 @@
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="Description of the service"
+DESC="Early OOM Daemon"
 NAME=earlyoom
 DAEMON=:TARGET:/$NAME
 #DAEMON_ARGS="--options args"
-LOGFILE=/var/log/earlyoom.log
+LOGFILE=/var/log/$NAME.log
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=:SYSCONFDIR:/init.d/$NAME
 
