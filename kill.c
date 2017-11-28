@@ -43,12 +43,12 @@ static int isnumeric(char* str)
 
 static void maybe_notify(char* notif_command, char* notif_args)
 {
-	if(notif_command)
-	{
-		char notif[200 + sizeof notif_command];
-		snprintf(notif, 200 + sizeof notif_command, "%s %s", notif_command, notif_args);
-		system(notif);
-	}
+	if(!notif_command)
+		return;
+
+	char notif[600];
+	snprintf(notif, 600, "%s %s", notif_command, notif_args);
+	system(notif);
 }
 
 const char * const fopen_msg = "fopen %s failed: %s\n";
@@ -170,7 +170,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 	if(victim_pid == 0)
 	{
 		fprintf(stderr, "Error: Could not find a process to kill. Sleeping 10 seconds.\n");
-		maybe_notify(notif_command, "-i dialog-error 'EarlyOOM' 'Error: Could not find a process to kill'");
+		maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill'");
 		sleep(10);
 		return;
 	}
@@ -186,7 +186,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 		fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
 
 		char notif_args[200];
-		snprintf(notif_args, 200, "-i dialog-warning 'EarlyOOM' 'Killing process %d %s'", victim_pid, name);
+		snprintf(notif_args, 200, "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);
 		maybe_notify(notif_command, notif_args);
 	}
 
@@ -197,7 +197,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 		// In that case, trying again in 100ms will just yield the same error.
 		// Throttle ourselves to not spam the log.
 		fprintf(stderr, "Sleeping 10 seconds\n");
-		maybe_notify(notif_command, "-i dialog-error 'EarlyOOM' 'Error: Failed to kill process'");
+		maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process'");
 		sleep(10);
 	}
 }
@@ -229,12 +229,12 @@ void trigger_kernel_oom(int sig, char *notif_command)
 	if(sig == 9)
 	{
 		fprintf(stderr, "Invoking oom killer: ");
-		maybe_notify(notif_command, "-i dialog-warning 'EarlyOOM' 'Invoking OOM killer'");
+		maybe_notify(notif_command, "-i dialog-warning 'earlyoom' 'Invoking OOM killer'");
 
 		if(fprintf(trig_fd, "f\n") != 2)
 		{
 			perror("failed");
-			maybe_notify(notif_command, "-i dialog-error 'EarlyOOM' 'Error: Failed to invoke OOM killer'");
+			maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to invoke OOM killer'");
 		}
 		else
 			fprintf(stderr, "done\n");
