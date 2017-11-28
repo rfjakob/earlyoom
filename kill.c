@@ -41,6 +41,16 @@ static int isnumeric(char* str)
 	}
 }
 
+static void maybe_notify(char* notif_command, char* notif_args)
+{
+	if(!notif_command)
+		return;
+
+	char notif[600];
+	snprintf(notif, 600, "%s %s", notif_command, notif_args);
+	system(notif);
+}
+
 const char * const fopen_msg = "fopen %s failed: %s\n";
 
 /* Read /proc/pid/{oom_score, oom_score_adj, statm}
@@ -93,7 +103,7 @@ static struct procinfo get_process_stats(int pid)
  * Find the process with the largest oom_score and kill it.
  * See trigger_kernel_oom() for the reason why this is done in userspace.
  */
-static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
+static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char *notif_command)
 {
 	struct dirent * d;
 	char buf[256];
@@ -160,6 +170,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 	if(victim_pid == 0)
 	{
 		fprintf(stderr, "Error: Could not find a process to kill. Sleeping 10 seconds.\n");
+		maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill'");
 		sleep(10);
 		return;
 	}
@@ -171,7 +182,13 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 	fclose(stat);
 
 	if(sig != 0)
+	{
 		fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
+
+		char notif_args[200];
+		snprintf(notif_args, 200, "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);
+		maybe_notify(notif_command, notif_args);
+	}
 
 	if(kill(victim_pid, sig) != 0)
 	{
@@ -180,6 +197,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
 		// In that case, trying again in 100ms will just yield the same error.
 		// Throttle ourselves to not spam the log.
 		fprintf(stderr, "Sleeping 10 seconds\n");
+		maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process'");
 		sleep(10);
 	}
 }
@@ -199,7 +217,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj)
  *    https://github.com/rfjakob/earlyoom/commit/f7e2cedce8e9605c688d0c6d7dc26b7e81817f02
  * Because of these issues, kill_by_rss() is used instead by default.
  */
-void trigger_kernel_oom(int sig)
+void trigger_kernel_oom(int sig, char *notif_command)
 {
 	FILE * trig_fd;
 	trig_fd = fopen("sysrq-trigger", "w");
@@ -211,18 +229,23 @@ void trigger_kernel_oom(int sig)
 	if(sig == 9)
 	{
 		fprintf(stderr, "Invoking oom killer: ");
+		maybe_notify(notif_command, "-i dialog-warning 'earlyoom' 'Invoking OOM killer'");
+
 		if(fprintf(trig_fd, "f\n") != 2)
+		{
 			perror("failed");
+			maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to invoke OOM killer'");
+		}
 		else
 			fprintf(stderr, "done\n");
 	}
 	fclose(trig_fd);
 }
 
-void handle_oom(DIR * procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj)
+void handle_oom(DIR * procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj, char *notif_command)
 {
 	if(kernel_oom_killer)
-		trigger_kernel_oom(sig);
+		trigger_kernel_oom(sig, notif_command);
 	else
-		userspace_kill(procdir, sig, ignore_oom_score_adj);
+		userspace_kill(procdir, sig, ignore_oom_score_adj, notif_command);
 }
