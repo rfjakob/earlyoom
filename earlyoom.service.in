@@ -1,6 +1,6 @@
 [Unit]
 Description=Early OOM Daemon
-Documentation=https://github.com/rfjakob/earlyoom
+Documentation=man:earlyoom(1) https://github.com/rfjakob/earlyoom
 
 [Service]
 EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
