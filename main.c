@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
 	long mem_min = 0, swap_min = 0; /* Same thing in KiB */
 	int ignore_oom_score_adj = 0;
 	char *notif_command = NULL;
+	int aggressive_mode = 1;
 	int report_interval = 1;
 	int set_my_priority = 0;
 
@@ -50,7 +51,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:ph")) != -1)
+	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:pah")) != -1)
 	{
 		switch(c)
 		{
@@ -98,6 +99,9 @@ int main(int argc, char *argv[])
 			case 'd':
 				enable_debug = 1;
 				break;
+			case 'a':
+				aggressive_mode = 1;
+				break;
 			case 'v':
 				// The version has already been printed above
 				exit(0);
@@ -128,6 +132,7 @@ int main(int argc, char *argv[])
 "  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to\n"
 "               disable completely\n"
 "  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+"  -a           enable aggressive mode which doesn't factor in swap usage\n"
 "  -h           this help text\n");
 				exit(1);
 			case '?':
@@ -213,7 +218,8 @@ int main(int argc, char *argv[])
 		}
 		c++;
 
-		if(m.MemAvailable <= mem_min && m.SwapFree <= swap_min)
+		if( (m.MemAvailable <= mem_min && m.SwapFree <= swap_min) ||
+				(m.MemAvailable <= mem_min && aggressive_mode) )
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
