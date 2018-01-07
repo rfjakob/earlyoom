@@ -181,6 +181,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 	fscanf(stat, "%*d %s", name);
 	fclose(stat);
 
+	fprintf(stderr, "Selected process %d %s\n", victim_pid, name);
 	if(sig != 0)
 	{
 		fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
