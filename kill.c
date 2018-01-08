@@ -1,5 +1,7 @@
 /* Kill the most memory-hungy process */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,6 +9,8 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#include <time.h>
+#include <langinfo.h>
 #include <limits.h>                     // for PATH_MAX
 #include <unistd.h>
 
@@ -38,6 +42,20 @@ static int isnumeric(char* str)
 			return 0;
 
 		i++;
+	}
+}
+
+static void pid_name(int pid, char* name)
+{
+	char buf[256];
+
+	snprintf(buf, sizeof(buf), "%d/stat", pid);
+	FILE * f = fopen(buf, "r");
+	if(f == NULL) {
+		sscanf("(unknown)", "%s", name);
+	} else {
+		fscanf(f, "%*d %s", name);
+		fclose(f);
 	}
 }
 
@@ -106,6 +124,7 @@ static struct procinfo get_process_stats(int pid)
 static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char *notif_command)
 {
 	struct dirent * d;
+	struct stat     s;
 	char buf[256];
 	int pid;
 	int victim_pid = 0;
@@ -114,6 +133,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 	char name[PATH_MAX];
 	struct procinfo p;
 	int badness;
+	double run_t;
 
 	rewinddir(procdir);
 	while(1)
@@ -145,12 +165,31 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 			// Process may have died in the meantime
 			continue;
 
+		if (stat(d->d_name, &s) == -1)
+		{
+			perror("stat returned error");
+		} else {
+			// execution time of process in seconds
+			run_t = difftime(time(NULL), s.st_ctime);
+		}
+
+		// calculate pid weight by using rss sie and time running
+		double weight = 0;
+		if(p.vm_rss > 0 && run_t > 0)
+			weight = p.vm_rss / run_t;
+
+		// a weight greater than 1.0 means higher memory usage to time running
+		if(weight < 1.0)
+			continue;
+
 		badness = p.oom_score;
 		if(ignore_oom_score_adj && p.oom_score_adj > 0)
 			badness -= p.oom_score_adj;
 
+		pid_name(pid, buf);
 		if(enable_debug)
-			printf("pid %5d: badness %3d vm_rss %6lu\n", pid, badness, p.vm_rss);
+			printf("%10.10s pid %5d: badness %3d vm_rss %6lu run %5d weight %lf\n",
+					buf, pid, badness, p.vm_rss, (int) run_t, weight);
 
 		if(badness > victim_badness)
 		{
