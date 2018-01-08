@@ -59,6 +59,9 @@ print version information and exit
 .BI \-r " INTERVAL"
 memory report interval in seconds (default 1), set to 0 to disable completely
 .TP
+.B \-a
+makes the oom killer more aggressive by not considering swap usage
+.TP
 .B \-p
 set niceness of earlyoom to -20 and
 .I oom_score_adj
