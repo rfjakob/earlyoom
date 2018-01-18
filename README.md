@@ -157,6 +157,16 @@ arguments. Example invocation earlyoom uses:
 NOTIFY_COMMAND -i dialog-warning 'notif title' 'notif text'
 ```
 
+### Preferred Processes
+
+The command-line flag `-f`specifies processes that are favored be killed; likewise, `-u` specifies
+processes that are unfavored to be killed. The list of processes is specified by a regex expression.
+For instance, to prefer that foo and bar are no killed:
+
+```bash
+earlyoom -u '(^|/)(foo|bar)$'
+```
+
 Command line options
 --------------------
 ```

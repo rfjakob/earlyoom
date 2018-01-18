@@ -1,1 +1,1 @@
-void handle_oom(DIR *, int, int, int, char *);
+void handle_oom(DIR *, int, int, int, char *, char *, char *);

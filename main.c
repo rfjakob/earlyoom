@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
+#include <regex.h>
 
 #include "meminfo.h"
 #include "kill.h"
@@ -29,6 +30,8 @@ int main(int argc, char *argv[])
 	char *notif_command = NULL;
 	int report_interval = 1;
 	int set_my_priority = 0;
+  char *favored_cmds = NULL;
+  char *unfavored_cmds = NULL;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -50,7 +53,7 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:ph")) != -1)
+	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:f:u:ph")) != -1)
 	{
 		switch(c)
 		{
@@ -111,6 +114,12 @@ int main(int argc, char *argv[])
 			case 'p':
 				set_my_priority = 1;
 				break;
+      case 'f':
+				favored_cmds = optarg;
+				break;
+      case 'u':
+				unfavored_cmds = optarg;
+				break;
 			case 'h':
 				fprintf(stderr,
 "Usage: earlyoom [OPTION]...\n"
@@ -128,6 +137,8 @@ int main(int argc, char *argv[])
 "  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to\n"
 "               disable completely\n"
 "  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+"  -f           regex specifying programs favored to be killed\n"
+"  -u           regex specifying programs unfavored to be killed\n"
 "  -h           this help text\n");
 				exit(1);
 			case '?':
@@ -148,6 +159,29 @@ int main(int argc, char *argv[])
 	if(kernel_oom_killer && ignore_oom_score_adj) {
 		fprintf(stderr, "Kernel oom killer does not support -i\n");
 		exit(2);
+	}
+
+	if(kernel_oom_killer && favored_cmds != NULL) {
+		fprintf(stderr, "Kernel oom killer does not support -f\n");
+		exit(2);
+	}
+
+	if(kernel_oom_killer && unfavored_cmds != NULL) {
+		fprintf(stderr, "Kernel oom killer does not support -u\n");
+		exit(2);
+	}
+
+  regex_t temp;
+	if (favored_cmds != NULL && regcomp(&temp, favored_cmds, REG_EXTENDED|REG_NOSUB) != 0)
+	{
+		fprintf(stderr, "Could not compile regexp: %s\n", favored_cmds);
+		exit(6);
+	}
+
+	if (unfavored_cmds != NULL && regcomp(&temp, unfavored_cmds, REG_EXTENDED|REG_NOSUB) != 0)
+	{
+		fprintf(stderr, "Could not compile regexp: %s\n", unfavored_cmds);
+		exit(6);
 	}
 
 	struct meminfo m = parse_meminfo();
@@ -181,7 +215,8 @@ int main(int argc, char *argv[])
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
 	 */
-	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj, notif_command);
+	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj,
+		notif_command, favored_cmds, unfavored_cmds);
 
 	if(mlockall(MCL_CURRENT|MCL_FUTURE) !=0 )
 		perror("Could not lock memory - continuing anyway");
@@ -217,7 +252,8 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
-			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj, notif_command);
+			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
+				notif_command, favored_cmds, unfavored_cmds);
 			oom_cnt++;
 		}
 
