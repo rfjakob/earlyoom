@@ -15,6 +15,11 @@
 #include "meminfo.h"
 #include "kill.h"
 
+/* Arbitrary identifiers for long options that do not have a short
+ * version */
+#define LONG_OPT_PREFER 513
+#define LONG_OPT_AVOID 514
+
 int set_oom_score_adj(int);
 
 int enable_debug = 0;
@@ -59,9 +64,9 @@ int main(int argc, char *argv[])
 	const char *short_opt = "m:s:M:S:kinN:dvr:ph";
 	struct option long_opt[] =
 	{
-		{"prefer",    required_argument,    NULL,    'P'},
-		{"avoid",     required_argument,    NULL,    'A'},
-		{0,           required_argument,    NULL,     0}
+		{"prefer",    required_argument,    NULL,    LONG_OPT_PREFER},
+		{"avoid",     required_argument,    NULL,    LONG_OPT_AVOID},
+		{0,           required_argument,    NULL,    0}
 	};
 
 	while((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1)
@@ -128,10 +133,10 @@ int main(int argc, char *argv[])
 			case 'p':
 				set_my_priority = 1;
 				break;
-			case 'P':
+			case LONG_OPT_PREFER:
 				prefer_cmds = optarg;
 				break;
-			case 'A':
+			case LONG_OPT_AVOID:
 				avoid_cmds = optarg;
 				break;
 			case 'h':
