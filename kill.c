@@ -105,7 +105,7 @@ static struct procinfo get_process_stats(int pid)
  * See trigger_kernel_oom() for the reason why this is done in userspace.
  */
 static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
-  char *notif_command, char *prefer_cmds, char *avoid_cmds)
+  char *notif_command, regex_t *prefer_regex, regex_t *avoid_regex)
 {
 	struct dirent * d;
 	char buf[256];
@@ -116,19 +116,6 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 	char name[PATH_MAX];
 	struct procinfo p;
 	int badness;
-
-	regex_t prefer_regex;
-	regex_t avoid_regex;
-
-	if(prefer_cmds != NULL)
-	{
-		regcomp(&prefer_regex, prefer_cmds, REG_EXTENDED|REG_NOSUB);
-	}
-
-	if(avoid_cmds != NULL)
-	{
-		regcomp(&avoid_regex, avoid_cmds, REG_EXTENDED|REG_NOSUB);
-	}
 
 	rewinddir(procdir);
 	while(1)
@@ -170,11 +157,11 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 		fscanf(stat, "%*d (%[^)]s", name);
 		fclose(stat);
 
-		if (prefer_cmds != NULL && regexec(&prefer_regex, name, (size_t)0, NULL, 0) == 0)
+		if (prefer_regex->re_nsub != 0 && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0)
 		{
 			badness += 300;
 		}
-		if (avoid_cmds != NULL && regexec(&avoid_regex, name, (size_t)0, NULL, 0) == 0)
+		if (avoid_regex->re_nsub != 0 && regexec(avoid_regex, name, (size_t)0, NULL, 0) == 0)
 		{
 			badness -= 300;
 		}
@@ -273,10 +260,10 @@ void trigger_kernel_oom(int sig, char *notif_command)
 }
 
 void handle_oom(DIR * procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj,
-  char *notif_command, char *prefer_cmds, char *avoid_cmds)
+  char *notif_command, regex_t *prefer_regex, regex_t *avoid_regex)
 {
 	if(kernel_oom_killer)
 		trigger_kernel_oom(sig, notif_command);
 	else
-		userspace_kill(procdir, sig, ignore_oom_score_adj, notif_command, prefer_cmds, avoid_cmds);
+		userspace_kill(procdir, sig, ignore_oom_score_adj, notif_command, prefer_regex, avoid_regex);
 }

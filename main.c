@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
 	int set_my_priority = 0;
 	char *prefer_cmds = NULL;
 	char *avoid_cmds = NULL;
+	regex_t prefer_regex;
+	regex_t avoid_regex;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -183,14 +185,13 @@ int main(int argc, char *argv[])
 		exit(2);
 	}
 
-  regex_t temp;
-	if (prefer_cmds != NULL && regcomp(&temp, prefer_cmds, REG_EXTENDED|REG_NOSUB) != 0)
+	if(prefer_cmds != NULL && regcomp(&prefer_regex, prefer_cmds, REG_EXTENDED|REG_NOSUB) != 0)
 	{
 		fprintf(stderr, "Could not compile regexp: %s\n", prefer_cmds);
 		exit(6);
 	}
 
-	if (avoid_cmds != NULL && regcomp(&temp, avoid_cmds, REG_EXTENDED|REG_NOSUB) != 0)
+	if(avoid_cmds != NULL && regcomp(&avoid_regex, avoid_cmds, REG_EXTENDED|REG_NOSUB) != 0)
 	{
 		fprintf(stderr, "Could not compile regexp: %s\n", avoid_cmds);
 		exit(6);
@@ -228,7 +229,7 @@ int main(int argc, char *argv[])
 	 * calling mlockall()
 	 */
 	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj,
-		notif_command, prefer_cmds, avoid_cmds);
+		notif_command, &prefer_regex, &avoid_regex);
 
 	if(mlockall(MCL_CURRENT|MCL_FUTURE) !=0 )
 		perror("Could not lock memory - continuing anyway");
@@ -265,7 +266,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
 			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
-				notif_command, prefer_cmds, avoid_cmds);
+				notif_command, &prefer_regex, &avoid_regex);
 			oom_cnt++;
 		}
 
