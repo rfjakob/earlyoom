@@ -9,9 +9,16 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
+#include <regex.h>
+#include <getopt.h>
 
 #include "meminfo.h"
 #include "kill.h"
+
+/* Arbitrary identifiers for long options that do not have a short
+ * version */
+#define LONG_OPT_PREFER 513
+#define LONG_OPT_AVOID 514
 
 int set_oom_score_adj(int);
 
@@ -29,6 +36,10 @@ int main(int argc, char *argv[])
 	char *notif_command = NULL;
 	int report_interval = 1;
 	int set_my_priority = 0;
+	char *prefer_cmds = NULL;
+	char *avoid_cmds = NULL;
+	regex_t prefer_regex;
+	regex_t avoid_regex;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -50,10 +61,21 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:ph")) != -1)
+	const char *short_opt = "m:s:M:S:kinN:dvr:ph";
+	struct option long_opt[] =
+	{
+		{"prefer",    required_argument,    NULL,    LONG_OPT_PREFER},
+		{"avoid",     required_argument,    NULL,    LONG_OPT_AVOID},
+		{0,           required_argument,    NULL,    0}
+	};
+
+	while((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1)
 	{
 		switch(c)
 		{
+			case -1:	/* no more arguments */
+			case 0:		/* long option toggles */
+				break;
 			case 'm':
 				mem_min_percent = strtol(optarg, NULL, 10);
 				if(mem_min_percent <= 0) {
@@ -111,24 +133,32 @@ int main(int argc, char *argv[])
 			case 'p':
 				set_my_priority = 1;
 				break;
+			case LONG_OPT_PREFER:
+				prefer_cmds = optarg;
+				break;
+			case LONG_OPT_AVOID:
+				avoid_cmds = optarg;
+				break;
 			case 'h':
 				fprintf(stderr,
 "Usage: earlyoom [OPTION]...\n"
 "\n"
-"  -m PERCENT   set available memory minimum to PERCENT of total (default 10 %%)\n"
-"  -s PERCENT   set free swap minimum to PERCENT of total (default 10 %%)\n"
-"  -M SIZE      set available memory minimum to SIZE KiB\n"
-"  -S SIZE      set free swap minimum to SIZE KiB\n"
-"  -k           use kernel oom killer instead of own user-space implementation\n"
-"  -i           user-space oom killer should ignore positive oom_score_adj values\n"
-"  -n           enable notifications using \"notify-send\"\n"
-"  -N COMMAND   enable notifications using COMMAND\n"
-"  -d           enable debugging messages\n"
-"  -v           print version information and exit\n"
-"  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to\n"
-"               disable completely\n"
-"  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
-"  -h           this help text\n");
+"  -m PERCENT       set available memory minimum to PERCENT of total (default 10 %%)\n"
+"  -s PERCENT       set free swap minimum to PERCENT of total (default 10 %%)\n"
+"  -M SIZE          set available memory minimum to SIZE KiB\n"
+"  -S SIZE          set free swap minimum to SIZE KiB\n"
+"  -k               use kernel oom killer instead of own user-space implementation\n"
+"  -i               user-space oom killer should ignore positive oom_score_adj values\n"
+"  -n               enable notifications using \"notify-send\"\n"
+"  -N COMMAND       enable notifications using COMMAND\n"
+"  -d               enable debugging messages\n"
+"  -v               print version information and exit\n"
+"  -r INTERVAL      memory report interval in seconds (default 1), set to 0 to\n"
+"                   disable completely\n"
+"  -p               set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+"  --prefer REGEX   prefer killing processes matching REGEX\n"
+"  --avoid REGEX    avoid killing processes matching REGEX\n"
+"  -h               this help text\n");
 				exit(1);
 			case '?':
 				exit(13);
@@ -148,6 +178,28 @@ int main(int argc, char *argv[])
 	if(kernel_oom_killer && ignore_oom_score_adj) {
 		fprintf(stderr, "Kernel oom killer does not support -i\n");
 		exit(2);
+	}
+
+	if(kernel_oom_killer && prefer_cmds != NULL) {
+		fprintf(stderr, "Kernel oom killer does not support -f\n");
+		exit(2);
+	}
+
+	if(kernel_oom_killer && avoid_cmds != NULL) {
+		fprintf(stderr, "Kernel oom killer does not support -u\n");
+		exit(2);
+	}
+
+	if(prefer_cmds != NULL && regcomp(&prefer_regex, prefer_cmds, REG_EXTENDED|REG_NOSUB) != 0)
+	{
+		fprintf(stderr, "Could not compile regexp: %s\n", prefer_cmds);
+		exit(6);
+	}
+
+	if(avoid_cmds != NULL && regcomp(&avoid_regex, avoid_cmds, REG_EXTENDED|REG_NOSUB) != 0)
+	{
+		fprintf(stderr, "Could not compile regexp: %s\n", avoid_cmds);
+		exit(6);
 	}
 
 	struct meminfo m = parse_meminfo();
@@ -181,7 +233,8 @@ int main(int argc, char *argv[])
 	/* Dry-run oom kill to make sure stack grows to maximum size before
 	 * calling mlockall()
 	 */
-	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj, notif_command);
+	handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj,
+		notif_command, &prefer_regex, &avoid_regex);
 
 	if(mlockall(MCL_CURRENT|MCL_FUTURE) !=0 )
 		perror("Could not lock memory - continuing anyway");
@@ -217,7 +270,8 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
 				m.MemAvailable / 1024, mem_min / 1024);
-			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj, notif_command);
+			handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
+				notif_command, &prefer_regex, &avoid_regex);
 			oom_cnt++;
 		}
 

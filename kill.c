@@ -9,8 +9,12 @@
 #include <ctype.h>
 #include <limits.h>                     // for PATH_MAX
 #include <unistd.h>
+#include <regex.h>
 
 #include "kill.h"
+
+#define BADNESS_PREFER 300
+#define BADNESS_AVOID -300
 
 extern int enable_debug;
 
@@ -103,7 +107,8 @@ static struct procinfo get_process_stats(int pid)
  * Find the process with the largest oom_score and kill it.
  * See trigger_kernel_oom() for the reason why this is done in userspace.
  */
-static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char *notif_command)
+static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
+  char *notif_command, regex_t *prefer_regex, regex_t *avoid_regex)
 {
 	struct dirent * d;
 	char buf[256];
@@ -148,6 +153,21 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj, char
 		badness = p.oom_score;
 		if(ignore_oom_score_adj && p.oom_score_adj > 0)
 			badness -= p.oom_score_adj;
+
+		name[0]=0;
+		snprintf(buf, sizeof(buf), "%d/stat", pid);
+		FILE * stat = fopen(buf, "r");
+		fscanf(stat, "%*d (%[^)]s", name);
+		fclose(stat);
+
+		if (prefer_regex->re_nsub != 0 && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0)
+		{
+			badness += BADNESS_PREFER;
+		}
+		if (avoid_regex->re_nsub != 0 && regexec(avoid_regex, name, (size_t)0, NULL, 0) == 0)
+		{
+			badness += BADNESS_AVOID;
+		}
 
 		if(enable_debug)
 			printf("pid %5d: badness %3d vm_rss %6lu\n", pid, badness, p.vm_rss);
@@ -242,10 +262,11 @@ void trigger_kernel_oom(int sig, char *notif_command)
 	fclose(trig_fd);
 }
 
-void handle_oom(DIR * procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj, char *notif_command)
+void handle_oom(DIR * procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj,
+  char *notif_command, regex_t *prefer_regex, regex_t *avoid_regex)
 {
 	if(kernel_oom_killer)
 		trigger_kernel_oom(sig, notif_command);
 	else
-		userspace_kill(procdir, sig, ignore_oom_score_adj, notif_command);
+		userspace_kill(procdir, sig, ignore_oom_score_adj, notif_command, prefer_regex, avoid_regex);
 }
