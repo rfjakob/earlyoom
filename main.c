@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
 	char *notif_command = NULL;
 	int report_interval = 1;
 	int set_my_priority = 0;
-  char *prefer_cmds = NULL;
-  char *avoid_cmds = NULL;
+	char *prefer_cmds = NULL;
+	char *avoid_cmds = NULL;
 
 	/* request line buffering for stdout - otherwise the output
 	 * may lag behind stderr */
@@ -114,10 +114,10 @@ int main(int argc, char *argv[])
 			case 'p':
 				set_my_priority = 1;
 				break;
-      case 'f':
+			case 'f':
 				prefer_cmds = optarg;
 				break;
-      case 'u':
+			case 'u':
 				avoid_cmds = optarg;
 				break;
 			case 'h':
