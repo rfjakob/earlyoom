@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <regex.h>
+#include <getopt.h>
 
 #include "meminfo.h"
 #include "kill.h"
@@ -53,10 +54,21 @@ int main(int argc, char *argv[])
 	}
 
 	int c;
-	while((c = getopt (argc, argv, "m:s:M:S:kinN:dvr:f:u:ph")) != -1)
+	const char *short_opt = "m:s:M:S:kinN:dvr:ph";
+	struct option long_opt[] =
+	{
+		{"prefer",	required_argument,	NULL,	'P'},
+		{"avoid",		required_argument,	NULL,	'A'},
+		{0,					required_argument,	NULL,	0}
+	};
+
+	while((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1)
 	{
 		switch(c)
 		{
+			case -1:	/* no more arguments */
+			case 0:		/* long option toggles */
+				break;
 			case 'm':
 				mem_min_percent = strtol(optarg, NULL, 10);
 				if(mem_min_percent <= 0) {
@@ -114,32 +126,32 @@ int main(int argc, char *argv[])
 			case 'p':
 				set_my_priority = 1;
 				break;
-			case 'f':
+			case 'P':
 				prefer_cmds = optarg;
 				break;
-			case 'u':
+			case 'A':
 				avoid_cmds = optarg;
 				break;
 			case 'h':
 				fprintf(stderr,
 "Usage: earlyoom [OPTION]...\n"
 "\n"
-"  -m PERCENT   set available memory minimum to PERCENT of total (default 10 %%)\n"
-"  -s PERCENT   set free swap minimum to PERCENT of total (default 10 %%)\n"
-"  -M SIZE      set available memory minimum to SIZE KiB\n"
-"  -S SIZE      set free swap minimum to SIZE KiB\n"
-"  -k           use kernel oom killer instead of own user-space implementation\n"
-"  -i           user-space oom killer should ignore positive oom_score_adj values\n"
-"  -n           enable notifications using \"notify-send\"\n"
-"  -N COMMAND   enable notifications using COMMAND\n"
-"  -d           enable debugging messages\n"
-"  -v           print version information and exit\n"
-"  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to\n"
-"               disable completely\n"
-"  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
-"  -f REGEX     prefer killing processes matching REGEX\n"
-"  -u REGEX     avoid killing processes matching REGEX\n"
-"  -h           this help text\n");
+"  -m PERCENT       set available memory minimum to PERCENT of total (default 10 %%)\n"
+"  -s PERCENT       set free swap minimum to PERCENT of total (default 10 %%)\n"
+"  -M SIZE          set available memory minimum to SIZE KiB\n"
+"  -S SIZE          set free swap minimum to SIZE KiB\n"
+"  -k               use kernel oom killer instead of own user-space implementation\n"
+"  -i               user-space oom killer should ignore positive oom_score_adj values\n"
+"  -n               enable notifications using \"notify-send\"\n"
+"  -N COMMAND       enable notifications using COMMAND\n"
+"  -d               enable debugging messages\n"
+"  -v               print version information and exit\n"
+"  -r INTERVAL      memory report interval in seconds (default 1), set to 0 to\n"
+"                   disable completely\n"
+"  -p               set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+"  --prefer REGEX   prefer killing processes matching REGEX\n"
+"  --avoid REGEX    avoid killing processes matching REGEX\n"
+"  -h               this help text\n");
 				exit(1);
 			case '?':
 				exit(13);

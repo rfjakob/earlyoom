@@ -16,6 +16,6 @@ EARLYOOM_ARGS=""
 # EARLYOOM_ARGS="-k"
 
 # Avoid killing processes whose name matches this regexp
-# EARLYOOM_ARGS="-u '(^|/)(init|X|sshd|firefox)$'"
+# EARLYOOM_ARGS="--avoid '(^|/)(init|X|sshd|firefox)$'"
 
 # See more at `earlyoom -h'

@@ -174,22 +174,22 @@ Command line options
 earlyoom v0.12
 Usage: earlyoom [OPTION]...
 
-  -m PERCENT   set available memory minimum to PERCENT of total (default 10 %)
-  -s PERCENT   set free swap minimum to PERCENT of total (default 10 %)
-  -M SIZE      set available memory minimum to SIZE KiB
-  -S SIZE      set free swap minimum to SIZE KiB
-  -k           use kernel oom killer instead of own user-space implementation
-  -i           user-space oom killer should ignore positive oom_score_adj values
-  -n           enable notifications using "notify-send"
-  -N COMMAND   enable notifications using COMMAND
-  -d           enable debugging messages
-  -v           print version information and exit
-  -r INTERVAL  memory report interval in seconds (default 1), set to 0 to
-               disable completely
-  -p           set niceness of earlyoom to -20 and oom_score_adj to -1000
-  -f REGEX     prefer killing processes matching REGEX
-  -u REGEX     avoid killing processes matching REGEX
-  -h           this help text
+  -m PERCENT       set available memory minimum to PERCENT of total (default 10 %)
+  -s PERCENT       set free swap minimum to PERCENT of total (default 10 %)
+  -M SIZE          set available memory minimum to SIZE KiB
+  -S SIZE          set free swap minimum to SIZE KiB
+  -k               use kernel oom killer instead of own user-space implementation
+  -i               user-space oom killer should ignore positive oom_score_adj values
+  -n               enable notifications using "notify-send"
+  -N COMMAND       enable notifications using COMMAND
+  -d               enable debugging messages
+  -v               print version information and exit
+  -r INTERVAL      memory report interval in seconds (default 1), set to 0 to
+                   disable completely
+  -p               set niceness of earlyoom to -20 and oom_score_adj to -1000
+  --prefer REGEX   prefer killing processes matching REGEX
+  --avoid REGEX    avoid killing processes matching REGEX
+  -h               this help text
 ```
 
 Contribute
