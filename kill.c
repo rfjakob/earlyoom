@@ -13,6 +13,9 @@
 
 #include "kill.h"
 
+#define BADNESS_PREFER 300
+#define BADNESS_AVOID -300
+
 extern int enable_debug;
 
 struct procinfo {
@@ -159,11 +162,11 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 
 		if (prefer_regex->re_nsub != 0 && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0)
 		{
-			badness += 300;
+			badness += BADNESS_PREFER;
 		}
 		if (avoid_regex->re_nsub != 0 && regexec(avoid_regex, name, (size_t)0, NULL, 0) == 0)
 		{
-			badness -= 300;
+			badness += BADNESS_AVOID;
 		}
 
 		if(enable_debug)
