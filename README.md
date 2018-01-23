@@ -159,9 +159,9 @@ NOTIFY_COMMAND -i dialog-warning 'notif title' 'notif text'
 
 ### Preferred Processes
 
-The command-line flag `-f`specifies processes that are favored be killed; likewise, `-u` specifies
-processes that are unfavored to be killed. The list of processes is specified by a regex expression.
-For instance, to prefer that foo and bar are no killed:
+The command-line flag `-f`specifies processes to prefer killing; likewise, `-u` specifies
+processes to avoid killing. The list of processes is specified by a regex expression.
+For instance, to avoid having foo and bar be killed:
 
 ```bash
 earlyoom -u '(^|/)(foo|bar)$'
@@ -187,6 +187,8 @@ Usage: earlyoom [OPTION]...
   -r INTERVAL  memory report interval in seconds (default 1), set to 0 to
                disable completely
   -p           set niceness of earlyoom to -20 and oom_score_adj to -1000
+  -f REGEX     prefer killing processes matching REGEX
+  -u REGEX     avoid killing processes matching REGEX
   -h           this help text
 ```
 

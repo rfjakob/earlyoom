@@ -15,7 +15,7 @@ EARLYOOM_ARGS=""
 # Use kernel oom killer
 # EARLYOOM_ARGS="-k"
 
-# Make processes whose cmdline matches this regexp unfavored to be killed
+# Avoid killing processes whose name matches this regexp
 # EARLYOOM_ARGS="-u '(^|/)(init|X|sshd|firefox)$'"
 
 # See more at `earlyoom -h'
