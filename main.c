@@ -59,9 +59,9 @@ int main(int argc, char *argv[])
 	const char *short_opt = "m:s:M:S:kinN:dvr:ph";
 	struct option long_opt[] =
 	{
-		{"prefer",	required_argument,	NULL,	'P'},
-		{"avoid",		required_argument,	NULL,	'A'},
-		{0,					required_argument,	NULL,	0}
+		{"prefer",    required_argument,    NULL,    'P'},
+		{"avoid",     required_argument,    NULL,    'A'},
+		{0,           required_argument,    NULL,     0}
 	};
 
 	while((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1)
