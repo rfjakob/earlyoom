@@ -160,11 +160,11 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 		fscanf(stat, "%*d (%[^)]s", name);
 		fclose(stat);
 
-		if (prefer_regex->re_nsub != 0 && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0)
+		if (prefer_regex && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0)
 		{
 			badness += BADNESS_PREFER;
 		}
-		if (avoid_regex->re_nsub != 0 && regexec(avoid_regex, name, (size_t)0, NULL, 0) == 0)
+		if (avoid_regex && regexec(avoid_regex, name, (size_t)0, NULL, 0) == 0)
 		{
 			badness += BADNESS_AVOID;
 		}
