@@ -157,8 +157,12 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 		name[0]=0;
 		snprintf(buf, sizeof(buf), "%d/stat", pid);
 		FILE * stat = fopen(buf, "r");
-		fscanf(stat, "%*d (%[^)]s", name);
-		fclose(stat);
+		if(stat) {
+			fscanf(stat, "%*d (%[^)]s", name);
+			fclose(stat);
+		} else {
+			perror("could not read process name");
+		}
 
 		if (prefer_regex && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0)
 		{
@@ -170,7 +174,7 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 		}
 
 		if(enable_debug)
-			printf("pid %5d: badness %3d vm_rss %6lu\n", pid, badness, p.vm_rss);
+			printf("pid %5d: badness %3d vm_rss %6lu %s\n", pid, badness, p.vm_rss, name);
 
 		if(badness > victim_badness)
 		{
@@ -194,12 +198,6 @@ static void userspace_kill(DIR *procdir, int sig, int ignore_oom_score_adj,
 		sleep(10);
 		return;
 	}
-
-	name[0]=0;
-	snprintf(buf, sizeof(buf), "%d/stat", victim_pid);
-	FILE * stat = fopen(buf, "r");
-	fscanf(stat, "%*d %s", name);
-	fclose(stat);
 
 	if(sig != 0)
 	{

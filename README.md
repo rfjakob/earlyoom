@@ -159,13 +159,17 @@ NOTIFY_COMMAND -i dialog-warning 'notif title' 'notif text'
 
 ### Preferred Processes
 
-The command-line flag `-f`specifies processes to prefer killing; likewise, `-u` specifies
+The command-line flag `--prefer` specifies processes to prefer killing;
+likewise, `--avoid` specifies
 processes to avoid killing. The list of processes is specified by a regex expression.
-For instance, to avoid having foo and bar be killed:
+For instance, to avoid having `foo` and `bar` be killed:
 
 ```bash
-earlyoom -u '(^|/)(foo|bar)$'
+earlyoom --avoid '^(foo|bar)$'
 ```
+
+The regex is matched against the basename of the process as shown
+in `/proc/PID/stat`.
 
 Command line options
 --------------------

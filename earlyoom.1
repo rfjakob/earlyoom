@@ -67,10 +67,12 @@ to -1000
 .BI \-\-prefer " REGEX"
 prefer killing processes matching
 .I REGEX
+(adds 300 to oom_score)
 .TP
 .BI \-\-avoid " REGEX"
 avoid killing processes matching
 .I REGEX
+(subtracts 300 from oom_score)
 .TP
 .B \-h
 this help text
