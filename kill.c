@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 /* Kill the most memory-hungy process */
 
 #include <dirent.h>

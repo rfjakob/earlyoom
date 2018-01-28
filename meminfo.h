@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MIT */
+
 struct meminfo {
 	long MemTotal;
 	long MemAvailable;

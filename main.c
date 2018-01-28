@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 /* Check available memory and swap in a loop and start killing
  * processes if they get too low */
 

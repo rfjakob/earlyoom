@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 /* Parse /proc/meminfo
  * Returned values are in kiB */
 
