@@ -11,7 +11,7 @@ ifeq ($(VERSION),)
 VERSION := "(unknown version)"
 endif
 
-.PHONY: all clean install uninstall
+.PHONY: all clean install uninstall format
 
 all: earlyoom
 
@@ -62,3 +62,6 @@ uninstall-initscript: uninstall-bin
 
 uninstall-bin:
 	rm -f $(DESTDIR)$(PREFIX)$(BINDIR)/earlyoom
+
+format:
+	clang-format -i *.h *.c
