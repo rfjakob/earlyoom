@@ -1,3 +1,6 @@
 language: c
 
-script: make
+script:
+  - make
+  - make format
+  - git diff
