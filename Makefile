@@ -19,7 +19,7 @@ earlyoom: $(wildcard *.c *.h)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 clean:
-	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz debian/debhelper-build-stamp debian/earlyoom.debhelper.log debian/earlyoom.substvars debian/files
+	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz debian/debhelper-build-stamp debian/earlyoom.debhelper.log debian/earlyoom.substvars debian/files debian/*.debhelper
 	rm -rf debian/earlyoom
 
 install: earlyoom.service install-bin install-default install-man
