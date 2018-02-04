@@ -117,6 +117,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
     char name[PATH_MAX];
+    char victim_name[PATH_MAX] = {0};
     struct procinfo p;
     int badness;
 
@@ -176,15 +177,17 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
             victim_pid = pid;
             victim_badness = badness;
             victim_vm_rss = p.vm_rss;
+            strncpy(victim_name, name, sizeof(victim_name) - 1);
             if (enable_debug)
                 printf("    ^ new victim (higher badness)\n");
         } else if (badness == victim_badness && p.vm_rss > victim_vm_rss) {
             victim_pid = pid;
             victim_vm_rss = p.vm_rss;
+            strncpy(victim_name, name, sizeof(victim_name) - 1);
             if (enable_debug)
                 printf("    ^ new victim (higher vm_rss)\n");
         }
-    }
+    } // end of while(1) loop
 
     if (victim_pid == 0) {
         fprintf(stderr, "Error: Could not find a process to kill. Sleeping 10 seconds.\n");
@@ -194,7 +197,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     }
 
     if (sig != 0) {
-        fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
+        fprintf(stderr, "Killing process %d %s\n", victim_pid, victim_name);
 
         char notif_args[200];
         snprintf(notif_args, 200, "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);
