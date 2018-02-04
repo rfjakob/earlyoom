@@ -53,7 +53,8 @@ static void maybe_notify(char* notif_command, char* notif_args)
 
     char notif[600];
     snprintf(notif, 600, "%s %s", notif_command, notif_args);
-    system(notif);
+    if (system(notif) != 0)
+        fprintf(stderr, "system(%s) failed: %d: %s\n", notif, errno, strerror(errno));
 }
 
 const char* const fopen_msg = "fopen %s failed: %s\n";
@@ -75,7 +76,8 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    fscanf(f, "%d", &(p.oom_score));
+    if (0 >= fscanf(f, "%d", &(p.oom_score)))
+        fprintf(stderr, "fscanf() oom_score failed: %d: %s\n", errno, strerror(errno));
     fclose(f);
 
     // Read /proc/[pid]/oom_score_adj
@@ -86,7 +88,9 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    fscanf(f, "%d", &(p.oom_score_adj));
+    if (0 >= fscanf(f, "%d", &(p.oom_score_adj)))
+        fprintf(stderr, "fscanf() oom_score_adj failed: %d: %s\n", errno, strerror(errno));
+
     fclose(f);
 
     // Read VmRss from /proc/[pid]/statm
@@ -97,7 +101,9 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    fscanf(f, "%*u %lu", &(p.vm_rss));
+    if (0 >= fscanf(f, "%*u %lu", &(p.vm_rss)))
+        fprintf(stderr, "fscanf() vm_rss failed: %d: %s\n", errno, strerror(errno));
+
     fclose(f);
 
     return p;
@@ -117,6 +123,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
     char name[PATH_MAX];
+    char victim_name[PATH_MAX] = {0};
     struct procinfo p;
     int badness;
 
@@ -156,7 +163,9 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         snprintf(buf, sizeof(buf), "%d/stat", pid);
         FILE* stat = fopen(buf, "r");
         if (stat) {
-            fscanf(stat, "%*d (%[^)]s", name);
+            if (0 >= fscanf(stat, "%*d (%[^)]s", name))
+                fprintf(stderr, "fscanf() stat name failed: %d: %s\n", errno, strerror(errno));
+
             fclose(stat);
         } else {
             perror("could not read process name");
@@ -176,15 +185,17 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
             victim_pid = pid;
             victim_badness = badness;
             victim_vm_rss = p.vm_rss;
+            strncpy(victim_name, name, sizeof(victim_name) - 1);
             if (enable_debug)
                 printf("    ^ new victim (higher badness)\n");
         } else if (badness == victim_badness && p.vm_rss > victim_vm_rss) {
             victim_pid = pid;
             victim_vm_rss = p.vm_rss;
+            strncpy(victim_name, name, sizeof(victim_name) - 1);
             if (enable_debug)
                 printf("    ^ new victim (higher vm_rss)\n");
         }
-    }
+    } // end of while(1) loop
 
     if (victim_pid == 0) {
         fprintf(stderr, "Error: Could not find a process to kill. Sleeping 10 seconds.\n");
@@ -194,7 +205,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     }
 
     if (sig != 0) {
-        fprintf(stderr, "Killing process %d %s\n", victim_pid, name);
+        fprintf(stderr, "Killing process %d %s\n", victim_pid, victim_name);
 
         char notif_args[200];
         snprintf(notif_args, 200, "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);

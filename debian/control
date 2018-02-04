@@ -1,0 +1,22 @@
+Source: earlyoom
+Section: utils
+Priority: optional
+Maintainer: Mikko Rantalainen <mikko.rantalainen@iki.fi>
+Build-Depends: debhelper (>= 9), dh-systemd
+Standards-Version: 3.9.7
+Homepage: https://github.com/mikkorantalainen/earlyoom
+Vcs-Git: https://github.com/mikkorantalainen/earlyoom.git
+Vcs-Browser: https://github.com/mikkorantalainen/earlyoom
+
+Package: earlyoom
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libnotify-bin (>= 0.7)
+Description: Monitor system memory and force processes to stop if needed
+ The earlyoom process checks the amount of available memory and free swap
+ multiple times a second (default 10). If both are below a set limit
+ (default 10%), it will kill the largest process.
+ .
+ The intent is to more nicely avoid Out of Memory errors that require kernel
+ "OOM killer" to kill one process instead of crashing the system. Earlyoom
+ can stop processes more nicely to avoid losing all disk cache before kernel
+ OOM killer is finally activated.
