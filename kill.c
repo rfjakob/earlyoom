@@ -53,7 +53,8 @@ static void maybe_notify(char* notif_command, char* notif_args)
 
     char notif[600];
     snprintf(notif, 600, "%s %s", notif_command, notif_args);
-    system(notif);
+    if (system(notif) != 0)
+        fprintf(stderr, "system(%s) failed: %d: %s\n", notif, errno, strerror(errno));
 }
 
 const char* const fopen_msg = "fopen %s failed: %s\n";
@@ -75,7 +76,8 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    fscanf(f, "%d", &(p.oom_score));
+    if (0 >= fscanf(f, "%d", &(p.oom_score)))
+        fprintf(stderr, "fscanf() oom_score failed: %d: %s\n", errno, strerror(errno));
     fclose(f);
 
     // Read /proc/[pid]/oom_score_adj
@@ -86,7 +88,9 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    fscanf(f, "%d", &(p.oom_score_adj));
+    if (0 >= fscanf(f, "%d", &(p.oom_score_adj)))
+        fprintf(stderr, "fscanf() oom_score_adj failed: %d: %s\n", errno, strerror(errno));
+
     fclose(f);
 
     // Read VmRss from /proc/[pid]/statm
@@ -97,7 +101,9 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    fscanf(f, "%*u %lu", &(p.vm_rss));
+    if (0 >= fscanf(f, "%*u %lu", &(p.vm_rss)))
+        fprintf(stderr, "fscanf() vm_rss failed: %d: %s\n", errno, strerror(errno));
+
     fclose(f);
 
     return p;
@@ -157,7 +163,9 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         snprintf(buf, sizeof(buf), "%d/stat", pid);
         FILE* stat = fopen(buf, "r");
         if (stat) {
-            fscanf(stat, "%*d (%[^)]s", name);
+            if (0 >= fscanf(stat, "%*d (%[^)]s", name))
+                fprintf(stderr, "fscanf() stat name failed: %d: %s\n", errno, strerror(errno));
+
             fclose(stat);
         } else {
             perror("could not read process name");
