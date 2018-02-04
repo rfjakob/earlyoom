@@ -2,10 +2,10 @@ VERSION ?= $(shell git describe --tags --dirty 2> /dev/null)
 CFLAGS += -Wall -Wextra -DVERSION=\"$(VERSION)\" -g
 
 DESTDIR ?=
-PREFIX ?= /usr/local
+PREFIX ?= /usr
 BINDIR ?= /bin
 SYSCONFDIR ?= /etc
-SYSTEMDDIR ?= $(SYSCONFDIR)/systemd
+SYSTEMDDIR ?= /lib/systemd
 
 ifeq ($(VERSION),)
 VERSION := "(unknown version)"
@@ -19,7 +19,8 @@ earlyoom: $(wildcard *.c *.h)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 clean:
-	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz
+	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz debian/debhelper-build-stamp debian/earlyoom.debhelper.log debian/earlyoom.substvars debian/files
+	rm -rf debian/earlyoom
 
 install: earlyoom.service install-bin install-default install-man
 	install -d $(DESTDIR)$(SYSTEMDDIR)/system/
@@ -65,3 +66,6 @@ uninstall-bin:
 
 format:
 	clang-format -i *.h *.c
+
+deb:
+	DEB_BUILD_MAINT_OPTIONS=hardening=+all debuild -I -us -uc -j2 --lintian-opts --pedantic -i -I -E
