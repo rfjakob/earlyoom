@@ -1,5 +1,5 @@
 VERSION ?= $(shell git describe --tags --dirty 2> /dev/null)
-CFLAGS += -Wall -Wextra -DVERSION=\"$(VERSION)\" -g
+CFLAGS += -Wall -Wextra -DVERSION=\"$(VERSION)\" -g -fstack-protector-strong
 
 DESTDIR ?=
 PREFIX ?= /usr/local
@@ -15,7 +15,7 @@ endif
 
 all: earlyoom
 
-earlyoom: $(wildcard *.c *.h)
+earlyoom: $(wildcard *.c *.h) Makefile
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 clean:
