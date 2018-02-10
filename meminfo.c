@@ -23,7 +23,7 @@ static long get_entry(const char* name, const char* buf)
     long val = strtol(hit + strlen(name), NULL, 10);
     if (errno != 0) {
         perror("get_entry: strtol() failed");
-        exit(105);
+        return -1;
     }
     return val;
 }
