@@ -22,7 +22,7 @@ static long get_entry(const char* name, const char* buf)
     errno = 0;
     long val = strtol(hit + strlen(name), NULL, 10);
     if (errno != 0) {
-        perror("Could not convert number");
+        perror("get_entry: strtol() failed");
         exit(105);
     }
     return val;
