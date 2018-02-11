@@ -52,7 +52,7 @@ static void maybe_notify(char* notif_command, char* notif_args)
         return;
 
     char notif[600];
-    snprintf(notif, 600, "%s %s", notif_command, notif_args);
+    snprintf(notif, sizeof(notif), "%s %s", notif_command, notif_args);
     if (system(notif) != 0)
         fprintf(stderr, "system(%s) failed: %d: %s\n", notif, errno, strerror(errno));
 }
@@ -210,10 +210,11 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
 
     if (sig != 0) {
         fprintf(stderr, "Killing process: %s, pid: %d, badness: %d, VmRSS: %lu MiB\n",
-            victim_name, victim_pid, victim_badness, victim_vm_rss/1024);
+            victim_name, victim_pid, victim_badness, victim_vm_rss / 1024);
 
         char notif_args[200];
-        snprintf(notif_args, 200, "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);
+        snprintf(notif_args, sizeof(notif_args),
+            "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);
         maybe_notify(notif_command, notif_args);
     }
 
