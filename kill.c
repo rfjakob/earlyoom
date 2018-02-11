@@ -133,7 +133,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         d = readdir(procdir);
         if (d == NULL) {
             if (errno != 0)
-                perror("readdir returned error");
+                perror("userspace_kill: readdir error");
 
             break;
         }
