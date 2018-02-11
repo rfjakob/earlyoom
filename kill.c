@@ -145,7 +145,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
 
         pid = strtoul(d->d_name, NULL, 10);
 
-        if (pid == 1)
+        if (pid <= 1)
             // Let's not kill init.
             continue;
 
@@ -153,6 +153,10 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
 
         if (p.exited == 1)
             // Process may have died in the meantime
+            continue;
+
+        if (p.vm_rss == 0)
+            // Skip kernel threads
             continue;
 
         badness = p.oom_score;
@@ -205,7 +209,8 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     }
 
     if (sig != 0) {
-        fprintf(stderr, "Killing process %d %s\n", victim_pid, victim_name);
+        fprintf(stderr, "Killing process: %s, pid: %d, badness: %d, VmRSS: %lu MiB\n",
+            victim_name, victim_pid, victim_badness, victim_vm_rss/1024);
 
         char notif_args[200];
         snprintf(notif_args, 200, "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, name);

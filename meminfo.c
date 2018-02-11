@@ -11,7 +11,8 @@
 
 #include "meminfo.h"
 
-/* Parse the contents of /proc/meminfo (in buf), return value of "*name" */
+/* Parse the contents of /proc/meminfo (in buf), return value of "name"
+ * (example: MemTotal) */
 static long get_entry(const char* name, const char* buf)
 {
     char* hit = strstr(buf, name);
@@ -28,7 +29,7 @@ static long get_entry(const char* name, const char* buf)
     return val;
 }
 
-/* Like get_entry(), but exit if the value cannot not be found */
+/* Like get_entry(), but exit if the value cannot be found */
 static long get_entry_fatal(const char* name, const char* buf)
 {
     long val = get_entry(name, buf);
