@@ -213,7 +213,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     }
 
     if (kill(victim_pid, sig) != 0) {
-        perror("Could not kill process");
+        perror("userspace_kill: kill() failed");
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
         // Throttle ourselves to not spam the log.

@@ -23,6 +23,7 @@
 #define LONG_OPT_AVOID 514
 
 int set_oom_score_adj(int);
+void print_mem_stats(FILE*, const struct meminfo);
 
 int enable_debug = 0;
 
@@ -245,35 +246,44 @@ int main(int argc, char* argv[])
             perror("Could not set oom_score_adj to -1000 for earlyoom process - continuing anyway");
     }
 
-    c = 1; // Start at 1 so we do not print another status line immediately
-    report_interval = report_interval * 10; // convert seconds to tenth of second
+    c = 0; // loop counter
+    report_interval = report_interval * 10; // loop runs at 10Hz
     while (1) {
+        c++;
         m = parse_meminfo();
 
-        if (report_interval && c % report_interval == 0) {
-            int swap_free_percent = 0;
-            if (m.SwapTotal > 0)
-                swap_free_percent = m.SwapFree * 100 / m.SwapTotal;
-
-            printf("mem avail: %lu MiB (%ld %%), swap free: %lu MiB (%d %%)\n",
-                m.MemAvailable / 1024, m.MemAvailable * 100 / m.MemTotal,
-                m.SwapFree / 1024, swap_free_percent);
-            c = 0;
-        }
-        c++;
-
         if (m.MemAvailable <= mem_min && m.SwapFree <= swap_min) {
-            fprintf(stderr, "Out of memory! avail: %lu MiB < min: %lu MiB\n",
-                m.MemAvailable / 1024, mem_min / 1024);
+            print_mem_stats(stderr, m);
+            fprintf(stderr, "Out of memory! mem min: %lu MiB, swap min: %lu MiB\n",
+                mem_min / 1024, swap_min / 1024);
             handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
                 notif_command, prefer_regex, avoid_regex);
             oom_cnt++;
+        } else if (report_interval > 0 && c % report_interval == 0) {
+            print_mem_stats(stdout, m);
         }
-
-        usleep(100000); // 100ms
+        usleep(100000); // 100 ms <=> 10 Hz
     }
-
     return 0;
+}
+
+/* Print a status line like
+ *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
+ * to the fd passed in out_fd.
+ */
+void print_mem_stats(FILE* out_fd, const struct meminfo m)
+{
+    long mem_mib = m.MemAvailable / 1024;
+    long mem_percent = m.MemAvailable * 100 / m.MemTotal;
+    long swap_mib = m.SwapFree / 1024;
+    long swap_percent = 0;
+
+    if (m.SwapTotal > 0)
+        swap_percent = m.SwapFree * 100 / m.SwapTotal;
+
+    fprintf(out_fd,
+        "mem avail: %ld MiB (%ld %%), swap free: %ld MiB (%ld %%)\n",
+        mem_mib, mem_percent, swap_mib, swap_percent);
 }
 
 int set_oom_score_adj(int oom_score_adj)
