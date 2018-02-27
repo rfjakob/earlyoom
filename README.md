@@ -102,6 +102,11 @@ sudo systemctl enable earlyoom
 sudo systemctl start earlyoom
 ```
 
+For Debian, there's an official package available [Debian package](https://tracker.debian.org/pkg/earlyoom):
+```bash
+sudo aptitude install earlyoom
+```
+
 Use
 ---
 Just start the executable you have just compiled:
