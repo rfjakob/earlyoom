@@ -5,7 +5,7 @@ DESTDIR ?=
 PREFIX ?= /usr/local
 BINDIR ?= /bin
 SYSCONFDIR ?= /etc
-SYSTEMDDIR ?= $(SYSCONFDIR)/systemd
+SYSTEMDUNITDIR ?= $(SYSCONFDIR)/systemd/system
 
 ifeq ($(VERSION),)
 VERSION := "(unknown version)"
@@ -22,8 +22,8 @@ clean:
 	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz
 
 install: earlyoom.service install-bin install-default install-man
-	install -d $(DESTDIR)$(SYSTEMDDIR)/system/
-	install -m 644 $< $(DESTDIR)$(SYSTEMDDIR)/system/
+	install -d $(DESTDIR)$(SYSTEMDUNITDIR)
+	install -m 644 $< $(DESTDIR)$(SYSTEMDUNITDIR)
 	-systemctl enable earlyoom
 
 install-initscript: earlyoom.initscript install-bin install-default
@@ -51,7 +51,7 @@ earlyoom.1.gz: earlyoom.1
 
 uninstall: uninstall-bin uninstall-man
 	systemctl disable earlyoom
-	rm -f $(DESTDIR)$(SYSTEMDDIR)/system/earlyoom.service
+	rm -f $(DESTDIR)$(SYSTEMDUNITDIR)/earlyoom.service
 
 uninstall-man:
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/earlyoom.1.gz
