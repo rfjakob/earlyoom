@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
                 "  --prefer REGEX   prefer killing processes matching REGEX\n"
                 "  --avoid REGEX    avoid killing processes matching REGEX\n"
                 "  -h, --help       this help text\n");
-            exit(1);
+            exit(0);
         case '?':
             fprintf(stderr, "Try 'earlyoom --help' for more information.\n");
             exit(13);
