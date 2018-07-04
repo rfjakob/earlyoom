@@ -19,8 +19,11 @@
 
 /* Arbitrary identifiers for long options that do not have a short
  * version */
-#define LONG_OPT_PREFER 513
-#define LONG_OPT_AVOID 514
+enum {
+    LONG_OPT_PREFER=513,
+    LONG_OPT_AVOID,
+    LONG_OPT_HELP,
+};
 
 int set_oom_score_adj(int);
 void print_mem_stats(FILE*, const struct meminfo);
@@ -68,7 +71,8 @@ int main(int argc, char* argv[])
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
-        { 0, required_argument, NULL, 0 }
+        { "help", no_argument, NULL, LONG_OPT_HELP },
+        { 0, 0, NULL, 0 }
     };
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
@@ -140,6 +144,7 @@ int main(int argc, char* argv[])
             avoid_cmds = optarg;
             break;
         case 'h':
+        case LONG_OPT_HELP:
             fprintf(stderr,
                 "Usage: earlyoom [OPTION]...\n"
                 "\n"
@@ -158,7 +163,7 @@ int main(int argc, char* argv[])
                 "  -p               set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
                 "  --prefer REGEX   prefer killing processes matching REGEX\n"
                 "  --avoid REGEX    avoid killing processes matching REGEX\n"
-                "  -h               this help text\n");
+                "  -h, --help       this help text\n");
             exit(1);
         case '?':
             exit(13);
