@@ -219,7 +219,9 @@ int main(int argc, char* argv[])
     }
 
     if (swap_min) {
-        swap_min_percent = 100 * swap_min / m.SwapTotal;
+        if (m.SwapTotal > 0) {
+            swap_min_percent = 100 * swap_min / m.SwapTotal;
+        }
     } else {
         if (!swap_min_percent) {
             swap_min_percent = 10;
