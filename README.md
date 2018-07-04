@@ -80,8 +80,9 @@ can see how this looks like on my machine (Intel integrated graphics).
 
 How much memory does earlyoom use?
 ----------------------------------
-About `0.6MB RSS`. All memory is locked using `mlockall()` to make sure
-earlyoom does not slow down in low memory situations.
+About `2 MiB` (`VmRSS`), though only `220 kiB` is private memory (`RssAnon`).
+The rest is the libc library (`RssFile`) that is shared with other processes.
+All memory is locked using `mlockall()` to make sure earlyoom does not slow down in low memory situations.
 
 Download and compile
 --------------------
