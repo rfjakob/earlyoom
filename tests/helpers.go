@@ -23,9 +23,9 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 
-	// Start with 1 second timeout
+	// Start with 100 ms timeout
 	var timer *time.Timer
-	timer = time.AfterFunc(1*time.Second, func() {
+	timer = time.AfterFunc(100*time.Millisecond, func() {
 		timer.Stop()
 		t.Logf("killing process after timeout")
 		cmd.Process.Kill()
