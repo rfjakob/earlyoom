@@ -212,7 +212,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         fprintf(stderr, "Killing process: %s, pid: %d, badness: %d, VmRSS: %lu MiB\n",
             victim_name, victim_pid, victim_badness, victim_vm_rss / 1024);
 
-        char notif_args[PATH_MAX+1000];
+        char notif_args[PATH_MAX + 1000];
         snprintf(notif_args, sizeof(notif_args),
             "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
         maybe_notify(notif_command, notif_args);

@@ -20,7 +20,7 @@
 /* Arbitrary identifiers for long options that do not have a short
  * version */
 enum {
-    LONG_OPT_PREFER=513,
+    LONG_OPT_PREFER = 513,
     LONG_OPT_AVOID,
     LONG_OPT_HELP,
 };
