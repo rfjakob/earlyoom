@@ -11,7 +11,7 @@ ifeq ($(VERSION),)
 VERSION := "(unknown version)"
 endif
 
-.PHONY: all clean install uninstall format
+.PHONY: all clean install uninstall format test
 
 all: earlyoom
 
@@ -65,3 +65,6 @@ uninstall-bin:
 
 format:
 	clang-format -i *.h *.c
+
+test: earlyoom
+	cd tests ; go test -v
