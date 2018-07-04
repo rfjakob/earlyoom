@@ -166,6 +166,7 @@ int main(int argc, char* argv[])
                 "  -h, --help       this help text\n");
             exit(1);
         case '?':
+            fprintf(stderr, "Try 'earlyoom --help' for more information.\n");
             exit(13);
         }
     }
