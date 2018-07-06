@@ -211,19 +211,23 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     if (sig != 0) {
         fprintf(stderr, "Killing process: %s, pid: %d, badness: %d, VmRSS: %lu MiB\n",
             victim_name, victim_pid, victim_badness, victim_vm_rss / 1024);
+    }
 
+    int res = kill(victim_pid, sig);
+
+    // Send the GUI notification AFTER killing a process. This makes it more likely
+    // that there is enough memory to spawn the notification helper.
+    if (sig != 0) {
         char notif_args[PATH_MAX + 1000];
-        snprintf(notif_args, sizeof(notif_args),
-            "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
+        snprintf(notif_args, sizeof(notif_args), "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
         maybe_notify(notif_command, notif_args);
     }
 
-    if (kill(victim_pid, sig) != 0) {
-        perror("userspace_kill: kill() failed");
-        // Killing the process may have failed because we are not running as root.
-        // In that case, trying again in 100ms will just yield the same error.
-        // Throttle ourselves to not spam the log.
-        fprintf(stderr, "Sleeping 1 second\n");
+    // Killing the process may have failed because we are not running as root.
+    // In that case, trying again in 100ms will just yield the same error.
+    // Throttle ourselves to not spam the log.
+    if (res != 0) {
+        perror("userspace_kill: kill() failed, sleeping 1 second");
         maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);
     }
