@@ -19,6 +19,7 @@
 #define BADNESS_AVOID -300
 
 extern int enable_debug;
+void sanitize(char* s);
 
 struct procinfo {
     int oom_score;
@@ -219,6 +220,8 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     // that there is enough memory to spawn the notification helper.
     if (sig != 0) {
         char notif_args[PATH_MAX + 1000];
+        // maybe_notify() calls system(). We must sanitize the strings we pass.
+        sanitize(victim_name);
         snprintf(notif_args, sizeof(notif_args), "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
         maybe_notify(notif_command, notif_args);
     }
