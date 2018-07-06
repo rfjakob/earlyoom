@@ -214,6 +214,13 @@ accept
 
 Changelog
 ---------
+* vNEXT, in progress:
+  * Fix possible shell code injection through GUI notifications
+    ([commit](https://github.com/rfjakob/earlyoom/commit/ab79aa3895077676f50120f15e2bb22915446db9))
+  * On failure to kill any process, only sleep 1 second instead of 10
+    ([issue #74](https://github.com/rfjakob/earlyoom/issues/74))
+  * Send the GUI notification *after* killing, not before
+    ([issue #73](https://github.com/rfjakob/earlyoom/issues/73))
 * v1.0, 2018-01-28: Add `--prefer` and `--avoid` options (@TomJohnZ)
 * v0.12: Add `-M` and `-S` options (@nailgun); add man page, parameterize Makefile (@yangfl)
 * v0.11: Fix undefined behavoir in get_entry_fatal (missing return, [commit](https://github.com/rfjakob/earlyoom/commit/9251d25618946723eb8a829404ebf1a65d99dbb0))
