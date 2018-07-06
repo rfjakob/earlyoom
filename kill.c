@@ -202,9 +202,9 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     } // end of while(1) loop
 
     if (victim_pid == 0) {
-        fprintf(stderr, "Error: Could not find a process to kill. Sleeping 10 seconds.\n");
-        maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill'");
-        sleep(10);
+        fprintf(stderr, "Error: Could not find a process to kill. Sleeping 1 second.\n");
+        maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
+        sleep(1);
         return;
     }
 
@@ -223,9 +223,9 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
         // Throttle ourselves to not spam the log.
-        fprintf(stderr, "Sleeping 10 seconds\n");
-        maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process'");
-        sleep(10);
+        fprintf(stderr, "Sleeping 1 second\n");
+        maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
+        sleep(1);
     }
 }
 
