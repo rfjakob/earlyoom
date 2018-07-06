@@ -62,6 +62,9 @@ the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
 any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
 victims (see below).
 
+See also: [nohang](https://github.com/hakavlad/nohang), written in Python
+and highly configurable.
+
 Why not trigger the kernel oom killer?
 --------------------------------------
 Earlyoom does not use `echo f > /proc/sysrq-trigger` because [the Chrome people made
