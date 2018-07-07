@@ -214,7 +214,9 @@ Changelog
     ([commit](https://github.com/rfjakob/earlyoom/commit/1466e9c8f7997108758d9585442a96c6806c040e))
   * Fix possible division by zero with `-S`
     ([commit](https://github.com/rfjakob/earlyoom/commit/a0c4b26dfef8b38ef81c7b0b907442f344a3e115))
-* v1.0, 2018-01-28: Add `--prefer` and `--avoid` options (@TomJohnZ)
+* v1.0, 2018-01-28
+  * Add `--prefer` and `--avoid` options (@TomJohnZ)
+  * Add support for GUI notifications, add options `-n` and `-N`
 * v0.12: Add `-M` and `-S` options (@nailgun); add man page, parameterize Makefile (@yangfl)
 * v0.11: Fix undefined behavoir in get_entry_fatal (missing return, [commit](https://github.com/rfjakob/earlyoom/commit/9251d25618946723eb8a829404ebf1a65d99dbb0))
 * v0.10: Allow to override Makefile's VERSION variable to make packaging easier,
