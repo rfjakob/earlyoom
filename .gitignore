@@ -1,6 +1,9 @@
 *~
 /earlyoom
 
+# generated from MANPAGE.md
+/earlyoom.1
+
 # generated service files
 /earlyoom.service
 /earlyoom.initscript

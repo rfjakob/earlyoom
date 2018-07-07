@@ -13,10 +13,13 @@ endif
 
 .PHONY: all clean install uninstall format test
 
-all: earlyoom
+all: earlyoom earlyoom.1
 
 earlyoom: $(wildcard *.c *.h) Makefile
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
+
+earlyoom.1: MANPAGE.md
+	pandoc MANPAGE.md -s -t man > earlyoom.1
 
 clean:
 	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz

@@ -193,6 +193,8 @@ Usage: earlyoom [OPTION]...
   -h, --help       this help text
 ```
 
+See the [man page](MANPAGE.md) for details.
+
 Contribute
 ----------
 Bug reports and pull requests are welcome via github. In particular, I am glad to
