@@ -19,6 +19,9 @@ after running out of patience.
 second. If both are below 10%, it will kill the largest process. The
 percentage value is configurable via command line arguments.
 
+If there is a failure when trying to kill a process, **earlyoom** sleeps for
+1 second to limit log spam due to recurring errors.
+
 # OPTIONS
 
 #### -m PERCENT
