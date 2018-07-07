@@ -7,26 +7,14 @@ The oom-killer generally has a bad reputation among Linux users. This may be
 part of the reason Linux invokes it only when it has absolutely no other choice.
 It will swap out the desktop environment, drop the whole page cache and empty
 every buffer before it will ultimately kill a process. At least that's what I
-think what it will do. I have yet to be patient enough to wait for it.
+think what it will do. I have yet to be patient enough to wait for it, sitting
+in front of an unresponsive system.
 
-Instead of sitting in front of an unresponsive system, listening to the grinding
-disk for minutes, I usually press the reset button and get back to what I was
-doing quickly.
+This made me and other people wonder if the oom-killer could be configured to
+step in earlier: [superuser.com][2], [unix.stackexchange.com][3].
 
-If you want to see what I mean, open something like
-the Epic Citatel HTML5 Demo in a few Firefox windows (the
-demo is now offline, it looked like
-[this](https://blog.mozilla.org/blog/2014/03/12/mozilla-and-epic-preview-unreal-engine-4-running-in-firefox/)).
-Save your work to disk beforehand, though.
-
-The downside of the reset button is that it kills all processes, whereas it
-would probably have been enough to kill a single one. This made people wonder
-if the oom-killer could be configured to step in earlier: [superuser.com][2]
-, [unix.stackexchange.com][3].
-
-As it turns out, no, it can't. At least using the in-kernel oom killer.
-
-In the user space however, we can do whatever we want.
+As it turns out, no, it can't. At least using the in-kernel oom-killer.
+In the user space, however, we can do whatever we want.
 
 What does it do
 ---------------
@@ -62,8 +50,8 @@ the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
 any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
 victims (see below).
 
-See also: [nohang](https://github.com/hakavlad/nohang), written in Python
-and highly configurable.
+See also: [nohang](https://github.com/hakavlad/nohang), a similar project,
+written in Python and with additional features and configuration options.
 
 Why not trigger the kernel oom killer?
 --------------------------------------
@@ -184,7 +172,7 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v0.12
+earlyoom v1.0-30-gaf48355
 Usage: earlyoom [OPTION]...
 
   -m PERCENT       set available memory minimum to PERCENT of total (default 10 %)
@@ -202,7 +190,7 @@ Usage: earlyoom [OPTION]...
   -p               set niceness of earlyoom to -20 and oom_score_adj to -1000
   --prefer REGEX   prefer killing processes matching REGEX
   --avoid REGEX    avoid killing processes matching REGEX
-  -h               this help text
+  -h, --help       this help text
 ```
 
 Contribute
