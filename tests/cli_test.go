@@ -77,8 +77,12 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "2"}, code: -1, stderrContains: "2 %", stdoutContains: memReport},
 		{args: []string{"-s", "0"}, code: 16, stderrContains: "Invalid percentage", stdoutEmpty: true},
 		{args: []string{"-M", mem1percent}, code: -1, stderrContains: "min:  1 %", stdoutContains: memReport},
-		{args: []string{"-S", swap2percent}, code: -1, stderrContains: "min:  2 %", stdoutContains: memReport},
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
+	}
+	if swapTotal > 0 {
+		// Test cannot work when there is no swap enabled
+		tc := cliTestCase{args: []string{"-S", swap2percent}, code: -1, stderrContains: "min:  2 %", stdoutContains: memReport}
+		testcases = append(testcases, tc)
 	}
 
 	for i, tc := range testcases {
