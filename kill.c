@@ -209,6 +209,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         return;
     }
 
+    // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0) {
         fprintf(stderr, "Killing process: %s, pid: %d, badness: %d, VmRSS: %lu MiB\n",
             victim_name, victim_pid, victim_badness, victim_vm_rss / 1024);
@@ -229,7 +230,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     // Killing the process may have failed because we are not running as root.
     // In that case, trying again in 100ms will just yield the same error.
     // Throttle ourselves to not spam the log.
-    if (res != 0) {
+    if (sig != 0 && res != 0) {
         perror("userspace_kill: kill() failed, sleeping 1 second");
         maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);
