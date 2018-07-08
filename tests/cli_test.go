@@ -1,6 +1,9 @@
 package tests
 
 import (
+	"fmt"
+	"io/ioutil"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -14,7 +17,45 @@ type cliTestCase struct {
 	stderrEmpty    bool
 }
 
+func paseMeminfoLine(l string) int64 {
+	fields := strings.Split(l, " ")
+	asciiVal := fields[len(fields)-2]
+	val, err := strconv.ParseInt(asciiVal, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func parseMeminfo() (memTotal int64, swapTotal int64) {
+	/*
+		/proc/meminfo looks like this:
+
+		MemTotal:        8024108 kB
+		[...]
+		SwapTotal:        102396 kB
+		[...]
+	*/
+	content, err := ioutil.ReadFile("/proc/meminfo")
+	if err != nil {
+		panic(err)
+	}
+	lines := strings.Split(string(content), "\n")
+	for _, l := range lines {
+		if strings.HasPrefix(l, "MemTotal:") {
+			memTotal = paseMeminfoLine(l)
+		}
+		if strings.HasPrefix(l, "SwapTotal:") {
+			swapTotal = paseMeminfoLine(l)
+		}
+	}
+	return
+}
+
 func TestCli(t *testing.T) {
+	memTotal, swapTotal := parseMeminfo()
+	mem1percent := fmt.Sprintf("%d", memTotal*2/101)   // slightly below 2 percent
+	swap2percent := fmt.Sprintf("%d", swapTotal*3/101) // slightly below 3 percent
 	// The periodic memory report looks like this:
 	//   mem avail: 4998 MiB (63 %), swap free: 0 MiB (0 %)
 	const memReport = "mem avail: "
@@ -35,8 +76,8 @@ func TestCli(t *testing.T) {
 		{args: []string{"-m", "0"}, code: 15, stderrContains: "Invalid percentage", stdoutEmpty: true},
 		{args: []string{"-s", "2"}, code: -1, stderrContains: "2 %", stdoutContains: memReport},
 		{args: []string{"-s", "0"}, code: 16, stderrContains: "Invalid percentage", stdoutEmpty: true},
-		//		{args: []string{"-M", "1024"}, code: -1, stderrContains: "min: 1 MiB", stdoutContains: memReport},
-		//		{args: []string{"-S", "2048"}, code: -1, stderrContains: "min: 2 MiB", stdoutContains: memReport},
+		{args: []string{"-M", mem1percent}, code: -1, stderrContains: "min:  1 %", stdoutContains: memReport},
+		{args: []string{"-S", swap2percent}, code: -1, stderrContains: "min:  2 %", stdoutContains: memReport},
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 	}
 
