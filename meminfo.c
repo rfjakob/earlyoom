@@ -74,19 +74,33 @@ struct meminfo parse_meminfo()
     }
     buf[len] = 0; // Make sure buf is zero-terminated
 
-    m.MemTotal = get_entry_fatal("MemTotal:", buf);
-    m.SwapTotal = get_entry_fatal("SwapTotal:", buf);
-    m.SwapFree = get_entry_fatal("SwapFree:", buf);
+    m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
+    m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
+    long SwapFree = get_entry_fatal("SwapFree:", buf);
 
-    m.MemAvailable = get_entry("MemAvailable:", buf);
-    if (m.MemAvailable == -1) {
-        m.MemAvailable = available_guesstimate(buf);
+    long MemAvailable = get_entry("MemAvailable:", buf);
+    if (MemAvailable == -1) {
+        MemAvailable = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
             fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
                             "         Falling back to guesstimate\n");
             guesstimate_warned = 1;
         }
     }
+
+    // Calculate percentages
+    m.MemAvailablePercent = MemAvailable * 100 / m.MemTotalKiB;
+    if (m.SwapTotalKiB > 0) {
+        m.SwapFreePercent = SwapFree * 100 / m.SwapTotalKiB;
+    } else {
+        m.SwapFreePercent = 0;
+    }
+
+    // Convert kiB to MiB
+    m.MemTotalMiB = m.MemTotalKiB / 1024;
+    m.MemAvailableMiB = MemAvailable / 1024;
+    m.SwapTotalMiB = m.SwapTotalKiB / 1024;
+    m.SwapFreeMiB = SwapFree / 1024;
 
     return m;
 }

@@ -210,29 +210,27 @@ int main(int argc, char* argv[])
     struct meminfo m = parse_meminfo();
 
     if (mem_min) {
-        mem_min_percent = 100 * mem_min / m.MemTotal;
+        mem_min_percent = 100 * mem_min / m.MemTotalKiB;
     } else {
         if (!mem_min_percent) {
             mem_min_percent = 10;
         }
-        mem_min = m.MemTotal * mem_min_percent / 100;
     }
 
     if (swap_min) {
-        if (m.SwapTotal > 0) {
-            swap_min_percent = 100 * swap_min / m.SwapTotal;
+        if (m.SwapTotalKiB > 0) {
+            swap_min_percent = 100 * swap_min / m.SwapTotalKiB;
         }
     } else {
         if (!swap_min_percent) {
             swap_min_percent = 10;
         }
-        swap_min = m.SwapTotal * swap_min_percent / 100;
     }
 
-    fprintf(stderr, "mem total: %lu MiB, min: %lu MiB (%d %%)\n",
-        m.MemTotal / 1024, mem_min / 1024, mem_min_percent);
-    fprintf(stderr, "swap total: %lu MiB, min: %lu MiB (%d %%)\n",
-        m.SwapTotal / 1024, swap_min / 1024, swap_min_percent);
+    fprintf(stderr, "mem  total: %4d MiB, min: %2d %%\n",
+        m.MemTotalMiB, mem_min_percent);
+    fprintf(stderr, "swap total: %4d MiB, min: %2d %%\n",
+        m.SwapTotalMiB, swap_min_percent);
 
     if (notif_command)
         fprintf(stderr, "notifications enabled using command: %s\n", notif_command);
@@ -259,10 +257,9 @@ int main(int argc, char* argv[])
     while (1) {
         m = parse_meminfo();
 
-        if (m.MemAvailable <= mem_min && m.SwapFree <= swap_min) {
-            print_mem_stats(stderr, m);
-            fprintf(stderr, "Out of memory! mem min: %lu MiB, swap min: %lu MiB\n",
-                mem_min / 1024, swap_min / 1024);
+        if (m.MemAvailablePercent <= mem_min_percent && m.SwapFreePercent <= swap_min_percent) {
+            fprintf(stderr, "Low memory! mem avail: %d of %d MiB (%d) %% <= min %d %%, swap free: %d of %d MiB (%d %%) <= min %d %%\n",
+                m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, mem_min_percent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent, swap_min_percent);
             handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
                 notif_command, prefer_regex, avoid_regex);
             oom_cnt++;
@@ -281,17 +278,9 @@ int main(int argc, char* argv[])
  */
 void print_mem_stats(FILE* out_fd, const struct meminfo m)
 {
-    long mem_mib = m.MemAvailable / 1024;
-    long mem_percent = m.MemAvailable * 100 / m.MemTotal;
-    long swap_mib = m.SwapFree / 1024;
-    long swap_percent = 0;
-
-    if (m.SwapTotal > 0)
-        swap_percent = m.SwapFree * 100 / m.SwapTotal;
-
     fprintf(out_fd,
-        "mem avail: %ld MiB (%ld %%), swap free: %ld MiB (%ld %%)\n",
-        mem_mib, mem_percent, swap_mib, swap_percent);
+        "mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
+        m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent);
 }
 
 int set_oom_score_adj(int oom_score_adj)
