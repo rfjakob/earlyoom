@@ -257,7 +257,6 @@ int main(int argc, char* argv[])
     c = 0; // loop counter
     report_interval = report_interval * 10; // loop runs at 10Hz
     while (1) {
-        c++;
         m = parse_meminfo();
 
         if (m.MemAvailable <= mem_min && m.SwapFree <= swap_min) {
@@ -271,6 +270,7 @@ int main(int argc, char* argv[])
             print_mem_stats(stdout, m);
         }
         usleep(100000); // 100 ms <=> 10 Hz
+        c++;
     }
     return 0;
 }
