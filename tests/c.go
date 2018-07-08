@@ -1,5 +1,6 @@
 package tests
 
+// #cgo CFLAGS: -std=gnu99
 // #include "../sanitize.c"
 import "C"
 

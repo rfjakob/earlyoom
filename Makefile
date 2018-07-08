@@ -70,4 +70,7 @@ format:
 	clang-format -i *.h *.c
 
 test: earlyoom
+	cd tests ; go test
+
+test-verbose: earlyoom
 	cd tests ; go test -v
