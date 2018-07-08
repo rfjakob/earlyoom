@@ -1,5 +1,10 @@
 language: c
 
+addons:
+  apt:
+    packages:
+    - pandoc
+
 script:
   - make
   - make format
