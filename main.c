@@ -254,6 +254,7 @@ int main(int argc, char* argv[])
             perror("Could not set oom_score_adj to -1000 for earlyoom process - continuing anyway");
     }
 
+    int tick_us = 100000; // 100 ms <=> 10 Hz
     c = 0; // loop counter
     report_interval = report_interval * 10; // loop runs at 10Hz
     while (1) {
@@ -265,10 +266,20 @@ int main(int argc, char* argv[])
             handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
                 notif_command, prefer_regex, avoid_regex);
             oom_cnt++;
+            // With swap enabled, the kernel seems to need more than 100ms to free the memory
+            // of the killed process. This means that earlyoom would immediately kill another
+            // process. Sleep a little extra to give the kernel time to free the memory.
+            // (Yes, this will sleep even if the kill has failed. Does no harm and keeps the
+            // code simple.)
+            if (m.SwapTotalMiB > 0) {
+                int sleep_cycles = 2;
+                usleep(sleep_cycles * tick_us);
+                c += sleep_cycles;
+            }
         } else if (report_interval > 0 && c % report_interval == 0) {
             print_mem_stats(stdout, m);
         }
-        usleep(100000); // 100 ms <=> 10 Hz
+        usleep(tick_us);
         c++;
     }
     return 0;

@@ -71,7 +71,8 @@ uninstall-initscript: uninstall-bin
 uninstall-bin:
 	rm -f $(DESTDIR)$(PREFIX)$(BINDIR)/earlyoom
 
-format:
+# Depends on earlyoom compilation to make sure the syntax is ok.
+format: earlyoom
 	clang-format -i *.h *.c
 
 test: earlyoom
