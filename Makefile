@@ -6,6 +6,7 @@ PREFIX ?= /usr/local
 BINDIR ?= /bin
 SYSCONFDIR ?= /etc
 SYSTEMDUNITDIR ?= $(SYSCONFDIR)/systemd/system
+PANDOC := $(shell command -v pandoc 2> /dev/null)
 
 ifeq ($(VERSION),)
 VERSION := "(unknown version)"
@@ -19,10 +20,14 @@ earlyoom: $(wildcard *.c *.h) Makefile
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 earlyoom.1: MANPAGE.md
+ifndef PANDOC
+	@echo "pandoc is not installed, skipping earlyoom.1 manpage generation"
+else
 	pandoc MANPAGE.md -s -t man > earlyoom.1
+endif
 
 clean:
-	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1.gz
+	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1 earlyoom.1.gz
 
 install: earlyoom.service install-bin install-default install-man
 	install -d $(DESTDIR)$(SYSTEMDUNITDIR)
