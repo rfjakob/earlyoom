@@ -29,6 +29,7 @@ int set_oom_score_adj(int);
 void print_mem_stats(FILE*, const struct meminfo);
 
 int enable_debug = 0;
+long page_size = 0;
 
 int main(int argc, char* argv[])
 {
@@ -48,6 +49,7 @@ int main(int argc, char* argv[])
     regex_t _avoid_regex;
     regex_t* prefer_regex = NULL;
     regex_t* avoid_regex = NULL;
+    page_size = sysconf(_SC_PAGESIZE);
 
     /* request line buffering for stdout - otherwise the output
      * may lag behind stderr */

@@ -19,12 +19,13 @@
 #define BADNESS_AVOID -300
 
 extern int enable_debug;
+extern long page_size;
 void sanitize(char* s);
 
 struct procinfo {
     int oom_score;
     int oom_score_adj;
-    unsigned long vm_rss;
+    unsigned long VmRSSkiB;
     int exited;
 };
 
@@ -67,7 +68,7 @@ static struct procinfo get_process_stats(int pid)
 {
     char buf[256];
     FILE* f;
-    struct procinfo p = { 0, 0, 0, 0 };
+    struct procinfo p = { 0 };
 
     // Read /proc/[pid]/oom_score
     snprintf(buf, sizeof(buf), "%d/oom_score", pid);
@@ -94,7 +95,7 @@ static struct procinfo get_process_stats(int pid)
 
     fclose(f);
 
-    // Read VmRss from /proc/[pid]/statm
+    // Read VmRSS from /proc/[pid]/statm (in pages)
     snprintf(buf, sizeof(buf), "%d/statm", pid);
     f = fopen(buf, "r");
     if (f == NULL) {
@@ -102,8 +103,11 @@ static struct procinfo get_process_stats(int pid)
         p.exited = 1;
         return p;
     }
-    if (fscanf(f, "%*u %lu", &(p.vm_rss)) < 1)
+    if (fscanf(f, "%*u %lu", &(p.VmRSSkiB)) < 1) {
         fprintf(stderr, "fscanf() vm_rss failed: %d: %s\n", errno, strerror(errno));
+    }
+    // Value is in pages. Convert to kiB.
+    p.VmRSSkiB = p.VmRSSkiB * page_size / 1024;
 
     fclose(f);
 
@@ -156,7 +160,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
             // Process may have died in the meantime
             continue;
 
-        if (p.vm_rss == 0)
+        if (p.VmRSSkiB == 0)
             // Skip kernel threads
             continue;
 
@@ -184,18 +188,18 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         }
 
         if (enable_debug)
-            printf("pid %5d: badness %3d vm_rss %6lu %s\n", pid, badness, p.vm_rss, name);
+            printf("pid %5d: badness %3d vm_rss %6lu %s\n", pid, badness, p.VmRSSkiB, name);
 
         if (badness > victim_badness) {
             victim_pid = pid;
             victim_badness = badness;
-            victim_vm_rss = p.vm_rss;
+            victim_vm_rss = p.VmRSSkiB;
             strncpy(victim_name, name, sizeof(victim_name) - 1);
             if (enable_debug)
                 printf("    ^ new victim (higher badness)\n");
-        } else if (badness == victim_badness && p.vm_rss > victim_vm_rss) {
+        } else if (badness == victim_badness && p.VmRSSkiB > victim_vm_rss) {
             victim_pid = pid;
-            victim_vm_rss = p.vm_rss;
+            victim_vm_rss = p.VmRSSkiB;
             strncpy(victim_name, name, sizeof(victim_name) - 1);
             if (enable_debug)
                 printf("    ^ new victim (higher vm_rss)\n");
