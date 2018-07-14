@@ -84,15 +84,17 @@ int main(int argc, char* argv[])
             break;
         case 'm':
             mem_min_percent = strtol(optarg, NULL, 10);
-            if (mem_min_percent <= 0) {
-                fprintf(stderr, "-m: Invalid percentage\n");
+            // Using "-m 100" makes no sense
+            if (mem_min_percent <= 0 || mem_min_percent >= 100) {
+                fprintf(stderr, "-m: Invalid percentage: %s\n", optarg);
                 exit(15);
             }
             break;
         case 's':
             swap_min_percent = strtol(optarg, NULL, 10);
+            // Using "-s 100" is a valid way to ignore swap usage
             if (swap_min_percent <= 0 || swap_min_percent > 100) {
-                fprintf(stderr, "-s: Invalid percentage\n");
+                fprintf(stderr, "-s: Invalid percentage: %s\n", optarg);
                 exit(16);
             }
             break;
@@ -212,6 +214,10 @@ int main(int argc, char* argv[])
     struct meminfo m = parse_meminfo();
 
     if (mem_min) {
+        if (mem_min >= m.MemTotalKiB) {
+            fprintf(stderr, "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n", mem_min, m.MemTotalKiB);
+            exit(15);
+        }
         mem_min_percent = 100 * mem_min / m.MemTotalKiB;
     } else {
         if (!mem_min_percent) {
@@ -221,6 +227,10 @@ int main(int argc, char* argv[])
 
     if (swap_min) {
         if (m.SwapTotalKiB > 0) {
+            if (swap_min > m.SwapTotalKiB) {
+                fprintf(stderr, "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n", swap_min, m.SwapTotalKiB);
+                exit(16);
+            }
             swap_min_percent = 100 * swap_min / m.SwapTotalKiB;
         }
     } else {
