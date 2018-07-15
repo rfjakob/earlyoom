@@ -49,7 +49,8 @@ enable debugging messages
 print version information and exit
 
 #### -r INTERVAL
-memory report interval in seconds (default 1), set to 0 to disable completely
+memory report interval in seconds (default 1), set to 0 to disable completely.
+With earlyoom v1.2 and higher, floating point numbers are accepted.
 
 #### -p
 set niceness of earlyoom to -20 and oom_score_adj to -1000

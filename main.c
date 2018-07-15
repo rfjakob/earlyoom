@@ -35,7 +35,7 @@ long page_size = 0;
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
-        .report_interval = 1,
+        .report_interval_ms = 1000,
         /* omitted fields are set to zero */
     };
     long mem_min_kib = 0, swap_min_kib = 0; /* Same thing in KiB */
@@ -75,6 +75,7 @@ int main(int argc, char* argv[])
     };
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
+        float report_interval_f = 0;
         switch (c) {
         case -1: /* no more arguments */
         case 0: /* long option toggles */
@@ -129,11 +130,12 @@ int main(int argc, char* argv[])
             // The version has already been printed above
             exit(0);
         case 'r':
-            args.report_interval = strtol(optarg, NULL, 10);
-            if (args.report_interval < 0) {
+            report_interval_f = strtof(optarg, NULL);
+            if (report_interval_f < 0) {
                 fprintf(stderr, "-r: Invalid interval\n");
                 exit(14);
             }
+            args.report_interval_ms = report_interval_f*1000;
             break;
         case 'p':
             set_my_priority = 1;
@@ -299,7 +301,7 @@ static void poll_loop(const poll_loop_args_t args)
     int oom_cnt = 0;
     int tick_us = 100000; // 100 ms <=> 10 Hz
 
-    int report_interval = args.report_interval * 10; // loop runs at 10Hz
+    int report_interval_cnts = args.report_interval_ms * 1000 / tick_us;
     while (1) {
         m = parse_meminfo();
 
@@ -318,7 +320,7 @@ static void poll_loop(const poll_loop_args_t args)
                 usleep(sleep_cycles * tick_us);
                 loop_cnt += sleep_cycles;
             }
-        } else if (report_interval > 0 && loop_cnt % report_interval == 0) {
+        } else if (args.report_interval_ms > 0 && loop_cnt % report_interval_cnts == 0) {
             print_mem_stats(stdout, m);
         }
         usleep(tick_us);

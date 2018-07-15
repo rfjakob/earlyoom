@@ -19,7 +19,7 @@ typedef struct {
     regex_t* prefer_regex;
     regex_t* avoid_regex;
     /* memory report interval, in milliseconds */
-    int report_interval;
+    int report_interval_ms;
 } poll_loop_args_t;
 
 void handle_oom(poll_loop_args_t args, int sig);

@@ -87,6 +87,7 @@ func TestCli(t *testing.T) {
 		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "at or above total memory", stdoutEmpty: true},
 		{args: []string{"-S", "9999999999999999"}, code: 16, stderrContains: "above total swap", stdoutEmpty: true},
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
+		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 	}
 	if swapTotal > 0 {
 		// Test cannot work when there is no swap enabled
