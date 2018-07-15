@@ -118,8 +118,7 @@ static struct procinfo get_process_stats(int pid)
  * Find the process with the largest oom_score and kill it.
  * See trigger_kernel_oom() for the reason why this is done in userspace.
  */
-static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
-    char* notif_command, regex_t* prefer_regex, regex_t* avoid_regex)
+static void userspace_kill(poll_loop_args_t args, int sig)
 {
     struct dirent* d;
     char buf[256];
@@ -132,10 +131,10 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     struct procinfo p;
     int badness;
 
-    rewinddir(procdir);
+    rewinddir(args.procdir);
     while (1) {
         errno = 0;
-        d = readdir(procdir);
+        d = readdir(args.procdir);
         if (d == NULL) {
             if (errno != 0)
                 perror("userspace_kill: readdir error");
@@ -165,7 +164,7 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
             continue;
 
         badness = p.oom_score;
-        if (ignore_oom_score_adj && p.oom_score_adj > 0)
+        if (args.ignore_oom_score_adj && p.oom_score_adj > 0)
             badness -= p.oom_score_adj;
 
         name[0] = 0;
@@ -180,10 +179,10 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
             perror("could not read process name");
         }
 
-        if (prefer_regex && regexec(prefer_regex, name, (size_t)0, NULL, 0) == 0) {
+        if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
             badness += BADNESS_PREFER;
         }
-        if (avoid_regex && regexec(avoid_regex, name, (size_t)0, NULL, 0) == 0) {
+        if (args.avoid_regex && regexec(args.avoid_regex, name, (size_t)0, NULL, 0) == 0) {
             badness += BADNESS_AVOID;
         }
 
@@ -207,8 +206,10 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     } // end of while(1) loop
 
     if (victim_pid == 0) {
-        fprintf(stderr, "Error: Could not find a process to kill. Sleeping 1 second.\n");
-        maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
+        fprintf(stderr,
+            "Error: Could not find a process to kill. Sleeping 1 second.\n");
+        maybe_notify(args.notif_command,
+            "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
         sleep(1);
         return;
     }
@@ -227,8 +228,9 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
         char notif_args[PATH_MAX + 1000];
         // maybe_notify() calls system(). We must sanitize the strings we pass.
         sanitize(victim_name);
-        snprintf(notif_args, sizeof(notif_args), "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
-        maybe_notify(notif_command, notif_args);
+        snprintf(notif_args, sizeof(notif_args),
+            "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
+        maybe_notify(args.notif_command, notif_args);
     }
 
     // Killing the process may have failed because we are not running as root.
@@ -236,7 +238,8 @@ static void userspace_kill(DIR* procdir, int sig, int ignore_oom_score_adj,
     // Throttle ourselves to not spam the log.
     if (sig != 0 && res != 0) {
         perror("userspace_kill: kill() failed, sleeping 1 second");
-        maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
+        maybe_notify(args.notif_command,
+            "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);
     }
 }
@@ -266,22 +269,23 @@ void trigger_kernel_oom(int sig, char* notif_command)
     }
     if (sig == 9) {
         fprintf(stderr, "Invoking oom killer: ");
-        maybe_notify(notif_command, "-i dialog-warning 'earlyoom' 'Invoking OOM killer'");
+        maybe_notify(notif_command,
+            "-i dialog-warning 'earlyoom' 'Invoking OOM killer'");
 
         if (fprintf(trig_fd, "f\n") != 2) {
             perror("failed");
-            maybe_notify(notif_command, "-i dialog-error 'earlyoom' 'Error: Failed to invoke OOM killer'");
+            maybe_notify(notif_command,
+                "-i dialog-error 'earlyoom' 'Error: Failed to invoke OOM killer'");
         } else
             fprintf(stderr, "done\n");
     }
     fclose(trig_fd);
 }
 
-void handle_oom(DIR* procdir, int sig, int kernel_oom_killer, int ignore_oom_score_adj,
-    char* notif_command, regex_t* prefer_regex, regex_t* avoid_regex)
+void handle_oom(poll_loop_args_t args, int sig)
 {
-    if (kernel_oom_killer)
-        trigger_kernel_oom(sig, notif_command);
+    if (args.kernel_oom_killer)
+        trigger_kernel_oom(sig, args.notif_command);
     else
-        userspace_kill(procdir, sig, ignore_oom_score_adj, notif_command, prefer_regex, avoid_regex);
+        userspace_kill(args, sig);
 }

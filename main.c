@@ -25,30 +25,25 @@ enum {
     LONG_OPT_HELP,
 };
 
-int set_oom_score_adj(int);
-void print_mem_stats(FILE*, const struct meminfo);
+static int set_oom_score_adj(int);
+static void print_mem_stats(FILE* procdir, const struct meminfo);
+static void poll_loop(const poll_loop_args_t args);
 
 int enable_debug = 0;
 long page_size = 0;
 
 int main(int argc, char* argv[])
 {
-    int kernel_oom_killer = 0;
-    unsigned long oom_cnt = 0;
-    /* If the available memory goes below this percentage, we start killing
-     * processes. 10 is a good start. */
-    int mem_min_percent = 0, swap_min_percent = 0;
-    long mem_min = 0, swap_min = 0; /* Same thing in KiB */
-    int ignore_oom_score_adj = 0;
-    char* notif_command = NULL;
-    int report_interval = 1;
+    poll_loop_args_t args = {
+        .report_interval = 1,
+        /* omitted fields are set to zero */
+    };
+    long mem_min_kib = 0, swap_min_kib = 0; /* Same thing in KiB */
     int set_my_priority = 0;
     char* prefer_cmds = NULL;
     char* avoid_cmds = NULL;
     regex_t _prefer_regex;
     regex_t _avoid_regex;
-    regex_t* prefer_regex = NULL;
-    regex_t* avoid_regex = NULL;
     page_size = sysconf(_SC_PAGESIZE);
 
     /* request line buffering for stdout - otherwise the output
@@ -62,11 +57,13 @@ int main(int argc, char* argv[])
         exit(4);
     }
 
-    DIR* procdir = opendir(".");
-    if (procdir == NULL) {
+    args.procdir = opendir(".");
+    if (args.procdir == NULL) {
         perror("Could not open /proc");
         exit(5);
     }
+
+    struct meminfo m = parse_meminfo();
 
     int c;
     const char* short_opt = "m:s:M:S:kinN:dvr:ph";
@@ -74,7 +71,7 @@ int main(int argc, char* argv[])
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
         { "help", no_argument, NULL, LONG_OPT_HELP },
-        { 0, 0, NULL, 0 }
+        { 0, 0, NULL, 0 } /* end-of-array marker */
     };
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
@@ -83,47 +80,47 @@ int main(int argc, char* argv[])
         case 0: /* long option toggles */
             break;
         case 'm':
-            mem_min_percent = strtol(optarg, NULL, 10);
+            args.mem_min_percent = strtol(optarg, NULL, 10);
             // Using "-m 100" makes no sense
-            if (mem_min_percent <= 0 || mem_min_percent >= 100) {
+            if (args.mem_min_percent <= 0 || args.mem_min_percent >= 100) {
                 fprintf(stderr, "-m: Invalid percentage: %s\n", optarg);
                 exit(15);
             }
             break;
         case 's':
-            swap_min_percent = strtol(optarg, NULL, 10);
+            args.swap_min_percent = strtol(optarg, NULL, 10);
             // Using "-s 100" is a valid way to ignore swap usage
-            if (swap_min_percent <= 0 || swap_min_percent > 100) {
+            if (args.swap_min_percent <= 0 || args.swap_min_percent > 100) {
                 fprintf(stderr, "-s: Invalid percentage: %s\n", optarg);
                 exit(16);
             }
             break;
         case 'M':
-            mem_min = strtol(optarg, NULL, 10);
-            if (mem_min <= 0) {
+            mem_min_kib = strtol(optarg, NULL, 10);
+            if (mem_min_kib <= 0) {
                 fprintf(stderr, "-M: Invalid KiB value\n");
                 exit(15);
             }
             break;
         case 'S':
-            swap_min = strtol(optarg, NULL, 10);
-            if (swap_min <= 0) {
+            swap_min_kib = strtol(optarg, NULL, 10);
+            if (swap_min_kib <= 0) {
                 fprintf(stderr, "-S: Invalid KiB value\n");
                 exit(16);
             }
             break;
         case 'k':
-            kernel_oom_killer = 1;
+            args.kernel_oom_killer = 1;
             fprintf(stderr, "Using kernel oom killer\n");
             break;
         case 'i':
-            ignore_oom_score_adj = 1;
+            args.ignore_oom_score_adj = 1;
             break;
         case 'n':
-            notif_command = "notify-send";
+            args.notif_command = "notify-send";
             break;
         case 'N':
-            notif_command = optarg;
+            args.notif_command = optarg;
             break;
         case 'd':
             enable_debug = 1;
@@ -132,8 +129,8 @@ int main(int argc, char* argv[])
             // The version has already been printed above
             exit(0);
         case 'r':
-            report_interval = strtol(optarg, NULL, 10);
-            if (report_interval < 0) {
+            args.report_interval = strtol(optarg, NULL, 10);
+            if (args.report_interval < 0) {
                 fprintf(stderr, "-r: Invalid interval\n");
                 exit(14);
             }
@@ -175,83 +172,82 @@ int main(int argc, char* argv[])
         }
     }
 
-    if (mem_min_percent && mem_min) {
+    if (args.mem_min_percent && mem_min_kib) {
         fprintf(stderr, "Can't use -m with -M\n");
         exit(2);
     }
 
-    if (swap_min_percent && swap_min) {
+    if (args.swap_min_percent && swap_min_kib) {
         fprintf(stderr, "Can't use -s with -S\n");
         exit(2);
     }
 
-    if (kernel_oom_killer && ignore_oom_score_adj) {
+    if (args.kernel_oom_killer && args.ignore_oom_score_adj) {
         fprintf(stderr, "Kernel oom killer does not support -i\n");
         exit(2);
     }
 
-    if (kernel_oom_killer && (prefer_cmds || avoid_cmds)) {
+    if (args.kernel_oom_killer && (prefer_cmds || avoid_cmds)) {
         fprintf(stderr, "Kernel oom killer does not support --prefer/--avoid\n");
         exit(2);
     }
 
     if (prefer_cmds) {
-        prefer_regex = &_prefer_regex;
-        if (regcomp(prefer_regex, prefer_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
+        args.prefer_regex = &_prefer_regex;
+        if (regcomp(args.prefer_regex, prefer_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
             fprintf(stderr, "Could not compile regexp: %s\n", prefer_cmds);
             exit(6);
         }
     }
 
     if (avoid_cmds) {
-        avoid_regex = &_avoid_regex;
-        if (regcomp(avoid_regex, avoid_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
+        args.avoid_regex = &_avoid_regex;
+        if (regcomp(args.avoid_regex, avoid_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
             fprintf(stderr, "Could not compile regexp: %s\n", avoid_cmds);
             exit(6);
         }
     }
 
-    struct meminfo m = parse_meminfo();
-
-    if (mem_min) {
-        if (mem_min >= m.MemTotalKiB) {
-            fprintf(stderr, "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n", mem_min, m.MemTotalKiB);
+    if (mem_min_kib) {
+        if (mem_min_kib >= m.MemTotalKiB) {
+            fprintf(stderr, "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n",
+                mem_min_kib, m.MemTotalKiB);
             exit(15);
         }
-        mem_min_percent = 100 * mem_min / m.MemTotalKiB;
+        args.mem_min_percent = 100 * mem_min_kib / m.MemTotalKiB;
     } else {
-        if (!mem_min_percent) {
-            mem_min_percent = 10;
+        if (!args.mem_min_percent) {
+            args.mem_min_percent = 10;
         }
     }
 
-    if (swap_min) {
+    if (swap_min_kib) {
         if (m.SwapTotalKiB > 0) {
-            if (swap_min > m.SwapTotalKiB) {
-                fprintf(stderr, "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n", swap_min, m.SwapTotalKiB);
+            if (swap_min_kib > m.SwapTotalKiB) {
+                fprintf(stderr, "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
+                    swap_min_kib, m.SwapTotalKiB);
                 exit(16);
             }
-            swap_min_percent = 100 * swap_min / m.SwapTotalKiB;
+            args.swap_min_percent = 100 * swap_min_kib / m.SwapTotalKiB;
         }
     } else {
-        if (!swap_min_percent) {
-            swap_min_percent = 10;
+        if (!args.swap_min_percent) {
+            args.swap_min_percent = 10;
         }
     }
 
     fprintf(stderr, "mem  total: %4d MiB, min: %2d %%\n",
-        m.MemTotalMiB, mem_min_percent);
+        m.MemTotalMiB, args.mem_min_percent);
     fprintf(stderr, "swap total: %4d MiB, min: %2d %%\n",
-        m.SwapTotalMiB, swap_min_percent);
+        m.SwapTotalMiB, args.swap_min_percent);
 
-    if (notif_command)
-        fprintf(stderr, "notifications enabled using command: %s\n", notif_command);
+    if (args.notif_command)
+        fprintf(stderr, "notifications enabled using command: %s\n", args.notif_command);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
      */
-    handle_oom(procdir, 0, kernel_oom_killer, ignore_oom_score_adj,
-        notif_command, prefer_regex, avoid_regex);
+    handle_oom(args, 0);
 
     if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0)
         perror("Could not lock memory - continuing anyway");
@@ -263,35 +259,8 @@ int main(int argc, char* argv[])
         if (set_oom_score_adj(-1000) != 0)
             perror("Could not set oom_score_adj to -1000 for earlyoom process - continuing anyway");
     }
-
-    int tick_us = 100000; // 100 ms <=> 10 Hz
-    c = 0; // loop counter
-    report_interval = report_interval * 10; // loop runs at 10Hz
-    while (1) {
-        m = parse_meminfo();
-
-        if (m.MemAvailablePercent <= mem_min_percent && m.SwapFreePercent <= swap_min_percent) {
-            fprintf(stderr, "Low memory! mem avail: %d of %d MiB (%d) %% <= min %d %%, swap free: %d of %d MiB (%d %%) <= min %d %%\n",
-                m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, mem_min_percent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent, swap_min_percent);
-            handle_oom(procdir, 9, kernel_oom_killer, ignore_oom_score_adj,
-                notif_command, prefer_regex, avoid_regex);
-            oom_cnt++;
-            // With swap enabled, the kernel seems to need more than 100ms to free the memory
-            // of the killed process. This means that earlyoom would immediately kill another
-            // process. Sleep a little extra to give the kernel time to free the memory.
-            // (Yes, this will sleep even if the kill has failed. Does no harm and keeps the
-            // code simple.)
-            if (m.SwapTotalMiB > 0) {
-                int sleep_cycles = 2;
-                usleep(sleep_cycles * tick_us);
-                c += sleep_cycles;
-            }
-        } else if (report_interval > 0 && c % report_interval == 0) {
-            print_mem_stats(stdout, m);
-        }
-        usleep(tick_us);
-        c++;
-    }
+    // Jump into main poll loop
+    poll_loop(args);
     return 0;
 }
 
@@ -299,14 +268,14 @@ int main(int argc, char* argv[])
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * to the fd passed in out_fd.
  */
-void print_mem_stats(FILE* out_fd, const struct meminfo m)
+static void print_mem_stats(FILE* out_fd, const struct meminfo m)
 {
     fprintf(out_fd,
         "mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
         m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent);
 }
 
-int set_oom_score_adj(int oom_score_adj)
+static int set_oom_score_adj(int oom_score_adj)
 {
     char buf[256];
     pid_t pid = getpid();
@@ -321,4 +290,38 @@ int set_oom_score_adj(int oom_score_adj)
     fclose(f);
 
     return 0;
+}
+
+static void poll_loop(const poll_loop_args_t args)
+{
+    struct meminfo m;
+    int loop_cnt = 0;
+    int oom_cnt = 0;
+    int tick_us = 100000; // 100 ms <=> 10 Hz
+
+    int report_interval = args.report_interval * 10; // loop runs at 10Hz
+    while (1) {
+        m = parse_meminfo();
+
+        if (m.MemAvailablePercent <= args.mem_min_percent && m.SwapFreePercent <= args.swap_min_percent) {
+            fprintf(stderr, "Low memory! mem avail: %d of %d MiB (%d) %% <= min %d %%, swap free: %d of %d MiB (%d %%) <= min %d %%\n",
+                m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, args.mem_min_percent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent, args.swap_min_percent);
+            handle_oom(args, 9);
+            oom_cnt++;
+            // With swap enabled, the kernel seems to need more than 100ms to free the memory
+            // of the killed process. This means that earlyoom would immediately kill another
+            // process. Sleep a little extra to give the kernel time to free the memory.
+            // (Yes, this will sleep even if the kill has failed. Does no harm and keeps the
+            // code simple.)
+            if (m.SwapTotalMiB > 0) {
+                int sleep_cycles = 2;
+                usleep(sleep_cycles * tick_us);
+                loop_cnt += sleep_cycles;
+            }
+        } else if (report_interval > 0 && loop_cnt % report_interval == 0) {
+            print_mem_stats(stdout, m);
+        }
+        usleep(tick_us);
+        loop_cnt++;
+    }
 }
