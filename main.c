@@ -306,7 +306,6 @@ static void poll_loop(const poll_loop_args_t args)
 {
     struct meminfo m;
     int loop_cnt = 0;
-    int oom_cnt = 0;
     int tick_us = 100000; // 100 ms <=> 10 Hz
 
     int report_interval_cnts = args.report_interval_ms * 1000 / tick_us;
@@ -325,7 +324,6 @@ static void poll_loop(const poll_loop_args_t args)
                 m.SwapFreePercent,
                 args.swap_min_percent);
             handle_oom(args, 9);
-            oom_cnt++;
             // With swap enabled, the kernel seems to need more than 100ms to free the memory
             // of the killed process. This means that earlyoom would immediately kill another
             // process. Sleep a little extra to give the kernel time to free the memory.
