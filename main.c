@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
                 fprintf(stderr, "-r: Invalid interval\n");
                 exit(14);
             }
-            args.report_interval_ms = report_interval_f*1000;
+            args.report_interval_ms = report_interval_f * 1000;
             break;
         case 'p':
             set_my_priority = 1;
@@ -212,7 +212,8 @@ int main(int argc, char* argv[])
 
     if (mem_min_kib) {
         if (mem_min_kib >= m.MemTotalKiB) {
-            fprintf(stderr, "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n",
+            fprintf(stderr,
+                "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n",
                 mem_min_kib, m.MemTotalKiB);
             exit(15);
         }
@@ -226,7 +227,8 @@ int main(int argc, char* argv[])
     if (swap_min_kib) {
         if (m.SwapTotalKiB > 0) {
             if (swap_min_kib > m.SwapTotalKiB) {
-                fprintf(stderr, "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
+                fprintf(stderr,
+                    "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
                     swap_min_kib, m.SwapTotalKiB);
                 exit(16);
             }
@@ -244,7 +246,8 @@ int main(int argc, char* argv[])
         m.SwapTotalMiB, args.swap_min_percent);
 
     if (args.notif_command)
-        fprintf(stderr, "notifications enabled using command: %s\n", args.notif_command);
+        fprintf(stderr, "notifications enabled using command: %s\n",
+            args.notif_command);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
@@ -274,7 +277,12 @@ static void print_mem_stats(FILE* out_fd, const struct meminfo m)
 {
     fprintf(out_fd,
         "mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
-        m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent);
+        m.MemAvailableMiB,
+        m.MemTotalMiB,
+        m.MemAvailablePercent,
+        m.SwapFreeMiB,
+        m.SwapTotalMiB,
+        m.SwapFreePercent);
 }
 
 static int set_oom_score_adj(int oom_score_adj)
@@ -306,8 +314,16 @@ static void poll_loop(const poll_loop_args_t args)
         m = parse_meminfo();
 
         if (m.MemAvailablePercent <= args.mem_min_percent && m.SwapFreePercent <= args.swap_min_percent) {
-            fprintf(stderr, "Low memory! mem avail: %d of %d MiB (%d) %% <= min %d %%, swap free: %d of %d MiB (%d %%) <= min %d %%\n",
-                m.MemAvailableMiB, m.MemTotalMiB, m.MemAvailablePercent, args.mem_min_percent, m.SwapFreeMiB, m.SwapTotalMiB, m.SwapFreePercent, args.swap_min_percent);
+            fprintf(stderr,
+                "Low memory! mem avail: %d of %d MiB (%d) %% <= min %d %%, swap free: %d of %d MiB (%d %%) <= min %d %%\n",
+                m.MemAvailableMiB,
+                m.MemTotalMiB,
+                m.MemAvailablePercent,
+                args.mem_min_percent,
+                m.SwapFreeMiB,
+                m.SwapTotalMiB,
+                m.SwapFreePercent,
+                args.swap_min_percent);
             handle_oom(args, 9);
             oom_cnt++;
             // With swap enabled, the kernel seems to need more than 100ms to free the memory
