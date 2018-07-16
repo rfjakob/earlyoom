@@ -9,8 +9,6 @@ typedef struct {
      * we start killing processes */
     int mem_min_percent;
     int swap_min_percent;
-    /* use the kernel oom killer? */
-    bool kernel_oom_killer;
     /* ignore /proc/PID/oom_score_adj? */
     bool ignore_oom_score_adj;
     /* notifcation command to launch when killing something. NULL = no-op. */
@@ -22,4 +20,4 @@ typedef struct {
     int report_interval_ms;
 } poll_loop_args_t;
 
-void handle_oom(poll_loop_args_t args, int sig);
+void userspace_kill(poll_loop_args_t args, int sig);

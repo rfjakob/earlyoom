@@ -118,7 +118,7 @@ static struct procinfo get_process_stats(int pid)
  * Find the process with the largest oom_score and kill it.
  * See trigger_kernel_oom() for the reason why this is done in userspace.
  */
-static void userspace_kill(poll_loop_args_t args, int sig)
+void userspace_kill(poll_loop_args_t args, int sig)
 {
     struct dirent* d;
     char buf[256];
@@ -242,50 +242,4 @@ static void userspace_kill(poll_loop_args_t args, int sig)
             "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);
     }
-}
-
-/*
- * Invoke the kernel oom killer by writing "f" into /proc/sysrq-trigger
- *
- * This approach has a few problems:
- * 1) It is disallowed by default (even for root) on Fedora 20.
- *    You have to first write "1" into /proc/sys/kernel/sysrq to enable the "f"
- *    trigger.
- * 2) The Chrome web browser assigns a penalty of 300 onto its own tab renderer
- *    processes. On an 8GB RAM machine, this means 2400MB, and will lead to every
- *    tab being killed before the actual memory hog
- *    See https://code.google.com/p/chromium/issues/detail?id=333617 for more info
- * 3) It is broken in 4.0.5 - see
- *    https://github.com/rfjakob/earlyoom/commit/f7e2cedce8e9605c688d0c6d7dc26b7e81817f02
- * Because of these issues, kill_by_rss() is used instead by default.
- */
-void trigger_kernel_oom(int sig, char* notif_command)
-{
-    FILE* trig_fd;
-    trig_fd = fopen("sysrq-trigger", "w");
-    if (trig_fd == NULL) {
-        perror("Could not open /proc/sysrq-trigger");
-        exit(7);
-    }
-    if (sig == 9) {
-        fprintf(stderr, "Invoking oom killer: ");
-        maybe_notify(notif_command,
-            "-i dialog-warning 'earlyoom' 'Invoking OOM killer'");
-
-        if (fprintf(trig_fd, "f\n") != 2) {
-            perror("failed");
-            maybe_notify(notif_command,
-                "-i dialog-error 'earlyoom' 'Error: Failed to invoke OOM killer'");
-        } else
-            fprintf(stderr, "done\n");
-    }
-    fclose(trig_fd);
-}
-
-void handle_oom(poll_loop_args_t args, int sig)
-{
-    if (args.kernel_oom_killer)
-        trigger_kernel_oom(sig, args.notif_command);
-    else
-        userspace_kill(args, sig);
 }

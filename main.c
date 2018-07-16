@@ -111,8 +111,7 @@ int main(int argc, char* argv[])
             }
             break;
         case 'k':
-            args.kernel_oom_killer = 1;
-            fprintf(stderr, "Using kernel oom killer\n");
+            fprintf(stderr, "Option -k is ignored since earlyoom v1.2\n");
             break;
         case 'i':
             args.ignore_oom_score_adj = 1;
@@ -155,7 +154,6 @@ int main(int argc, char* argv[])
                 "  -s PERCENT       set free swap minimum to PERCENT of total (default 10 %%)\n"
                 "  -M SIZE          set available memory minimum to SIZE KiB\n"
                 "  -S SIZE          set free swap minimum to SIZE KiB\n"
-                "  -k               use kernel oom killer instead of own user-space implementation\n"
                 "  -i               user-space oom killer should ignore positive oom_score_adj values\n"
                 "  -n               enable notifications using \"notify-send\"\n"
                 "  -N COMMAND       enable notifications using COMMAND\n"
@@ -181,16 +179,6 @@ int main(int argc, char* argv[])
 
     if (args.swap_min_percent && swap_min_kib) {
         fprintf(stderr, "Can't use -s with -S\n");
-        exit(2);
-    }
-
-    if (args.kernel_oom_killer && args.ignore_oom_score_adj) {
-        fprintf(stderr, "Kernel oom killer does not support -i\n");
-        exit(2);
-    }
-
-    if (args.kernel_oom_killer && (prefer_cmds || avoid_cmds)) {
-        fprintf(stderr, "Kernel oom killer does not support --prefer/--avoid\n");
         exit(2);
     }
 
@@ -250,7 +238,7 @@ int main(int argc, char* argv[])
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
      */
-    handle_oom(args, 0);
+    userspace_kill(args, 0);
 
     if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0)
         perror("Could not lock memory - continuing anyway");
@@ -321,7 +309,7 @@ static void poll_loop(const poll_loop_args_t args)
                 m.SwapTotalMiB,
                 m.SwapFreePercent,
                 args.swap_min_percent);
-            handle_oom(args, 9);
+            userspace_kill(args, 9);
             // With swap enabled, the kernel seems to need more than 100ms to free the memory
             // of the killed process. This means that earlyoom would immediately kill another
             // process. Sleep a little extra to give the kernel time to free the memory.

@@ -37,7 +37,7 @@ set available memory minimum to SIZE KiB
 set free swap minimum to SIZE KiB
 
 #### -k
-use kernel oom killer instead of own user-space implementation
+removed in earlyoom v1.2, ignored for compatibility
 
 #### -i
 user-space oom killer should ignore positive oom_score_adj values
