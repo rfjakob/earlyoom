@@ -225,15 +225,13 @@ int main(int argc, char* argv[])
     }
 
     if (swap_min_kib) {
-        if (m.SwapTotalKiB > 0) {
-            if (swap_min_kib > m.SwapTotalKiB) {
-                fprintf(stderr,
-                    "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
-                    swap_min_kib, m.SwapTotalKiB);
-                exit(16);
-            }
-            args.swap_min_percent = 100 * swap_min_kib / m.SwapTotalKiB;
+        if (swap_min_kib > m.SwapTotalKiB) {
+            fprintf(stderr,
+                "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
+                swap_min_kib, m.SwapTotalKiB);
+            exit(16);
         }
+        args.swap_min_percent = 100 * swap_min_kib / m.SwapTotalKiB;
     } else {
         if (!args.swap_min_percent) {
             args.swap_min_percent = 10;
