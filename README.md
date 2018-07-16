@@ -11,16 +11,17 @@ think what it will do. I have yet to be patient enough to wait for it, sitting
 in front of an unresponsive system.
 
 This made me and other people wonder if the oom-killer could be configured to
-step in earlier: [superuser.com][2], [unix.stackexchange.com][3].
+step in earlier: [reddit r/linux][5], [superuser.com][2], [unix.stackexchange.com][3].
 
 As it turns out, no, it can't. At least using the in-kernel oom-killer.
 In the user space, however, we can do whatever we want.
 
 What does it do
 ---------------
-earlyoom checks the amount of available memory and (since version 0.5)
-free swap 10 times a second. If both are below 10%, it will kill the
-largest process. The percentage value is configurable via command line
+earlyoom checks the amount of available memory and free swap to to 10
+times a second (less often if there is a lot of free memory).
+If both are below 10%, it will kill the largest process (highest `oom_score`).
+The percentage value is configurable via command line
 arguments.
 
 In the `free -m` output below, the available memory is 2170 MiB and
@@ -242,3 +243,4 @@ Changelog
 [2]: http://superuser.com/questions/406101/is-it-possible-to-make-the-oom-killer-intervent-earlier
 [3]: http://unix.stackexchange.com/questions/38507/is-it-possible-to-trigger-oom-killer-on-forced-swapping
 [4]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
+[5]: https://www.reddit.com/r/linux/comments/56r4xj/why_are_low_memory_conditions_handled_so_badly/

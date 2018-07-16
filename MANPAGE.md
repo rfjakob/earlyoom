@@ -15,9 +15,10 @@ to sit in front of an unresponsive system, listening to the grinding disk for
 minutes, and press the reset button to quickly get back to what one was doing
 after running out of patience.
 
-**earlyoom** checks the amount of available memory and free swap 10 times a
-second. If both are below 10%, it will kill the largest process. The
-percentage value is configurable via command line arguments.
+**earlyoom** checks the amount of available memory and free swap up to 10 times a
+second (less often if there is a lot of free memory).
+If both are below 10%, it will kill the largest process (highest `oom_score`).
+The percentage value is configurable via command line arguments.
 
 If there is a failure when trying to kill a process, **earlyoom** sleeps for
 1 second to limit log spam due to recurring errors.
@@ -50,7 +51,9 @@ print version information and exit
 
 #### -r INTERVAL
 memory report interval in seconds (default 1), set to 0 to disable completely.
-With earlyoom v1.2 and higher, floating point numbers are accepted.
+With earlyoom v1.2 and higher, floating point numbers are accepted. Due to the
+adaptive poll rate, when there is a lot of free memory, the actual interval
+may be up to 1 second longer than the setting.
 
 #### -p
 set niceness of earlyoom to -20 and oom_score_adj to -1000
