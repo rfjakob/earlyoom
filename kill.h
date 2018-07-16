@@ -1,4 +1,6 @@
 /* SPDX-License-Identifier: MIT */
+#ifndef KILL_H
+#define KILL_H
 
 #include <stdbool.h>
 
@@ -21,3 +23,5 @@ typedef struct {
 } poll_loop_args_t;
 
 void userspace_kill(poll_loop_args_t args, int sig);
+
+#endif

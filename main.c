@@ -26,7 +26,7 @@ enum {
 };
 
 static int set_oom_score_adj(int);
-static void print_mem_stats(FILE* procdir, const struct meminfo);
+static void print_mem_stats(FILE* procdir, const meminfo_t m);
 static void poll_loop(const poll_loop_args_t args);
 
 int enable_debug = 0;
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
         exit(5);
     }
 
-    struct meminfo m = parse_meminfo();
+    meminfo_t m = parse_meminfo();
 
     int c;
     const char* short_opt = "m:s:M:S:kinN:dvr:ph";
@@ -259,7 +259,7 @@ int main(int argc, char* argv[])
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * to the fd passed in out_fd.
  */
-static void print_mem_stats(FILE* out_fd, const struct meminfo m)
+static void print_mem_stats(FILE* out_fd, const meminfo_t m)
 {
     fprintf(out_fd,
         "mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
@@ -290,7 +290,7 @@ static int set_oom_score_adj(int oom_score_adj)
 
 static void poll_loop(const poll_loop_args_t args)
 {
-    struct meminfo m;
+    meminfo_t m;
     int loop_cnt = 0;
     int tick_us = 100000; // 100 ms <=> 10 Hz
 

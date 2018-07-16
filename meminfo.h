@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: MIT */
+#ifndef MEMINFO_H
+#define MEMINFO_H
 
-struct meminfo {
+typedef struct {
     // Values from /proc/meminfo, in KiB or converted to MiB.
     long MemTotalKiB;
     int MemTotalMiB;
@@ -11,6 +13,8 @@ struct meminfo {
     // Calculated percentages
     int MemAvailablePercent; // percent of total memory that is available
     int SwapFreePercent; // percent of total swap that is free
-};
+} meminfo_t;
 
-struct meminfo parse_meminfo();
+meminfo_t parse_meminfo();
+
+#endif

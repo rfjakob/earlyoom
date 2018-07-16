@@ -52,12 +52,12 @@ static long available_guesstimate(const char* buf)
     return MemFree + Cached + Buffers - Shmem;
 }
 
-struct meminfo parse_meminfo()
+meminfo_t parse_meminfo()
 {
     static FILE* fd;
     static char buf[8192];
     static int guesstimate_warned = 0;
-    struct meminfo m;
+    meminfo_t m;
 
     if (fd == NULL)
         fd = fopen("/proc/meminfo", "r");
