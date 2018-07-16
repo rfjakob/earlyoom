@@ -288,13 +288,45 @@ static int set_oom_score_adj(int oom_score_adj)
     return 0;
 }
 
+/* Calculate the time we should sleep based upon how far away from the memory and swap
+ * limits we are (headroom). Returns a millisecond value between 100 and 1000 (inclusive).
+ * The idea is simple: if memory and swap can only fill up so fast, we know how long we can sleep
+ * without risking to miss a low memory event.
+ */
+static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
+{
+    // Maximum expected memory/swap fill rate. In kiB per millisecond ==~ MiB per second.
+    const int mem_fill_rate = 6000; // 6000MiB/s seen with "stress -m 4 --vm-bytes 4G"
+    const int swap_fill_rate = 800; //  800MiB/s seen with membomb on ZRAM
+    // Clamp calculated value to this range (milliseconds)
+    const int min_sleep = 100;
+    const int max_sleep = 1000;
+
+    int mem_headroom_kib = (m->MemAvailablePercent - args->mem_min_percent) * 10 * m->MemTotalMiB;
+    if (mem_headroom_kib < 0) {
+        mem_headroom_kib = 0;
+    }
+    int swap_headroom_kib = (m->SwapFreePercent - args->swap_min_percent) * 10 * m->SwapTotalMiB;
+    if (swap_headroom_kib < 0) {
+        swap_headroom_kib = 0;
+    }
+    int ms = mem_headroom_kib / mem_fill_rate + swap_headroom_kib / swap_fill_rate;
+    if (ms < min_sleep) {
+        return min_sleep;
+    }
+    if (ms > max_sleep) {
+        return max_sleep;
+    }
+    return ms;
+}
+
 static void poll_loop(const poll_loop_args_t args)
 {
-    meminfo_t m;
-    int loop_cnt = 0;
-    int tick_us = 100000; // 100 ms <=> 10 Hz
+    meminfo_t m = {0};
+    int report_countdown_ms = 0;
+    // extra time to sleep after a kill
+    const int cooldown_ms = 200;
 
-    int report_interval_cnts = args.report_interval_ms * 1000 / tick_us;
     while (1) {
         m = parse_meminfo();
 
@@ -316,14 +348,18 @@ static void poll_loop(const poll_loop_args_t args)
             // (Yes, this will sleep even if the kill has failed. Does no harm and keeps the
             // code simple.)
             if (m.SwapTotalMiB > 0) {
-                int sleep_cycles = 2;
-                usleep(sleep_cycles * tick_us);
-                loop_cnt += sleep_cycles;
+                usleep(cooldown_ms*1000);
+                report_countdown_ms -= cooldown_ms;
             }
-        } else if (args.report_interval_ms > 0 && loop_cnt % report_interval_cnts == 0) {
+        } else if (args.report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(stdout, m);
+            report_countdown_ms = args.report_interval_ms;
         }
-        usleep(tick_us);
-        loop_cnt++;
+        int sleep_ms = sleep_time_ms(&args, &m);
+        if (enable_debug) {
+            printf("adaptive sleep time: %d ms\n", sleep_ms);
+        }
+        usleep(sleep_ms*1000);
+        report_countdown_ms -= sleep_ms;
     }
 }

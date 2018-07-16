@@ -205,7 +205,10 @@ accept
 Changelog
 ---------
 * v1.2, in progress
-  * Remove option to use kernel oom-killer (`-k`) ([issue #80](https://github.com/rfjakob/earlyoom/issues/80))
+  * Implement adaptive sleep time (= adaptive poll rate) to lower CPU
+    usage further ([issue #61](https://github.com/rfjakob/earlyoom/issues/61))
+  * Remove option to use kernel oom-killer (`-k`)
+    ([issue #80](https://github.com/rfjakob/earlyoom/issues/80))
 * v1.1, 2018-07-07
   * Fix possible shell code injection through GUI notifications
     ([commit](https://github.com/rfjakob/earlyoom/commit/ab79aa3895077676f50120f15e2bb22915446db9))
