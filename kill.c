@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "kill.h"
 
@@ -130,6 +131,11 @@ void userspace_kill(poll_loop_args_t args, int sig)
     char victim_name[PATH_MAX] = { 0 };
     struct procinfo p;
     int badness;
+    struct timespec t0 = {0}, t1 = {0};
+
+    if(enable_debug) {
+        clock_gettime(CLOCK_MONOTONIC, &t0);
+    }
 
     rewinddir(args.procdir);
     while (1) {
@@ -221,6 +227,12 @@ void userspace_kill(poll_loop_args_t args, int sig)
     }
 
     int res = kill(victim_pid, sig);
+
+    if(enable_debug) {
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        long delta = (t1.tv_sec - t0.tv_sec)*1000 + (t1.tv_nsec - t0.tv_nsec)/1000;
+        printf("selecting victim and sending signal took %ld.%03ld ms\n", delta/1000, delta%1000);
+    }
 
     // Send the GUI notification AFTER killing a process. This makes it more likely
     // that there is enough memory to spawn the notification helper.
