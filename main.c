@@ -22,7 +22,6 @@
 enum {
     LONG_OPT_PREFER = 513,
     LONG_OPT_AVOID,
-    LONG_OPT_HELP,
 };
 
 static int set_oom_score_adj(int);
@@ -70,7 +69,7 @@ int main(int argc, char* argv[])
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
-        { "help", no_argument, NULL, LONG_OPT_HELP },
+        { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
 
@@ -146,7 +145,6 @@ int main(int argc, char* argv[])
             avoid_cmds = optarg;
             break;
         case 'h':
-        case LONG_OPT_HELP:
             fprintf(stderr,
                 "Usage: earlyoom [OPTION]...\n"
                 "\n"
