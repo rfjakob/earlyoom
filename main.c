@@ -188,6 +188,7 @@ int main(int argc, char* argv[])
             fprintf(stderr, "Could not compile regexp: %s\n", prefer_cmds);
             exit(6);
         }
+        fprintf(stderr, "Prefering to kill process names that match regex '%s'\n", prefer_cmds);
     }
 
     if (avoid_cmds) {
@@ -196,6 +197,7 @@ int main(int argc, char* argv[])
             fprintf(stderr, "Could not compile regexp: %s\n", avoid_cmds);
             exit(6);
         }
+        fprintf(stderr, "Avoiding to kill process names that match regex '%s'\n", avoid_cmds);
     }
 
     if (mem_min_kib) {

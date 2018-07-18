@@ -88,6 +88,9 @@ func TestCli(t *testing.T) {
 		{args: []string{"-S", "9999999999999999"}, code: 16, stderrContains: "above total swap", stdoutEmpty: true},
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		// Test --avoid and --prefer
+		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Avoiding to kill", stdoutContains: memReport},
+		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Prefering to kill", stdoutContains: memReport},
 	}
 	if swapTotal > 0 {
 		// Test cannot work when there is no swap enabled
