@@ -20,10 +20,10 @@ earlyoom: $(wildcard *.c *.h) Makefile
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 earlyoom.1: MANPAGE.md
-ifndef PANDOC
-	@echo "pandoc is not installed, skipping earlyoom.1 manpage generation"
-else
+ifdef PANDOC
 	pandoc MANPAGE.md -s -t man > earlyoom.1
+else
+	@echo "pandoc is not installed, skipping earlyoom.1 manpage generation"
 endif
 
 clean:
@@ -51,11 +51,15 @@ install-bin: earlyoom
 	install -m 755 $< $(DESTDIR)$(PREFIX)$(BINDIR)/
 
 install-man: earlyoom.1.gz
+ifdef PANDOC
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -m 644 $< $(DESTDIR)$(PREFIX)/share/man/man1/
+endif
 
 earlyoom.1.gz: earlyoom.1
-	gzip -k $<
+ifdef PANDOC
+	gzip -f -k $<
+endif
 
 uninstall: uninstall-bin uninstall-man
 	systemctl disable earlyoom
