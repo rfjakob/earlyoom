@@ -4,8 +4,6 @@ Documentation=man:earlyoom(1) https://github.com/rfjakob/earlyoom
 
 [Service]
 EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
-StandardOutput=null
-StandardError=syslog
 ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
 
 [Install]

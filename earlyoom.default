@@ -1,19 +1,19 @@
 # Default settings for earlyoom. This file is sourced by /bin/sh from
-# /etc/init.d/earlyoom.
+# /etc/init.d/earlyoom or by systemd from earlyoom.service.
 
 # Options to pass to earlyoom
-EARLYOOM_ARGS=""
+EARLYOOM_ARGS="-r 60"
 
 # Examples:
+
+# Print memory report every second instead of every minute
+# EARLYOOM_ARGS="-r 1"
 
 # Available minimum memory 5%
 # EARLYOOM_ARGS="-m 5"
 
 # Available minimum memory 15% and free minimum swap 5%
 # EARLYOOM_ARGS="-m 15 -s 5"
-
-# Use kernel oom killer
-# EARLYOOM_ARGS="-k"
 
 # Avoid killing processes whose name matches this regexp
 # EARLYOOM_ARGS="--avoid '(^|/)(init|X|sshd|firefox)$'"
