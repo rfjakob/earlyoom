@@ -168,6 +168,11 @@ int main(int argc, char* argv[])
             fprintf(stderr, "Try 'earlyoom --help' for more information.\n");
             exit(13);
         }
+    } /* while getopt */
+
+    if (optind < argc) {
+        fprintf(stderr, "Extra argument not understood: '%s'\n", argv[optind]);
+        exit(13);
     }
 
     if (args.mem_min_percent && mem_min_kib) {

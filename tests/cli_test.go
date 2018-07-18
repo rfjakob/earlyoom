@@ -66,8 +66,9 @@ func TestCli(t *testing.T) {
 	// startupMsg matches the last line of the startup output.
 	const startupMsg = "swap total: "
 	testcases := []cliTestCase{
+		// Both -h and --help should show the help text
 		{args: []string{"-h"}, code: 0, stderrContains: "this help text", stdoutEmpty: true},
-		{args: []string{"-h"}, code: 0, stderrContains: "this help text", stdoutEmpty: true},
+		{args: []string{"--help"}, code: 0, stderrContains: "this help text", stdoutEmpty: true},
 		{args: nil, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		{args: []string{"-p"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-v"}, code: 0, stderrContains: "earlyoom v", stdoutEmpty: true},
@@ -91,6 +92,9 @@ func TestCli(t *testing.T) {
 		// Test --avoid and --prefer
 		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Avoiding to kill", stdoutContains: memReport},
 		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Prefering to kill", stdoutContains: memReport},
+		// Extra arguments should error out
+		{args: []string{"xyz"}, code: 13, stderrContains: "Extra argument not understood", stdoutEmpty: true},
+		{args: []string{"-i", "1"}, code: 13, stderrContains: "Extra argument not understood", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Test cannot work when there is no swap enabled
