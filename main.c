@@ -324,7 +324,7 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
 
 static void poll_loop(const poll_loop_args_t args)
 {
-    meminfo_t m = {0};
+    meminfo_t m = { 0 };
     int report_countdown_ms = 0;
     // extra time to sleep after a kill
     const int cooldown_ms = 200;
@@ -350,7 +350,7 @@ static void poll_loop(const poll_loop_args_t args)
             // (Yes, this will sleep even if the kill has failed. Does no harm and keeps the
             // code simple.)
             if (m.SwapTotalMiB > 0) {
-                usleep(cooldown_ms*1000);
+                usleep(cooldown_ms * 1000);
                 report_countdown_ms -= cooldown_ms;
             }
         } else if (args.report_interval_ms && report_countdown_ms <= 0) {
@@ -361,7 +361,7 @@ static void poll_loop(const poll_loop_args_t args)
         if (enable_debug) {
             printf("adaptive sleep time: %d ms\n", sleep_ms);
         }
-        usleep(sleep_ms*1000);
+        usleep(sleep_ms * 1000);
         report_countdown_ms -= sleep_ms;
     }
 }
