@@ -210,6 +210,9 @@ Changelog
     usage further ([issue #61](https://github.com/rfjakob/earlyoom/issues/61))
   * Remove option to use kernel oom-killer (`-k`)
     ([issue #80](https://github.com/rfjakob/earlyoom/issues/80))
+  * Gracefully handle the case of swap being added or removed after earlyoom was started
+    ([issue 62](https://github.com/rfjakob/earlyoom/issues/62),
+    [commit](https://github.com/rfjakob/earlyoom/commit/88e58903fec70b105aebba39cd584add5e1d1532))
 * v1.1, 2018-07-07
   * Fix possible shell code injection through GUI notifications
     ([commit](https://github.com/rfjakob/earlyoom/commit/ab79aa3895077676f50120f15e2bb22915446db9))
