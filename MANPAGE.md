@@ -29,7 +29,11 @@ If there is a failure when trying to kill a process, **earlyoom** sleeps for
 set available memory minimum to PERCENT of total (default 10 %)
 
 #### -s PERCENT
-set free swap minimum to PERCENT of total (default 10 %)
+set free swap minimum to PERCENT of total (default 10 %).
+
+You can use `-s 100` to have earlyoom effectively ignore swap usage:
+Processes are killed once available memory drops below the configured
+minimum, no matter how much swap is free.
 
 #### -M SIZE
 set available memory minimum to SIZE KiB
