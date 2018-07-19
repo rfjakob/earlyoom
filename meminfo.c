@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "meminfo.h"
+#include "msg.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: MemTotal) */
@@ -34,8 +35,7 @@ static long get_entry_fatal(const char* name, const char* buf)
 {
     long val = get_entry(name, buf);
     if (val == -1) {
-        fprintf(stderr, "Could not find \"%s\"\n", name);
-        exit(104);
+        fatal(104, "could not find entry '%s' in /proc/meminfo\n");
     }
     return val;
 }
@@ -62,15 +62,13 @@ meminfo_t parse_meminfo()
     if (fd == NULL)
         fd = fopen("/proc/meminfo", "r");
     if (fd == NULL) {
-        perror("Could not open /proc/meminfo");
-        exit(102);
+        fatal(102, "could not open /proc/meminfo: %s\n", strerror(errno));
     }
     rewind(fd);
 
     size_t len = fread(buf, 1, sizeof(buf) - 1, fd);
     if (len == 0) {
-        perror("Could not read /proc/meminfo");
-        exit(103);
+        fatal(102, "could not read /proc/meminfo: %s\n", strerror(errno));
     }
     buf[len] = 0; // Make sure buf is zero-terminated
 

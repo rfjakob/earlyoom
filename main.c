@@ -16,6 +16,7 @@
 
 #include "kill.h"
 #include "meminfo.h"
+#include "msg.h"
 
 /* Arbitrary identifiers for long options that do not have a short
  * version */
@@ -52,14 +53,12 @@ int main(int argc, char* argv[])
     fprintf(stderr, "earlyoom " VERSION "\n");
 
     if (chdir("/proc") != 0) {
-        perror("Could not cd to /proc");
-        exit(4);
+        fatal(4, "Could not cd to /proc: %s", strerror(errno));
     }
 
     args.procdir = opendir(".");
     if (args.procdir == NULL) {
-        perror("Could not open /proc");
-        exit(5);
+        fatal(5, "Could not open /proc: %s", strerror(errno));
     }
 
     meminfo_t m = parse_meminfo();
@@ -83,30 +82,26 @@ int main(int argc, char* argv[])
             args.mem_min_percent = strtol(optarg, NULL, 10);
             // Using "-m 100" makes no sense
             if (args.mem_min_percent <= 0 || args.mem_min_percent >= 100) {
-                fprintf(stderr, "-m: Invalid percentage: %s\n", optarg);
-                exit(15);
+                fatal(15, "-m: invalid percentage '%s'\n", optarg);
             }
             break;
         case 's':
             args.swap_min_percent = strtol(optarg, NULL, 10);
             // Using "-s 100" is a valid way to ignore swap usage
             if (args.swap_min_percent <= 0 || args.swap_min_percent > 100) {
-                fprintf(stderr, "-s: Invalid percentage: %s\n", optarg);
-                exit(16);
+                fatal(16, "-s: invalid percentage: '%s'\n", optarg);
             }
             break;
         case 'M':
             mem_min_kib = strtol(optarg, NULL, 10);
             if (mem_min_kib <= 0) {
-                fprintf(stderr, "-M: Invalid KiB value\n");
-                exit(15);
+                fatal(15, "-M: invalid KiB value '%s'\n", optarg);
             }
             break;
         case 'S':
             swap_min_kib = strtol(optarg, NULL, 10);
             if (swap_min_kib <= 0) {
-                fprintf(stderr, "-S: Invalid KiB value\n");
-                exit(16);
+                fatal(16, "-S: invalid KiB value: '%s'\n", optarg);
             }
             break;
         case 'k':
@@ -130,8 +125,7 @@ int main(int argc, char* argv[])
         case 'r':
             report_interval_f = strtof(optarg, NULL);
             if (report_interval_f < 0) {
-                fprintf(stderr, "-r: Invalid interval\n");
-                exit(14);
+                fatal(14, "-r: invalid interval '%s'\n", optarg);
             }
             args.report_interval_ms = report_interval_f * 1000;
             break;
@@ -171,25 +165,21 @@ int main(int argc, char* argv[])
     } /* while getopt */
 
     if (optind < argc) {
-        fprintf(stderr, "Extra argument not understood: '%s'\n", argv[optind]);
-        exit(13);
+        fatal(13, "extra argument not understood: '%s'\n", argv[optind]);
     }
 
     if (args.mem_min_percent && mem_min_kib) {
-        fprintf(stderr, "Can't use -m with -M\n");
-        exit(2);
+        fatal(2, "can't use -m with -M\n");
     }
 
     if (args.swap_min_percent && swap_min_kib) {
-        fprintf(stderr, "Can't use -s with -S\n");
-        exit(2);
+        fatal(2, "can't use -s with -S\n");
     }
 
     if (prefer_cmds) {
         args.prefer_regex = &_prefer_regex;
         if (regcomp(args.prefer_regex, prefer_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
-            fprintf(stderr, "Could not compile regexp: %s\n", prefer_cmds);
-            exit(6);
+            fatal(6, "could not compile regexp '%s'\n", prefer_cmds);
         }
         fprintf(stderr, "Prefering to kill process names that match regex '%s'\n", prefer_cmds);
     }
@@ -197,18 +187,16 @@ int main(int argc, char* argv[])
     if (avoid_cmds) {
         args.avoid_regex = &_avoid_regex;
         if (regcomp(args.avoid_regex, avoid_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
-            fprintf(stderr, "Could not compile regexp: %s\n", avoid_cmds);
-            exit(6);
+            fatal(6, "could not compile regexp '%s'\n", avoid_cmds);
         }
         fprintf(stderr, "Avoiding to kill process names that match regex '%s'\n", avoid_cmds);
     }
 
     if (mem_min_kib) {
         if (mem_min_kib >= m.MemTotalKiB) {
-            fprintf(stderr,
+            fatal(15,
                 "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n",
                 mem_min_kib, m.MemTotalKiB);
-            exit(15);
         }
         args.mem_min_percent = 100 * mem_min_kib / m.MemTotalKiB;
     } else {
@@ -219,10 +207,9 @@ int main(int argc, char* argv[])
 
     if (swap_min_kib) {
         if (swap_min_kib > m.SwapTotalKiB) {
-            fprintf(stderr,
+            fatal(16,
                 "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
                 swap_min_kib, m.SwapTotalKiB);
-            exit(16);
         }
         args.swap_min_percent = 100 * swap_min_kib / m.SwapTotalKiB;
     } else {
