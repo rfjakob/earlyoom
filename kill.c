@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "kill.h"
+#include "msg.h"
 
 #define BADNESS_PREFER 300
 #define BADNESS_AVOID -300
@@ -57,7 +58,7 @@ static void maybe_notify(char* notif_command, char* notif_args)
     char notif[600];
     snprintf(notif, sizeof(notif), "%s %s", notif_command, notif_args);
     if (system(notif) != 0)
-        fprintf(stderr, "system(%s) failed: %d: %s\n", notif, errno, strerror(errno));
+        warn("system('%s') failed: %s\n", notif, strerror(errno));
 }
 
 const char* const fopen_msg = "fopen %s failed: %s\n";
@@ -80,7 +81,7 @@ static struct procinfo get_process_stats(int pid)
         return p;
     }
     if (fscanf(f, "%d", &(p.oom_score)) < 1)
-        fprintf(stderr, "fscanf() oom_score failed: %d: %s\n", errno, strerror(errno));
+        warn("fscanf() oom_score failed: %s\n", strerror(errno));
     fclose(f);
 
     // Read /proc/[pid]/oom_score_adj
@@ -92,7 +93,7 @@ static struct procinfo get_process_stats(int pid)
         return p;
     }
     if (fscanf(f, "%d", &(p.oom_score_adj)) < 1)
-        fprintf(stderr, "fscanf() oom_score_adj failed: %d: %s\n", errno, strerror(errno));
+        warn("fscanf() oom_score_adj failed: %s\n", strerror(errno));
 
     fclose(f);
 
@@ -105,7 +106,7 @@ static struct procinfo get_process_stats(int pid)
         return p;
     }
     if (fscanf(f, "%*u %lu", &(p.VmRSSkiB)) < 1) {
-        fprintf(stderr, "fscanf() vm_rss failed: %d: %s\n", errno, strerror(errno));
+        warn("fscanf() vm_rss failed: %s\n", strerror(errno));
     }
     // Value is in pages. Convert to kiB.
     p.VmRSSkiB = p.VmRSSkiB * page_size / 1024;
@@ -143,7 +144,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
         d = readdir(args.procdir);
         if (d == NULL) {
             if (errno != 0)
-                perror("userspace_kill: readdir error");
+                warn("userspace_kill: readdir error: %s", strerror(errno));
 
             break;
         }
@@ -178,11 +179,11 @@ void userspace_kill(poll_loop_args_t args, int sig)
         FILE* stat = fopen(buf, "r");
         if (stat) {
             if (fscanf(stat, "%*d (%[^)]s", name) < 1)
-                fprintf(stderr, "fscanf() stat name failed: %d: %s\n", errno, strerror(errno));
+                warn("fscanf() stat name failed: %s\n", strerror(errno));
 
             fclose(stat);
         } else {
-            perror("could not read process name");
+            warn("could not read process name: %s", strerror(errno));
         }
 
         if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
@@ -212,8 +213,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
     } // end of while(1) loop
 
     if (victim_pid == 0) {
-        fprintf(stderr,
-            "Error: Could not find a process to kill. Sleeping 1 second.\n");
+        warn("Could not find a process to kill. Sleeping 1 second.\n");
         maybe_notify(args.notif_command,
             "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
         sleep(1);
@@ -249,7 +249,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
     // In that case, trying again in 100ms will just yield the same error.
     // Throttle ourselves to not spam the log.
     if (sig != 0 && res != 0) {
-        perror("userspace_kill: kill() failed, sleeping 1 second");
+        warn("kill() failed: %s. Sleeping 1 second", strerror(errno));
         maybe_notify(args.notif_command,
             "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);

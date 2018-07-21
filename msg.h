@@ -3,5 +3,6 @@
 #define MSG_H
 
 void fatal(int code, char* fmt, ...);
+void warn(char* fmt, ...);
 
 #endif

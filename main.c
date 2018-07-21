@@ -224,11 +224,11 @@ int main(int argc, char* argv[])
     if (set_my_priority) {
         bool fail = 0;
         if (setpriority(PRIO_PROCESS, 0, -20) != 0) {
-            perror("Could not set priority - continuing anyway");
+            warn("Could not set priority: %s. Continuing anyway\n", strerror(errno));
             fail = 1;
         }
         if (set_oom_score_adj(-1000) != 0) {
-            perror("Could not set oom_score_adj - continuing anyway");
+            warn("Could not set oom_score_adj: %s. Continuing anyway\n", strerror(errno));
             fail = 1;
         }
         if (!fail) {
