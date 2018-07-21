@@ -51,8 +51,12 @@ the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
 any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
 victims (see below).
 
-See also: [nohang](https://github.com/hakavlad/nohang), a similar project,
-written in Python and with additional features and configuration options.
+#### See also
+* [nohang](https://github.com/hakavlad/nohang), a similar project like earlyoom,
+  written in Python and with additional features and configuration options.
+* facebooks's pressure stall information (psi) [kernel patches](https://github.com/facebookincubator/oomd)
+  and the accompanying [oomd](https://github.com/facebookincubator/oomd) userspace helper.
+  The patches are not not yet merged into the mainline kernel as of 2018-07-21.
 
 Why not trigger the kernel oom killer?
 --------------------------------------
