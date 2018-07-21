@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 // Print message to stderr and exit with "code".

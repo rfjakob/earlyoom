@@ -109,12 +109,15 @@ int main(int argc, char* argv[])
             break;
         case 'i':
             args.ignore_oom_score_adj = 1;
+            fprintf(stderr, "Ignoring oom_score_adj\n");
             break;
         case 'n':
             args.notif_command = "notify-send";
+            fprintf(stderr, "Notifying using '%s'\n", args.notif_command);
             break;
         case 'N':
             args.notif_command = optarg;
+            fprintf(stderr, "Notifying using '%s'\n", args.notif_command);
             break;
         case 'd':
             enable_debug = 1;
@@ -218,14 +221,26 @@ int main(int argc, char* argv[])
         }
     }
 
+    if (set_my_priority) {
+        bool fail = 0;
+        if (setpriority(PRIO_PROCESS, 0, -20) != 0) {
+            perror("Could not set priority - continuing anyway");
+            fail = 1;
+        }
+        if (set_oom_score_adj(-1000) != 0) {
+            perror("Could not set oom_score_adj - continuing anyway");
+            fail = 1;
+        }
+        if (!fail) {
+            fprintf(stderr, "Priority was raised successfully\n");
+        }
+    }
+
+    // Print memory limits
     fprintf(stderr, "mem  total: %4d MiB, min: %2d %%\n",
         m.MemTotalMiB, args.mem_min_percent);
     fprintf(stderr, "swap total: %4d MiB, min: %2d %%\n",
         m.SwapTotalMiB, args.swap_min_percent);
-
-    if (args.notif_command)
-        fprintf(stderr, "notifications enabled using command: %s\n",
-            args.notif_command);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
@@ -235,13 +250,6 @@ int main(int argc, char* argv[])
     if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0)
         perror("Could not lock memory - continuing anyway");
 
-    if (set_my_priority) {
-        if (setpriority(PRIO_PROCESS, 0, -20) != 0)
-            perror("Could not set priority - continuing anyway");
-
-        if (set_oom_score_adj(-1000) != 0)
-            perror("Could not set oom_score_adj to -1000 for earlyoom process - continuing anyway");
-    }
     // Jump into main poll loop
     poll_loop(args);
     return 0;
@@ -267,6 +275,7 @@ static int set_oom_score_adj(int oom_score_adj)
 {
     char buf[256];
     pid_t pid = getpid();
+    int ret, ret2;
 
     snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
     FILE* f = fopen(buf, "w");
@@ -274,10 +283,13 @@ static int set_oom_score_adj(int oom_score_adj)
         return -1;
     }
 
-    fprintf(f, "%d", oom_score_adj);
-    fclose(f);
+    ret = fprintf(f, "%d", oom_score_adj);
+    ret2 = fclose(f);
 
-    return 0;
+    if (ret) {
+        return ret;
+    }
+    return ret2;
 }
 
 /* Calculate the time we should sleep based upon how far away from the memory and swap
