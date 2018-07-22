@@ -249,7 +249,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
     // In that case, trying again in 100ms will just yield the same error.
     // Throttle ourselves to not spam the log.
     if (sig != 0 && res != 0) {
-        warn("kill() failed: %s. Sleeping 1 second", strerror(errno));
+        warn("kill() failed: %s. Sleeping 1 second\n", strerror(errno));
         maybe_notify(args.notif_command,
             "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);
