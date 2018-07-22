@@ -7,13 +7,13 @@
 #include <errno.h>
 #include <getopt.h>
 #include <regex.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include "kill.h"
 #include "meminfo.h"
@@ -237,9 +237,9 @@ int main(int argc, char* argv[])
  */
 static void print_mem_stats(bool lowmem, const meminfo_t m)
 {
-    int(*out_func)(const char* fmt, ...) = &printf;
-    if(lowmem) {
-        out_func=&warn;
+    int (*out_func)(const char* fmt, ...) = &printf;
+    if (lowmem) {
+        out_func = &warn;
     }
     out_func("mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
         m.MemAvailableMiB,
@@ -315,7 +315,7 @@ static void poll_loop(const poll_loop_args_t args)
 
         if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
             int sig = 0;
-            if(m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+            if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
                 warn("Low memory! At or below sigkill limits (mem: %d %%, swap: %d %%)\n",
                     args.mem_kill_percent, args.swap_kill_percent);
                 sig = SIGKILL;
