@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "kill.h"
 #include "meminfo.h"
@@ -26,7 +27,7 @@ enum {
 };
 
 static int set_oom_score_adj(int);
-static void print_mem_stats(FILE* procdir, const meminfo_t m);
+static void print_mem_stats(bool lowmem, const meminfo_t m);
 static void poll_loop(const poll_loop_args_t args);
 
 int enable_debug = 0;
@@ -35,10 +36,13 @@ long page_size = 0;
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
+        .mem_term_percent = 10,
+        .swap_term_percent = 10,
+        .mem_kill_percent = 5,
+        .swap_kill_percent = 5,
         .report_interval_ms = 1000,
         /* omitted fields are set to zero */
     };
-    long mem_min_kib = 0, swap_min_kib = 0; /* Same thing in KiB */
     int set_my_priority = 0;
     char* prefer_cmds = NULL;
     char* avoid_cmds = NULL;
@@ -71,38 +75,41 @@ int main(int argc, char* argv[])
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
+    bool have_m = 0, have_M = 0, have_s = 0, have_S = 0;
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
         float report_interval_f = 0;
+        term_kill_tuple_t tuple;
+
         switch (c) {
         case -1: /* no more arguments */
         case 0: /* long option toggles */
             break;
         case 'm':
-            args.mem_min_percent = strtol(optarg, NULL, 10);
-            // Using "-m 100" makes no sense
-            if (args.mem_min_percent <= 0 || args.mem_min_percent >= 100) {
-                fatal(15, "-m: invalid percentage '%s'\n", optarg);
-            }
+            // Use 99 as upper limit. Passing "-m 100" makes no sense.
+            tuple = parse_term_kill_tuple("-m", optarg, 99, 15);
+            args.mem_term_percent = tuple.term;
+            args.mem_kill_percent = tuple.kill;
+            have_m = 1;
             break;
         case 's':
-            args.swap_min_percent = strtol(optarg, NULL, 10);
             // Using "-s 100" is a valid way to ignore swap usage
-            if (args.swap_min_percent <= 0 || args.swap_min_percent > 100) {
-                fatal(16, "-s: invalid percentage: '%s'\n", optarg);
-            }
+            tuple = parse_term_kill_tuple("-s", optarg, 100, 16);
+            args.swap_term_percent = tuple.term;
+            args.swap_kill_percent = tuple.kill;
+            have_s = 1;
             break;
         case 'M':
-            mem_min_kib = strtol(optarg, NULL, 10);
-            if (mem_min_kib <= 0) {
-                fatal(15, "-M: invalid KiB value '%s'\n", optarg);
-            }
+            tuple = parse_term_kill_tuple("-M", optarg, m.MemTotalKiB * 100 / 99, 15);
+            args.mem_term_percent = 100 * tuple.term / m.MemTotalKiB;
+            args.mem_kill_percent = 100 * tuple.kill / m.MemTotalKiB;
+            have_M = 1;
             break;
         case 'S':
-            swap_min_kib = strtol(optarg, NULL, 10);
-            if (swap_min_kib <= 0) {
-                fatal(16, "-S: invalid KiB value: '%s'\n", optarg);
-            }
+            tuple = parse_term_kill_tuple("-S", optarg, m.SwapTotalKiB * 100 / 99, 16);
+            args.swap_term_percent = 100 * tuple.term / m.SwapTotalKiB;
+            args.swap_kill_percent = 100 * tuple.kill / m.SwapTotalKiB;
+            have_S = 1;
             break;
         case 'k':
             fprintf(stderr, "Option -k is ignored since earlyoom v1.2\n");
@@ -170,15 +177,12 @@ int main(int argc, char* argv[])
     if (optind < argc) {
         fatal(13, "extra argument not understood: '%s'\n", argv[optind]);
     }
-
-    if (args.mem_min_percent && mem_min_kib) {
-        fatal(2, "can't use -m with -M\n");
+    if (have_m && have_M) {
+        fatal(2, "can't use both -m and -M\n");
     }
-
-    if (args.swap_min_percent && swap_min_kib) {
-        fatal(2, "can't use -s with -S\n");
+    if (have_s && have_S) {
+        fatal(2, "can't use both -s and -S\n");
     }
-
     if (prefer_cmds) {
         args.prefer_regex = &_prefer_regex;
         if (regcomp(args.prefer_regex, prefer_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
@@ -186,7 +190,6 @@ int main(int argc, char* argv[])
         }
         fprintf(stderr, "Prefering to kill process names that match regex '%s'\n", prefer_cmds);
     }
-
     if (avoid_cmds) {
         args.avoid_regex = &_avoid_regex;
         if (regcomp(args.avoid_regex, avoid_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
@@ -194,33 +197,6 @@ int main(int argc, char* argv[])
         }
         fprintf(stderr, "Avoiding to kill process names that match regex '%s'\n", avoid_cmds);
     }
-
-    if (mem_min_kib) {
-        if (mem_min_kib >= m.MemTotalKiB) {
-            fatal(15,
-                "-M: the value you passed (%ld kiB) is at or above total memory (%ld kiB)\n",
-                mem_min_kib, m.MemTotalKiB);
-        }
-        args.mem_min_percent = 100 * mem_min_kib / m.MemTotalKiB;
-    } else {
-        if (!args.mem_min_percent) {
-            args.mem_min_percent = 10;
-        }
-    }
-
-    if (swap_min_kib) {
-        if (swap_min_kib > m.SwapTotalKiB) {
-            fatal(16,
-                "-S: the value you passed (%ld kiB) is above total swap (%ld kiB)\n",
-                swap_min_kib, m.SwapTotalKiB);
-        }
-        args.swap_min_percent = 100 * swap_min_kib / m.SwapTotalKiB;
-    } else {
-        if (!args.swap_min_percent) {
-            args.swap_min_percent = 10;
-        }
-    }
-
     if (set_my_priority) {
         bool fail = 0;
         if (setpriority(PRIO_PROCESS, 0, -20) != 0) {
@@ -237,10 +213,10 @@ int main(int argc, char* argv[])
     }
 
     // Print memory limits
-    fprintf(stderr, "mem  total: %4d MiB, min: %2d %%\n",
-        m.MemTotalMiB, args.mem_min_percent);
-    fprintf(stderr, "swap total: %4d MiB, min: %2d %%\n",
-        m.SwapTotalMiB, args.swap_min_percent);
+    fprintf(stderr, "mem  total: %4d MiB, sending sigterm at %2d %%, sigkill at %2d %%\n",
+        m.MemTotalMiB, args.mem_term_percent, args.mem_kill_percent);
+    fprintf(stderr, "swap total: %4d MiB, sending sigterm at %2d %%, sigkill at %2d %%\n",
+        m.SwapTotalMiB, args.swap_term_percent, args.swap_kill_percent);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
@@ -259,10 +235,13 @@ int main(int argc, char* argv[])
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * to the fd passed in out_fd.
  */
-static void print_mem_stats(FILE* out_fd, const meminfo_t m)
+static void print_mem_stats(bool lowmem, const meminfo_t m)
 {
-    fprintf(out_fd,
-        "mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
+    int(*out_func)(const char* fmt, ...) = &printf;
+    if(lowmem) {
+        out_func=&warn;
+    }
+    out_func("mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
         m.MemAvailableMiB,
         m.MemTotalMiB,
         m.MemAvailablePercent,
@@ -306,11 +285,11 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const int min_sleep = 100;
     const int max_sleep = 1000;
 
-    int mem_headroom_kib = (m->MemAvailablePercent - args->mem_min_percent) * 10 * m->MemTotalMiB;
+    int mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    int swap_headroom_kib = (m->SwapFreePercent - args->swap_min_percent) * 10 * m->SwapTotalMiB;
+    int swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
@@ -334,18 +313,19 @@ static void poll_loop(const poll_loop_args_t args)
     while (1) {
         m = parse_meminfo();
 
-        if (m.MemAvailablePercent <= args.mem_min_percent && m.SwapFreePercent <= args.swap_min_percent) {
-            fprintf(stderr,
-                "Low memory! mem avail: %d of %d MiB (%d) %% <= min %d %%, swap free: %d of %d MiB (%d %%) <= min %d %%\n",
-                m.MemAvailableMiB,
-                m.MemTotalMiB,
-                m.MemAvailablePercent,
-                args.mem_min_percent,
-                m.SwapFreeMiB,
-                m.SwapTotalMiB,
-                m.SwapFreePercent,
-                args.swap_min_percent);
-            userspace_kill(args, 9);
+        if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
+            int sig = 0;
+            if(m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+                warn("Low memory! At or below sigkill limits (mem: %d %%, swap: %d %%)\n",
+                    args.mem_kill_percent, args.swap_kill_percent);
+                sig = SIGKILL;
+            } else {
+                warn("Low Memory! At or below sigterm limits (mem: %d %%, swap: %d %%)\n",
+                    args.mem_term_percent, args.swap_term_percent);
+                sig = SIGTERM;
+            }
+            print_mem_stats(1, m);
+            userspace_kill(args, sig);
             // With swap enabled, the kernel seems to need more than 100ms to free the memory
             // of the killed process. This means that earlyoom would immediately kill another
             // process. Sleep a little extra to give the kernel time to free the memory.
@@ -356,7 +336,7 @@ static void poll_loop(const poll_loop_args_t args)
                 report_countdown_ms -= cooldown_ms;
             }
         } else if (args.report_interval_ms && report_countdown_ms <= 0) {
-            print_mem_stats(stdout, m);
+            print_mem_stats(0, m);
             report_countdown_ms = args.report_interval_ms;
         }
         int sleep_ms = sleep_time_ms(&args, &m);

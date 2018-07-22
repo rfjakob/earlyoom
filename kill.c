@@ -222,8 +222,8 @@ void userspace_kill(poll_loop_args_t args, int sig)
 
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0) {
-        fprintf(stderr, "Killing process: %s, pid: %d, badness: %d, VmRSS: %lu MiB\n",
-            victim_name, victim_pid, victim_badness, victim_vm_rss / 1024);
+        warn("Killing process '%s' with signal %d, pid: %d, badness: %d, VmRSS: %lu MiB\n",
+            victim_name, sig, victim_pid, victim_badness, victim_vm_rss / 1024);
     }
 
     int res = kill(victim_pid, sig);

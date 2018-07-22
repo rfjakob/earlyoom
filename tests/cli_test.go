@@ -74,19 +74,19 @@ func TestCli(t *testing.T) {
 		{args: []string{"-v"}, code: 0, stderrContains: "earlyoom v", stdoutEmpty: true},
 		{args: []string{"-d"}, code: -1, stdoutContains: "^ new victim (higher badness)"},
 		{args: []string{"-m", "1"}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
-		{args: []string{"-m", "0"}, code: 15, stderrContains: "invalid percentage", stdoutEmpty: true},
-		{args: []string{"-m", "-10"}, code: 15, stderrContains: "invalid percentage", stdoutEmpty: true},
+		{args: []string{"-m", "0"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", "-10"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		// Using "-m 100" makes no sense
-		{args: []string{"-m", "100"}, code: 15, stderrContains: "invalid percentage", stdoutEmpty: true},
+		{args: []string{"-m", "100"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-s", "2"}, code: -1, stderrContains: " 2 %", stdoutContains: memReport},
 		// Using "-s 100" is a valid way to ignore swap usage
 		{args: []string{"-s", "100"}, code: -1, stderrContains: " 100 %", stdoutContains: memReport},
-		{args: []string{"-s", "101"}, code: 16, stderrContains: "invalid percentage", stdoutEmpty: true},
-		{args: []string{"-s", "0"}, code: 16, stderrContains: "invalid percentage", stdoutEmpty: true},
-		{args: []string{"-s", "-10"}, code: 16, stderrContains: "invalid percentage", stdoutEmpty: true},
+		{args: []string{"-s", "101"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", "0"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", "-10"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-M", mem1percent}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
-		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "at or above total memory", stdoutEmpty: true},
-		{args: []string{"-S", "9999999999999999"}, code: 16, stderrContains: "above total swap", stdoutEmpty: true},
+		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-S", "9999999999999999"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		// Test --avoid and --prefer
@@ -95,11 +95,20 @@ func TestCli(t *testing.T) {
 		// Extra arguments should error out
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
+		// Tuples
+		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "sending sigterm at  2 %, sigkill at  1 %", stdoutContains: memReport},
+		{args: []string{"-m", "1,2"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", "1,-1"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", "1000,-1000"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending sigterm at  2 %, sigkill at  1 %", stdoutContains: memReport},
+		{args: []string{"-s", "1,2"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
-		// Test cannot work when there is no swap enabled
-		tc := cliTestCase{args: []string{"-S", swap2percent}, code: -1, stderrContains: " 2 %", stdoutContains: memReport}
-		testcases = append(testcases, tc)
+		// Tests that cannot work when there is no swap enabled
+		tc := []cliTestCase{
+			cliTestCase{args: []string{"-S", swap2percent}, code: -1, stderrContains: " 2 %", stdoutContains: memReport},
+		}
+		testcases = append(testcases, tc...)
 	}
 
 	for i, tc := range testcases {

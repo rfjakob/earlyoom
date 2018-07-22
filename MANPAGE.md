@@ -25,21 +25,27 @@ If there is a failure when trying to kill a process, **earlyoom** sleeps for
 
 # OPTIONS
 
-#### -m PERCENT
-set available memory minimum to PERCENT of total (default 10 %)
+#### -m PERCENT[,KILL_PERCENT]
+set available memory minimum to PERCENT of total (default 10 %).
+Send sigkill if at or below KILL_PERCENT (default 1/2 PERCENT), otherwise sigterm.
 
-#### -s PERCENT
+Use the same value for PERCENT and KILL_PERCENT if you always want to use sigkill.
+
+#### -s PERCENT[,KILL_PERCENT]
 set free swap minimum to PERCENT of total (default 10 %).
+Send sigkill if at or below KILL_PERCENT (default 1/2 PERCENT), otherwise sigterm.
 
 You can use `-s 100` to have earlyoom effectively ignore swap usage:
 Processes are killed once available memory drops below the configured
 minimum, no matter how much swap is free.
 
-#### -M SIZE
-set available memory minimum to SIZE KiB
+#### -M SIZE[,KILL_SIZE]
+set available memory minimum to SIZE KiB.
+Send sigkill if at or below KILL_SIZE (default 1/2 SIZE), otherwise sigterm.
 
-#### -S SIZE
-set free swap minimum to SIZE KiB
+#### -S SIZE[,KILL_SIZE]
+set free swap minimum to SIZE KiB.
+Send sigkill if at or below KILL_SIZE (default 1/2 SIZE), otherwise sigterm.
 
 #### -k
 removed in earlyoom v1.2, ignored for compatibility
