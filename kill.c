@@ -230,7 +230,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
 
     if (enable_debug) {
         clock_gettime(CLOCK_MONOTONIC, &t1);
-        long delta = (t1.tv_sec - t0.tv_sec) * 1000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
+        long delta = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
         printf("selecting victim and sending signal took %ld.%03ld ms\n", delta / 1000, delta % 1000);
     }
 
