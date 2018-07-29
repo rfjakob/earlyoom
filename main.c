@@ -203,8 +203,9 @@ int main(int argc, char* argv[])
             warn("Could not set priority: %s. Continuing anyway\n", strerror(errno));
             fail = 1;
         }
-        if (set_oom_score_adj(-1000) != 0) {
-            warn("Could not set oom_score_adj: %s. Continuing anyway\n", strerror(errno));
+        int ret = set_oom_score_adj(-1000);
+        if (ret != 0) {
+            warn("Could not set oom_score_adj: %s. Continuing anyway\n", strerror(ret));
             fail = 1;
         }
         if (!fail) {
@@ -250,11 +251,11 @@ static void print_mem_stats(bool lowmem, const meminfo_t m)
         m.SwapFreePercent);
 }
 
+// Returns errno (success = 0)
 static int set_oom_score_adj(int oom_score_adj)
 {
     char buf[256];
     pid_t pid = getpid();
-    int ret, ret2;
 
     snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
     FILE* f = fopen(buf, "w");
@@ -262,13 +263,18 @@ static int set_oom_score_adj(int oom_score_adj)
         return -1;
     }
 
-    ret = fprintf(f, "%d", oom_score_adj);
-    ret2 = fclose(f);
+    // fprintf returns a negative error code on failure
+    int ret1 = fprintf(f, "%d", oom_score_adj);
+    // fclose returns a non-zero value on failure and errno contains the error code
+    int ret2 = fclose(f);
 
-    if (ret) {
-        return ret;
+    if (ret1 < 0) {
+        return -ret1;
     }
-    return ret2;
+    if (ret2) {
+        return errno;
+    }
+    return 0;
 }
 
 /* Calculate the time we should sleep based upon how far away from the memory and swap
