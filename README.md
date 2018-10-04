@@ -88,8 +88,10 @@ Easy:
 git clone https://github.com/rfjakob/earlyoom.git
 cd earlyoom
 make
-sudo make install # Optional, if you want earlyoom to start
-                  # automatically as a service (works on Fedora)
+# If you want earlyoom to start as a service (systemd)
+sudo make install
+# If you want earlyoom to start as a service (non-systemd)
+sudo make install-initscript
 ```
 
 For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/):
