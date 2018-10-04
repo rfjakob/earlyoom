@@ -88,9 +88,9 @@ Easy:
 git clone https://github.com/rfjakob/earlyoom.git
 cd earlyoom
 make
-# If you want earlyoom to start as a service (systemd)
+# If you want earlyoom to start automatically (systemd)
 sudo make install
-# If you want earlyoom to start as a service (non-systemd)
+# If you want earlyoom to start automatically (non-systemd)
 sudo make install-initscript
 ```
 
