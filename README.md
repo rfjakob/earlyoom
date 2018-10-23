@@ -54,7 +54,7 @@ victims (see below).
 #### See also
 * [nohang](https://github.com/hakavlad/nohang), a similar project like earlyoom,
   written in Python and with additional features and configuration options.
-* facebooks's pressure stall information (psi) [kernel patches](https://github.com/facebookincubator/oomd)
+* facebooks's pressure stall information (psi) [kernel patches](http://git.cmpxchg.org/cgit.cgi/linux-psi.git/)
   and the accompanying [oomd](https://github.com/facebookincubator/oomd) userspace helper.
   The patches are not not yet merged into the mainline kernel as of 2018-07-21.
 
