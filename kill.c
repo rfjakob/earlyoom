@@ -241,7 +241,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
         // maybe_notify() calls system(). We must sanitize the strings we pass.
         sanitize(victim_name);
         snprintf(notif_args, sizeof(notif_args),
-            "-i dialog-warning 'earlyoom' 'Killing process %d %s'", victim_pid, victim_name);
+            "-i dialog-warning 'earlyoom' 'Low memory! Killing process %d %s'", victim_pid, victim_name);
         maybe_notify(args.notif_command, notif_args);
     }
 
