@@ -82,16 +82,28 @@ All memory is locked using `mlockall()` to make sure earlyoom does not slow down
 
 Download and compile
 --------------------
-Easy:
+Compiling yourself is easy:
 
 ```bash
 git clone https://github.com/rfjakob/earlyoom.git
 cd earlyoom
 make
-# If you want earlyoom to start automatically (systemd)
-sudo make install
-# If you want earlyoom to start automatically (non-systemd)
-sudo make install-initscript
+```
+
+Optional: Run the integrated self-tests:
+```bash
+make test
+```
+
+Start earlyoom automatically by registering it as a service:
+```bash
+sudo make install              # systemd
+sudo make install-initscript   # non-systemd
+```
+
+For Debian and Ubuntu, there's a [Debian package](https://packages.debian.org/search?keywords=earlyoom):
+```bash
+apt install earlyoom
 ```
 
 For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/):
@@ -99,11 +111,6 @@ For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earl
 yaourt -S earlyoom
 sudo systemctl enable earlyoom
 sudo systemctl start earlyoom
-```
-
-For Debian, there's an [Debian package](https://packages.debian.org/search?keywords=earlyoom):
-```bash
-apt install earlyoom
 ```
 
 Use
