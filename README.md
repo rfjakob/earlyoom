@@ -214,7 +214,7 @@ Changelog
 * v1.2, in progress
   * Implement adaptive sleep time (= adaptive poll rate) to lower CPU
     usage further ([issue #61](https://github.com/rfjakob/earlyoom/issues/61))
-  * Remove option to use kernel oom-killer (`-k`)
+  * Remove option to use kernel oom-killer (`-k`, now ignored for compatibility)
     ([issue #80](https://github.com/rfjakob/earlyoom/issues/80))
   * Gracefully handle the case of swap being added or removed after earlyoom was started
     ([issue 62](https://github.com/rfjakob/earlyoom/issues/62),
