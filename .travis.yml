@@ -11,6 +11,6 @@ addons:
 script:
   - cc --version
   - make
-  - make test-verbose
+  - make test
   - make format
   - git diff
