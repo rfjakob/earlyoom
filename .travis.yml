@@ -3,6 +3,12 @@
 # pretend we are a Go project.
 language: go
 
+# Travis by default only pulls the last 50 commits, which means
+# "git describe" will fail once we are more than 50 commits
+# away from the last tag.
+git:
+  depth: 100
+
 addons:
   apt:
     packages:
