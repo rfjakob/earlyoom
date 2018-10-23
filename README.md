@@ -2,6 +2,7 @@ The Early OOM Daemon
 ====================
 
 [![Build Status](https://api.travis-ci.org/rfjakob/earlyoom.svg)](https://travis-ci.org/rfjakob/earlyoom)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 The oom-killer generally has a bad reputation among Linux users. This may be
 part of the reason Linux invokes it only when it has absolutely no other choice.
