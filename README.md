@@ -183,6 +183,22 @@ earlyoom --avoid '^(foo|bar)$'
 The regex is matched against the basename of the process as shown
 in `/proc/PID/stat`.
 
+Configuration file
+------------------
+
+If you are running earlyoom as a system service (through systemd or init.d), you can adjust its configuration via the file provided in `/etc/default/earlyoom`. The file already contains some examples in the comments, which you can use to build your own set of configuration based on the supported command line options, for example:
+
+```
+EARLYOOM_ARGS="-m 5 -r 60 --avoid '(^|/)(init|Xorg|ssh)$' --prefer '(^|/)(java|chromium)$'"
+```
+After adjusting the file, simply restart the service to apply the changes. For example, for systemd:
+
+```bash
+systemctl restart earlyoom
+```
+
+Please note that this configuration file has no effect on earlyoom instances outside of systemd/init.d.
+
 Command line options
 --------------------
 ```
