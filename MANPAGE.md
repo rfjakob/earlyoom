@@ -17,7 +17,7 @@ after running out of patience.
 
 **earlyoom** checks the amount of available memory and free swap up to 10 times a
 second (less often if there is a lot of free memory).
-If both are below 10%, it will kill the largest process (highest `oom_score`).
+If **both** memory **and** swap are below 10%, it will kill the largest process (highest `oom_score`).
 The percentage value is configurable via command line arguments.
 
 If there is a failure when trying to kill a process, **earlyoom** sleeps for
@@ -27,25 +27,36 @@ If there is a failure when trying to kill a process, **earlyoom** sleeps for
 
 #### -m PERCENT[,KILL_PERCENT]
 set available memory minimum to PERCENT of total (default 10 %).
-Send sigkill if at or below KILL_PERCENT (default 1/2 PERCENT), otherwise sigterm.
 
-Use the same value for PERCENT and KILL_PERCENT if you always want to use sigkill.
+earlyoom starts sending SIGTERM once **both** memory **and** swap are below their
+respective PERCENT setting. It sends SIGKILL once **both** are below their respective
+KILL_PERCENT setting (default PERCENT/2).
+
+Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKILL.
 
 #### -s PERCENT[,KILL_PERCENT]
 set free swap minimum to PERCENT of total (default 10 %).
-Send sigkill if at or below KILL_PERCENT (default 1/2 PERCENT), otherwise sigterm.
+Send sigkill if at or below KILL_PERCENT (default PERCENT/2), otherwise sigterm.
 
 You can use `-s 100` to have earlyoom effectively ignore swap usage:
 Processes are killed once available memory drops below the configured
 minimum, no matter how much swap is free.
 
+Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKILL.
+
 #### -M SIZE[,KILL_SIZE]
-set available memory minimum to SIZE KiB.
-Send sigkill if at or below KILL_SIZE (default 1/2 SIZE), otherwise sigterm.
+As an alternative to specifying a percentage of total memory, `-M` sets
+the available memory minimum to SIZE KiB. The value is internally converted
+to a percentage. You can only use **either** `-m` **or** `-M`.
+
+Send SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
 
 #### -S SIZE[,KILL_SIZE]
-set free swap minimum to SIZE KiB.
-Send sigkill if at or below KILL_SIZE (default 1/2 SIZE), otherwise sigterm.
+As an alternative to specifying a percentage of total swap, `-S` sets
+the free swap minimum to SIZE KiB. The value is internally converted
+to a percentage. You can only use **either** `-s` **or** `-S`.
+
+Send SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
 
 #### -k
 removed in earlyoom v1.2, ignored for compatibility
@@ -66,7 +77,7 @@ adaptive poll rate, when there is a lot of free memory, the actual interval
 may be up to 1 second longer than the setting.
 
 #### -p
-set niceness of earlyoom to -20 and oom_score_adj to -1000
+Increase earlyoom's priority: set niceness of earlyoom to -20 and oom_score_adj to -1000
 
 #### \-\-prefer REGEX
 prefer killing processes matching REGEX (adds 300 to oom_score)
