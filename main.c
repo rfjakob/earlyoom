@@ -152,21 +152,23 @@ int main(int argc, char* argv[])
             fprintf(stderr,
                 "Usage: earlyoom [OPTION]...\n"
                 "\n"
-                "  -m PERCENT       set available memory minimum to PERCENT of total (default 10 %%)\n"
-                "  -s PERCENT       set free swap minimum to PERCENT of total (default 10 %%)\n"
-                "  -M SIZE          set available memory minimum to SIZE KiB\n"
-                "  -S SIZE          set free swap minimum to SIZE KiB\n"
-                "  -i               user-space oom killer should ignore positive oom_score_adj values\n"
-                "  -n               enable notifications using \"notify-send\"\n"
-                "  -N COMMAND       enable notifications using COMMAND\n"
-                "  -d               enable debugging messages\n"
-                "  -v               print version information and exit\n"
-                "  -r INTERVAL      memory report interval in seconds (default 1), set to 0 to\n"
-                "                   disable completely\n"
-                "  -p               set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
-                "  --prefer REGEX   prefer killing processes matching REGEX\n"
-                "  --avoid REGEX    avoid killing processes matching REGEX\n"
-                "  -h, --help       this help text\n");
+                "  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total (default 10 %%).\n"
+                "                            earlyoom sends SIGTERM once below PERCENT, then SIGKILL once below\n"
+                "                            KILL_PERCENT (default PERCENT/2).\n"
+                "  -s PERCENT[,KILL_PERCENT] set free swap minimum to PERCENT of total (default 10 %%)\n"
+                "  -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB\n"
+                "  -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB\n"
+                "  -i                        user-space oom killer should ignore positive oom_score_adj values\n"
+                "  -n                        enable notifications using \"notify-send\"\n"
+                "  -N COMMAND                enable notifications using COMMAND\n"
+                "  -d                        enable debugging messages\n"
+                "  -v                        print version information and exit\n"
+                "  -r INTERVAL               memory report interval in seconds (default 1), set to 0 to\n"
+                "                            disable completely\n"
+                "  -p                        set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+                "  --prefer REGEX            prefer killing processes matching REGEX\n"
+                "  --avoid REGEX             avoid killing processes matching REGEX\n"
+                "  -h, --help                this help text\n");
             exit(0);
         case '?':
             fprintf(stderr, "Try 'earlyoom --help' for more information.\n");
@@ -214,9 +216,9 @@ int main(int argc, char* argv[])
     }
 
     // Print memory limits
-    fprintf(stderr, "mem  total: %4d MiB, sending sigterm at %2d %%, sigkill at %2d %%\n",
+    fprintf(stderr, "mem  total: %4d MiB, sending SIGTERM at %2d %%, SIGKILL at %2d %%\n",
         m.MemTotalMiB, args.mem_term_percent, args.mem_kill_percent);
-    fprintf(stderr, "swap total: %4d MiB, sending sigterm at %2d %%, sigkill at %2d %%\n",
+    fprintf(stderr, "swap total: %4d MiB, sending SIGTERM at %2d %%, SIGKILL at %2d %%\n",
         m.SwapTotalMiB, args.swap_term_percent, args.swap_kill_percent);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
