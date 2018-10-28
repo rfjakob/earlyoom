@@ -187,25 +187,26 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v1.0-30-gaf48355
+earlyoom v1.2
 Usage: earlyoom [OPTION]...
 
-  -m PERCENT       set available memory minimum to PERCENT of total (default 10 %)
-  -s PERCENT       set free swap minimum to PERCENT of total (default 10 %)
-  -M SIZE          set available memory minimum to SIZE KiB
-  -S SIZE          set free swap minimum to SIZE KiB
-  -k               use kernel oom killer instead of own user-space implementation
-  -i               user-space oom killer should ignore positive oom_score_adj values
-  -n               enable notifications using "notify-send"
-  -N COMMAND       enable notifications using COMMAND
-  -d               enable debugging messages
-  -v               print version information and exit
-  -r INTERVAL      memory report interval in seconds (default 1), set to 0 to
-                   disable completely
-  -p               set niceness of earlyoom to -20 and oom_score_adj to -1000
-  --prefer REGEX   prefer killing processes matching REGEX
-  --avoid REGEX    avoid killing processes matching REGEX
-  -h, --help       this help text
+  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total (default 10 %).
+                            earlyoom sends SIGTERM once below PERCENT, then SIGKILL once below
+                            KILL_PERCENT (default PERCENT/2).
+  -s PERCENT[,KILL_PERCENT] set free swap minimum to PERCENT of total (default 10 %)
+  -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB
+  -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB
+  -i                        user-space oom killer should ignore positive oom_score_adj values
+  -n                        enable notifications using "notify-send"
+  -N COMMAND                enable notifications using COMMAND
+  -d                        enable debugging messages
+  -v                        print version information and exit
+  -r INTERVAL               memory report interval in seconds (default 1), set to 0 to
+                            disable completely
+  -p                        set niceness of earlyoom to -20 and oom_score_adj to -1000
+  --prefer REGEX            prefer killing processes matching REGEX
+  --avoid REGEX             avoid killing processes matching REGEX
+  -h, --help                this help text
 ```
 
 See the [man page](MANPAGE.md) for details.
@@ -219,7 +220,9 @@ accept
 
 Changelog
 ---------
-* v1.2, in progress
+* vNext, in progress
+
+* v1.2, 2018-10-28
   * Implement adaptive sleep time (= adaptive poll rate) to lower CPU
     usage further ([issue #61](https://github.com/rfjakob/earlyoom/issues/61))
   * Remove option to use kernel oom-killer (`-k`, now ignored for compatibility)
