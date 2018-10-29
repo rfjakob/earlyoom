@@ -96,11 +96,11 @@ func TestCli(t *testing.T) {
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		// Tuples
-		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "sending sigterm at  2 %, sigkill at  1 %", stdoutContains: memReport},
+		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "sending SIGTERM at  2 %, SIGKILL at  1 %", stdoutContains: memReport},
 		{args: []string{"-m", "1,2"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "1,-1"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "1000,-1000"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending sigterm at  2 %, sigkill at  1 %", stdoutContains: memReport},
+		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending SIGTERM at  2 %, SIGKILL at  1 %", stdoutContains: memReport},
 		{args: []string{"-s", "1,2"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
