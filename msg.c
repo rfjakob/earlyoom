@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+#include <ctype.h> // need isdigit()
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // need strlen()
 #include <unistd.h>
 
 #include "msg.h"
@@ -45,24 +47,57 @@ int warn(const char* fmt, ...)
     return ret;
 }
 
-term_kill_tuple_t parse_term_kill_tuple(char* opt, char* optarg, long upper_limit, int exitcode)
+// Parse the "123[,456]" tuple in optarg.
+term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
 {
     term_kill_tuple_t tuple = { 0 };
-    int n;
+    int n = 0;
+
+    // Arbitrary limit of 100 bytes to prevent snprintf truncation
+    if (strlen(optarg) > 100) {
+        snprintf(tuple.err, sizeof(tuple.err),
+            "argument too long (%d bytes)\n", (int)strlen(optarg));
+        return tuple;
+    }
+
+    for (size_t i = 0; i < strlen(optarg); i++) {
+        if (isdigit(optarg[i])) {
+            continue;
+        }
+        if (optarg[i] == ',') {
+            n++;
+            if (n == 1) {
+                continue;
+            }
+            snprintf(tuple.err, sizeof(tuple.err),
+                "found multiple ','\n");
+            return tuple;
+        }
+        snprintf(tuple.err, sizeof(tuple.err),
+            "found non-digit '%c'\n", optarg[i]);
+        return tuple;
+    }
 
     n = sscanf(optarg, "%ld,%ld", &tuple.term, &tuple.kill);
     if (n == 0) {
-        fatal(exitcode, "%s: could not parse '%s'\n", opt, optarg);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "could not parse '%s'\n", optarg);
+        return tuple;
     }
     if (tuple.term == 0) {
-        fatal(exitcode, "%s: zero sigterm value in '%s'\n", opt, optarg);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "zero sigterm value in '%s'\n", optarg);
+        return tuple;
     }
     if (tuple.term < 0) {
-        fatal(exitcode, "%s: negative sigterm value in '%s'\n", opt, optarg);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "negative sigterm value in '%s'\n", optarg);
+        return tuple;
     }
     if (tuple.term > upper_limit) {
-        fatal(exitcode, "%s: sigterm value in '%s' exceeds limit %ld\n",
-            opt, optarg, upper_limit);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "sigterm value in '%s' exceeds limit %ld\n", optarg, upper_limit);
+        return tuple;
     }
     // User passed only "term" value
     if (n == 1) {
@@ -71,14 +106,19 @@ term_kill_tuple_t parse_term_kill_tuple(char* opt, char* optarg, long upper_limi
     }
     // User passed "term,kill" values
     if (tuple.kill == 0) {
-        fatal(exitcode, "%s: zero sigkill value in '%s'\n", opt, optarg);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "zero sigkill value in '%s'\n", optarg);
+        return tuple;
     }
     if (tuple.kill < 0) {
-        fatal(exitcode, "%s: negative sigkill value in '%s'\n", opt, optarg);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "negative sigkill value in '%s'\n", optarg);
+        return tuple;
     }
     if (tuple.kill > tuple.term) {
-        fatal(exitcode, "%s: sigkill value exceeds sigterm value in '%s'\n",
-            opt, optarg);
+        snprintf(tuple.err, sizeof(tuple.err),
+            "sigkill value exceeds sigterm value in '%s'\n", optarg);
+        return tuple;
     }
     return tuple;
 }

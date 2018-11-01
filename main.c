@@ -87,26 +87,38 @@ int main(int argc, char* argv[])
             break;
         case 'm':
             // Use 99 as upper limit. Passing "-m 100" makes no sense.
-            tuple = parse_term_kill_tuple("-m", optarg, 99, 15);
+            tuple = parse_term_kill_tuple(optarg, 99);
+            if (strlen(tuple.err)) {
+                fatal(15, "-m: %s", tuple.err);
+            }
             args.mem_term_percent = tuple.term;
             args.mem_kill_percent = tuple.kill;
             have_m = 1;
             break;
         case 's':
             // Using "-s 100" is a valid way to ignore swap usage
-            tuple = parse_term_kill_tuple("-s", optarg, 100, 16);
+            tuple = parse_term_kill_tuple(optarg, 100);
+            if (strlen(tuple.err)) {
+                fatal(16, "-s: %s", tuple.err);
+            }
             args.swap_term_percent = tuple.term;
             args.swap_kill_percent = tuple.kill;
             have_s = 1;
             break;
         case 'M':
-            tuple = parse_term_kill_tuple("-M", optarg, m.MemTotalKiB * 100 / 99, 15);
+            tuple = parse_term_kill_tuple(optarg, m.MemTotalKiB * 100 / 99);
+            if (strlen(tuple.err)) {
+                fatal(15, "-M: %s", tuple.err);
+            }
             args.mem_term_percent = 100 * tuple.term / m.MemTotalKiB;
             args.mem_kill_percent = 100 * tuple.kill / m.MemTotalKiB;
             have_M = 1;
             break;
         case 'S':
-            tuple = parse_term_kill_tuple("-S", optarg, m.SwapTotalKiB * 100 / 99, 16);
+            tuple = parse_term_kill_tuple(optarg, m.SwapTotalKiB * 100 / 99);
+            if (strlen(tuple.err)) {
+                fatal(16, "-S: %s", tuple.err);
+            }
             args.swap_term_percent = 100 * tuple.term / m.SwapTotalKiB;
             args.swap_kill_percent = 100 * tuple.kill / m.SwapTotalKiB;
             have_S = 1;

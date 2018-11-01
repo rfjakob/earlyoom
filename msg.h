@@ -2,14 +2,19 @@
 #ifndef MSG_H
 #define MSG_H
 
+#include <stdbool.h>
+
 void fatal(int code, char* fmt, ...);
 int warn(const char* fmt, ...);
 
 typedef struct {
+    // If the conversion failed, err contains the error message.
+    char err[255];
+    // Parsed values.
     long term;
     long kill;
 } term_kill_tuple_t;
 
-term_kill_tuple_t parse_term_kill_tuple(char* opt, char* optarg, long upper_limit, int exitcode);
+term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit);
 
 #endif
