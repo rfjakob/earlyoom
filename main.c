@@ -331,19 +331,18 @@ static void poll_loop(const poll_loop_args_t args)
     const int cooldown_ms = 200;
 
     while (1) {
+        int sig = 0;
         m = parse_meminfo();
-
-        if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
-            int sig = 0;
-            if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-                warn("Low memory! At or below SIGKILL limits (mem: %d %%, swap: %d %%)\n",
-                    args.mem_kill_percent, args.swap_kill_percent);
-                sig = SIGKILL;
-            } else {
-                warn("Low Memory! At or below SIGTERM limits (mem: %d %%, swap: %d %%)\n",
-                    args.mem_term_percent, args.swap_term_percent);
-                sig = SIGTERM;
-            }
+        if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+            warn("Low memory! At or below SIGKILL limits (mem: %d %%, swap: %d %%)\n",
+                args.mem_kill_percent, args.swap_kill_percent);
+            sig = SIGKILL;
+        } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
+            warn("Low Memory! At or below SIGTERM limits (mem: %d %%, swap: %d %%)\n",
+                args.mem_term_percent, args.swap_term_percent);
+            sig = SIGTERM;
+        }
+        if (sig) {
             print_mem_stats(1, m);
             userspace_kill(args, sig);
             // With swap enabled, the kernel seems to need more than 100ms to free the memory

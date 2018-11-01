@@ -9,7 +9,7 @@
 
 #include "msg.h"
 
-// Print message to stderr and exit with "code".
+// Print message, prefixed with "fatal: ", to stderr and exit with "code".
 // Example: fatal(6, "could not compile regexp '%s'\n", regex_str);
 void fatal(int code, char* fmt, ...)
 {
@@ -28,7 +28,7 @@ void fatal(int code, char* fmt, ...)
     exit(code);
 }
 
-// Print a yellow warning message to stderr.
+// Print a yellow warning message to stderr. No "warning" prefix is added.
 int warn(const char* fmt, ...)
 {
     int ret = 0;
@@ -84,11 +84,6 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
             "could not parse '%s'\n", optarg);
         return tuple;
     }
-    if (tuple.term == 0) {
-        snprintf(tuple.err, sizeof(tuple.err),
-            "zero SIGTERM value in '%s'\n", optarg);
-        return tuple;
-    }
     if (tuple.term < 0) {
         snprintf(tuple.err, sizeof(tuple.err),
             "negative SIGTERM value in '%s'\n", optarg);
@@ -99,21 +94,24 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
             "SIGTERM value %ld exceeds limit %ld\n", tuple.term, upper_limit);
         return tuple;
     }
-    // User passed only "term" value
+    // User passed only the SIGTERM value: the SIGKILL value is calculated as
+    // SIGTERM/2.
     if (n == 1) {
         tuple.kill = tuple.term / 2;
-        return tuple;
     }
-    // User passed "term,kill" values
     if (tuple.kill < 0) {
         snprintf(tuple.err, sizeof(tuple.err),
             "negative SIGKILL value in '%s'\n", optarg);
         return tuple;
     }
-    if (tuple.kill > tuple.term) {
+    if (tuple.kill == 0 && tuple.term == 0) {
         snprintf(tuple.err, sizeof(tuple.err),
-            "SIGKILL value exceeds SIGTERM value in '%s'\n", optarg);
+            "both SIGTERM and SIGKILL values are zero\n");
         return tuple;
+    }
+    if (tuple.term > 0 && tuple.term < tuple.kill) {
+        warn("warning: SIGTERM value is non-zero but below SIGKILL, setting it to zero\n");
+        tuple.term = 0;
     }
     return tuple;
 }
