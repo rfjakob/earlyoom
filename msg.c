@@ -96,7 +96,7 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
     }
     if (tuple.term > upper_limit) {
         snprintf(tuple.err, sizeof(tuple.err),
-            "SIGTERM value in '%s' exceeds limit %ld\n", optarg, upper_limit);
+            "SIGTERM value %ld exceeds limit %ld\n", tuple.term, upper_limit);
         return tuple;
     }
     // User passed only "term" value
@@ -105,11 +105,6 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
         return tuple;
     }
     // User passed "term,kill" values
-    if (tuple.kill == 0) {
-        snprintf(tuple.err, sizeof(tuple.err),
-            "zero SIGKILL value in '%s'\n", optarg);
-        return tuple;
-    }
     if (tuple.kill < 0) {
         snprintf(tuple.err, sizeof(tuple.err),
             "negative SIGKILL value in '%s'\n", optarg);

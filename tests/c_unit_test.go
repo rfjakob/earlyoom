@@ -36,14 +36,15 @@ func TestParseTuple(t *testing.T) {
 		term       int
 		kill       int
 	}{
-		{arg: "2,1", limit: 100, shouldFail: false, term: 2, kill: 1},
-		{arg: "20,10", limit: 100, shouldFail: false, term: 20, kill: 10},
-		{arg: "30", limit: 100, shouldFail: false, term: 30, kill: 15},
+		{arg: "2,1", limit: 100, term: 2, kill: 1},
+		{arg: "20,10", limit: 100, term: 20, kill: 10},
+		{arg: "30", limit: 100, term: 30, kill: 15},
 		{arg: "30", limit: 20, shouldFail: true},
 		// https://github.com/rfjakob/earlyoom/issues/97
 		{arg: "22[,20]", limit: 100, shouldFail: true},
 		{arg: "220[,160]", limit: 300, shouldFail: true},
 		{arg: "180[,170]", limit: 300, shouldFail: true},
+		{arg: "5,0", limit: 100, term: 5, kill: 0},
 	}
 	for _, tc := range tcs {
 		err, term, kill := parse_term_kill_tuple(tc.arg, tc.limit)
