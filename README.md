@@ -246,7 +246,7 @@ Changelog
   * Gracefully handle the case of swap being added or removed after earlyoom was started
     ([issue 62](https://github.com/rfjakob/earlyoom/issues/62),
     [commit](https://github.com/rfjakob/earlyoom/commit/88e58903fec70b105aebba39cd584add5e1d1532))
-  * Implement staged kill: first sigterm, then sigkill, with configurable limits
+  * Implement staged kill: first SIGTERM, then SIGKILL, with configurable limits
     ([issue #67](https://github.com/rfjakob/earlyoom/issues/67))
 * v1.1, 2018-07-07
   * Fix possible shell code injection through GUI notifications

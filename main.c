@@ -336,11 +336,11 @@ static void poll_loop(const poll_loop_args_t args)
         if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
             int sig = 0;
             if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-                warn("Low memory! At or below sigkill limits (mem: %d %%, swap: %d %%)\n",
+                warn("Low memory! At or below SIGKILL limits (mem: %d %%, swap: %d %%)\n",
                     args.mem_kill_percent, args.swap_kill_percent);
                 sig = SIGKILL;
             } else {
-                warn("Low Memory! At or below sigterm limits (mem: %d %%, swap: %d %%)\n",
+                warn("Low Memory! At or below SIGTERM limits (mem: %d %%, swap: %d %%)\n",
                     args.mem_term_percent, args.swap_term_percent);
                 sig = SIGTERM;
             }

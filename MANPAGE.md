@@ -44,7 +44,7 @@ Examples:
 
 #### -s PERCENT[,KILL_PERCENT]
 set free swap minimum to PERCENT of total (default 10 %).
-Send sigkill if at or below KILL_PERCENT (default PERCENT/2), otherwise sigterm.
+Send SIGKILL if at or below KILL_PERCENT (default PERCENT/2), otherwise SIGTERM.
 
 You can use `-s 100` to have earlyoom effectively ignore swap usage:
 Processes are killed once available memory drops below the configured
