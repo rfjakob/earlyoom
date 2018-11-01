@@ -34,6 +34,14 @@ KILL_PERCENT setting (default PERCENT/2).
 
 Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKILL.
 
+Examples:
+
+    earlyoom              # sets PERCENT=10, KILL_PERCENT=5
+
+    earlyoom -m 30        # sets PERCENT=30, KILL_PERCENT=15
+
+    earlyoom -m 20,18     # sets PERCENT=20, KILL_PERCENT=18
+
 #### -s PERCENT[,KILL_PERCENT]
 set free swap minimum to PERCENT of total (default 10 %).
 Send sigkill if at or below KILL_PERCENT (default PERCENT/2), otherwise sigterm.
