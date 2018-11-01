@@ -102,6 +102,8 @@ func TestCli(t *testing.T) {
 		{args: []string{"-m", "1000,-1000"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending SIGTERM at  2 %, SIGKILL at  1 %", stdoutContains: memReport},
 		{args: []string{"-s", "1,2"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		// https://github.com/rfjakob/earlyoom/issues/97
+		{args: []string{"-s", "1,2"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled
