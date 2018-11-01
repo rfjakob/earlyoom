@@ -109,9 +109,5 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
             "both SIGTERM and SIGKILL values are zero\n");
         return tuple;
     }
-    if (tuple.term > 0 && tuple.term < tuple.kill) {
-        warn("warning: SIGTERM value is non-zero but below SIGKILL, setting it to zero\n");
-        tuple.term = 0;
-    }
     return tuple;
 }

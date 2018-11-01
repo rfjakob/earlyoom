@@ -47,7 +47,7 @@ func TestParseTuple(t *testing.T) {
 		{arg: "5,0", limit: 100, term: 5, kill: 0},
 		{arg: "0,5", limit: 100, term: 0, kill: 5},
 		// SIGTERM value is set to zero when it is below SIGKILL
-		{arg: "4,5", limit: 100, term: 0, kill: 5},
+		{arg: "4,5", limit: 100, term: 4, kill: 5},
 		{arg: "0", limit: 100, shouldFail: true},
 		{arg: "0,0", limit: 100, shouldFail: true},
 	}
