@@ -228,10 +228,12 @@ int main(int argc, char* argv[])
     }
 
     // Print memory limits
-    fprintf(stderr, "mem  total: %4d MiB, sending SIGTERM at %2d %%, SIGKILL at %2d %%\n",
-        m.MemTotalMiB, args.mem_term_percent, args.mem_kill_percent);
-    fprintf(stderr, "swap total: %4d MiB, sending SIGTERM at %2d %%, SIGKILL at %2d %%\n",
-        m.SwapTotalMiB, args.swap_term_percent, args.swap_kill_percent);
+    fprintf(stderr, "mem total: %4d MiB, swap total: %4d MiB\n",
+        m.MemTotalMiB, m.SwapTotalMiB);
+    fprintf(stderr, "Sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
+        args.mem_term_percent, args.swap_term_percent);
+    fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
+        args.mem_kill_percent, args.swap_kill_percent);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()

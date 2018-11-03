@@ -96,12 +96,15 @@ func TestCli(t *testing.T) {
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		// Tuples
-		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "sending SIGTERM at  2 %, SIGKILL at  1 %", stdoutContains: memReport},
+		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "Sending SIGTERM when mem <=  2 % and swap <= 10 %", stdoutContains: memReport},
 		{args: []string{"-m", "1,2"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-m", "1,-1"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "1000,-1000"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending SIGTERM at  2 %, SIGKILL at  1 %", stdoutContains: memReport},
+		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "Sending SIGTERM when mem <= 10 % and swap <=  2 %", stdoutContains: memReport},
 		{args: []string{"-s", "1,2"}, code: -1, stdoutContains: memReport},
+		// https://github.com/rfjakob/earlyoom/issues/97
+		{args: []string{"-m", "5,0"}, code: -1, stdoutContains: memReport},
+		{args: []string{"-m", "5,9"}, code: -1, stdoutContains: memReport},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled

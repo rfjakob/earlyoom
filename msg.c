@@ -84,6 +84,18 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
             "could not parse '%s'\n", optarg);
         return tuple;
     }
+    // User passed only the SIGTERM value: the SIGKILL value is calculated as
+    // SIGTERM/2.
+    if (n == 1) {
+        tuple.kill = tuple.term / 2;
+    }
+    // Would setting SIGTERM below SIGKILL ever make sense?
+    if (tuple.term < tuple.kill) {
+        warn("warning: SIGTERM value %ld is below SIGKILL value %ld, setting SIGTERM = SIGKILL = %ld\n",
+            tuple.term, tuple.kill, tuple.kill);
+        tuple.term = tuple.kill;
+    }
+    // Sanity checks
     if (tuple.term < 0) {
         snprintf(tuple.err, sizeof(tuple.err),
             "negative SIGTERM value in '%s'\n", optarg);
@@ -93,11 +105,6 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
         snprintf(tuple.err, sizeof(tuple.err),
             "SIGTERM value %ld exceeds limit %ld\n", tuple.term, upper_limit);
         return tuple;
-    }
-    // User passed only the SIGTERM value: the SIGKILL value is calculated as
-    // SIGTERM/2.
-    if (n == 1) {
-        tuple.kill = tuple.term / 2;
     }
     if (tuple.kill < 0) {
         snprintf(tuple.err, sizeof(tuple.err),
