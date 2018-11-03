@@ -236,7 +236,13 @@ accept
 
 Changelog
 ---------
-* vNext, in progress
+* v1.2.1, in progress
+  * Be more liberal in what limits to accepts for SIGTERM and SIGKILL
+    ([issue #97](https://github.com/rfjakob/earlyoom/issues/97))
+    * Don't exit with a fatal error if SIGTERM limit < SIGKILL limit
+    * Allow zero SIGKILL limit
+  * Reformat startup output to make it clear that BOTH swap and mem must
+    be <= limit
 
 * v1.2, 2018-10-28
   * Implement adaptive sleep time (= adaptive poll rate) to lower CPU
