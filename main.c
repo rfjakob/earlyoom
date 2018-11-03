@@ -115,6 +115,10 @@ int main(int argc, char* argv[])
             have_M = 1;
             break;
         case 'S':
+            if (m.SwapTotalKiB == 0) {
+                warn("warning: -S: total swap is zero, using default percentages\n");
+                break;
+            }
             tuple = parse_term_kill_tuple(optarg, m.SwapTotalKiB * 100 / 99);
             if (strlen(tuple.err)) {
                 fatal(16, "-S: %s", tuple.err);

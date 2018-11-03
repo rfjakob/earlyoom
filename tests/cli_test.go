@@ -86,7 +86,6 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "-10"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-M", mem1percent}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
 		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-S", "9999999999999999"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		// Test --avoid and --prefer
