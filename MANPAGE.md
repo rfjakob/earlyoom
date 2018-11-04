@@ -144,6 +144,11 @@ process.
 About 2 MiB VmRSS. All memory is locked using mlockall() to make sure earlyoom
 does not slow down in low memory situations.
 
+# BUGS
+
+If there is zero total swap on earlyoom startup, any `-S` (uppercase "S") values
+are ignored, a warning is printed, and default swap percentages are used.
+
 # AUTHOR
 
 The author of earlyoom is Jakob Unterwurzacher ⟨jakobunt@gmail.com⟩.
