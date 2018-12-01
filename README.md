@@ -102,12 +102,13 @@ sudo make install              # systemd
 sudo make install-initscript   # non-systemd
 ```
 
-For Debian and Ubuntu, there's a [Debian package](https://packages.debian.org/search?keywords=earlyoom):
+For Debian 10+ and Ubuntu 18.04+, there's a [Debian package](https://packages.debian.org/search?keywords=earlyoom):
 ```bash
 apt install earlyoom
 ```
 
-For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/):
+For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/).
+Use your favorite AUR helper. For example:
 ```bash
 yaourt -S earlyoom
 sudo systemctl enable earlyoom
@@ -126,12 +127,15 @@ It will inform you how much memory and swap you have, what the minimum
 is, how much memory is available and how much swap is free.
 
 ```
-earlyoom v0.10
-mem total: 7842 MiB, min: 784 MiB (10 %)
-swap total: 1023 MiB, min: 102 MiB (10 %)
-mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
-mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
-mem avail: 5115 MiB (65 %), swap free: 1023 MiB (100 %)
+./earlyoom
+earlyoom v1.2-10-ga8f30d7
+mem total: 7834 MiB, swap total:    0 MiB
+Sending SIGTERM when mem <= 10 % and swap <= 10 %,
+        SIGKILL when mem <=  5 % and swap <=  5 %
+mem avail: 4667 of 7834 MiB (59 %), swap free:    0 of    0 MiB ( 0 %)
+mem avail: 4704 of 7834 MiB (60 %), swap free:    0 of    0 MiB ( 0 %)
+mem avail: 4704 of 7834 MiB (60 %), swap free:    0 of    0 MiB ( 0 %)
+
 [...]
 ```
 
@@ -203,7 +207,7 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v1.2
+earlyoom v1.2-10-ga8f30d7
 Usage: earlyoom [OPTION]...
 
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total (default 10 %).
