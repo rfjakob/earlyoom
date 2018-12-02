@@ -1,63 +1,31 @@
 #!/usr/bin/env python3
+#
+# Send a GUI notification to all logged-in users.
+# Written by https://github.com/hakavlad .
+#
+# Example:
+#   ./notify_all_users.py earlyoom "Low memory! Killing/Terminating process 2233 tail"
+#
+# Notification that should pop up:
+#   earlyoom
+#   Low memory! Killing/Terminating process 2233 tail
 
-# notify all users
+import sys
+import subprocess
 
-# notify_all_users.py --pid 2233 --name tail --signal 15
-
-# output:
-# earlyoom
-# Low memory! Killing/Terminating process 2233 tail
-
-from argparse import ArgumentParser
-from subprocess import Popen, PIPE
-
-parser = ArgumentParser()
-
-parser.add_argument(
-    '--signal',
-    help="""signal (15 or 9)""",
-    default=None,
-    type=str
-)
-
-parser.add_argument(
-    '--pid',
-    help="""pid""",
-    default=None,
-    type=str
-)
-
-parser.add_argument(
-    '--name',
-    help="""process name""",
-    default=None,
-    type=str
-)
-
-args = parser.parse_args()
-
-pid = args.pid
-signal = args.signal
-name = args.name
-
-if name == None or pid == None or signal == None:
-    print('Run script with correct --pid, --name and --signal options.' \
-        '\nAlso run script with --help option.')
-    exit()
-
-notify_sig_dict = {'9': 'Killing', '15': 'Terminating'}
-
-title = 'earlyoom'
-
-body = 'Low memory! {} process {} {}'.format(
-    notify_sig_dict[signal], pid, name.replace('&', '*'))
-
+if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+    print("Usage:")
+    print("  %s [notify-send options] summary [body text]" % (sys.argv[0]))
+    print("Examples:")
+    print("  %s mytitle mytext" % (sys.argv[0]))
+    print("  %s -i dialog-warning earlyoom \"killing process X\"" % (sys.argv[0]))
+    exit(1)
 
 # return list of tuples with
 # username, DISPLAY and DBUS_SESSION_BUS_ADDRESS
 def root_notify_env():
 
-    ps_output_list = Popen(['ps', 'ae'], stdout=PIPE
+    ps_output_list = subprocess.Popen(['ps', 'ae'], stdout=subprocess.PIPE
         ).communicate()[0].decode().split('\n')
 
     lines_with_displays = []
@@ -89,16 +57,16 @@ def root_notify_env():
     return vult
 
 
-def send_notify(signal, name, pid):
+def send_notify(args):
 
     b = root_notify_env()
 
-    if len(b) > 0:
-        for i in b:
-            username, display_env, dbus_env = i[0], i[1], i[2]
-            Popen(['sudo', '-u', username, 'env', display_env,
-                    dbus_env, 'notify-send', '--icon=dialog-warning',
-                    '{}'.format(title), '{}'.format(body)])
+    for i in b:
+        username, display_env, dbus_env = i[0], i[1], i[2]
+        cmdline = ['sudo', '-u', username, 'env', display_env,
+            dbus_env, 'notify-send']
+        cmdline.extend(args)
+        print("Running commend: %r" % (cmdline))
+        subprocess.run(cmdline, check=True, timeout=10)
 
-
-send_notify(signal, name, pid)
+send_notify(sys.argv[1:])
