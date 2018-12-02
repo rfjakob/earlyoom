@@ -67,7 +67,7 @@ def send_notify(args):
         cmdline = ['sudo', '-u', username, 'env', display_env,
                    dbus_env, 'notify-send']
         cmdline.extend(args)
-        print("Running commend: %r" % (cmdline))
+        print("Running notify-send: %r" % (cmdline))
         subprocess.run(cmdline, check=True, timeout=10)
 
 
