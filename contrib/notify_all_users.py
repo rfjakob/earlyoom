@@ -68,7 +68,10 @@ def send_notify(args):
                    dbus_env, 'notify-send']
         cmdline.extend(args)
         print("Running notify-send: %r" % (cmdline))
-        subprocess.run(cmdline, check=True, timeout=10)
+        try:
+            subprocess.run(cmdline, check=True, timeout=10)
+        except Exception as e:
+            print("Exception: %s" % (e))
 
 
 send_notify(sys.argv[1:])
