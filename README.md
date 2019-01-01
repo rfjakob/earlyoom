@@ -249,7 +249,7 @@ Changelog
     be <= limit
   * Add [notify_all_users.py](contrib/notify_all_users.py)
     helper script
-  * Add [CODE_OF_CONDUCT.md](contrib/notify_all_users.py) (Contributor Covenant 1.4)
+  * Add [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) (Contributor Covenant 1.4)
     ([#102](https://github.com/rfjakob/earlyoom/issues/102))
 
 * v1.2, 2018-10-28
