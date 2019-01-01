@@ -247,6 +247,10 @@ Changelog
     * Allow zero SIGKILL limit
   * Reformat startup output to make it clear that BOTH swap and mem must
     be <= limit
+  * Add [notify_all_users.py](contrib/notify_all_users.py)
+    helper script
+  * Add [CODE_OF_CONDUCT.md](contrib/notify_all_users.py) (Contributor Covenant 1.4)
+    ([#102](https://github.com/rfjakob/earlyoom/issues/102))
 
 * v1.2, 2018-10-28
   * Implement adaptive sleep time (= adaptive poll rate) to lower CPU
