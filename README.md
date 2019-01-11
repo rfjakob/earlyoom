@@ -47,7 +47,7 @@ a recent kernel, but an old version of `free`, you can get the value
 from `cat /proc/meminfo | grep MemAvailable`.
 
 When both your available memory and free swap drop below 10% of the total,
-it will `kill -9` the process that uses the most memory in the opinion of
+it will send the `SIGTERM` signal to the process that uses the most memory in the opinion of
 the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
 any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
 victims (see below).
