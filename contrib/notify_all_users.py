@@ -122,7 +122,7 @@ if len(list_with_envs) > 0:
 
         with Popen(['sudo', '-u', username,
                     'notify-send', '--icon=dialog-warning',
-                    '{}'.format('earlyoom'), '{}'.format(argv[2])
+                    argv[1], argv[2]
                     ], env={
             display_key: display_value,
             dbus_key: dbus_value
