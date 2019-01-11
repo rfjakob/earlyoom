@@ -45,9 +45,6 @@ def re_pid_environ(pid):
      'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus')
     returns None if these vars is not in /proc/[pid]/environ
     """
-    display_env = 'DISPLAY='
-    dbus_env = 'DBUS_SESSION_BUS_ADDRESS='
-    user_env = 'USER='
     try:
         env = str(rline1('/proc/' + pid + '/environ'))
         if display_env in env and dbus_env in env and user_env in env:
