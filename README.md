@@ -21,7 +21,7 @@ What does it do
 ---------------
 earlyoom checks the amount of available memory and free swap to to 10
 times a second (less often if there is a lot of free memory).
-If both are below 10%, it will kill the largest process (highest `oom_score`).
+By default if both are below 10%, it will kill the largest process (highest `oom_score`).
 The percentage value is configurable via command line
 arguments.
 
@@ -57,7 +57,7 @@ victims (see below).
   written in Python and with additional features and configuration options.
 * facebooks's pressure stall information (psi) [kernel patches](http://git.cmpxchg.org/cgit.cgi/linux-psi.git/)
   and the accompanying [oomd](https://github.com/facebookincubator/oomd) userspace helper.
-  The patches are now available in Linux 4.20 stable release.
+  The patches are merged in Linux 4.20.
 
 Why not trigger the kernel oom killer?
 --------------------------------------
