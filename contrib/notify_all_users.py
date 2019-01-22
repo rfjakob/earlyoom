@@ -111,13 +111,17 @@ list_with_envs = root_notify_env()
 if len(list_with_envs) > 0:
     # iterating over logged-in users
     for i in list_with_envs:
-        username, dbus_env = i[0], i[2]
+        username, display_env, dbus_env = i[0], i[1], i[2]
+        display_tuple = display_env.partition('=')
         dbus_tuple = dbus_env.partition('=')
-        dbus_key, dbus_value = dbus_tuple[0], dbus_tuple[2]
+        display_value = display_tuple[2]
+        dbus_value = dbus_tuple[2]
 
         with Popen([
             'sudo', '-u', username,
-            'env', 'DBUS_SESSION_BUS_ADDRESS=' + dbus_value,
+            'env',
+            'DISPLAY=' + display_value,
+            'DBUS_SESSION_BUS_ADDRESS=' + dbus_value,
             'notify-send', '--icon=dialog-warning', argv[1], argv[2]
         ]) as proc:
             try:
