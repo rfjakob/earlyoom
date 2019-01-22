@@ -111,24 +111,19 @@ list_with_envs = root_notify_env()
 if len(list_with_envs) > 0:
     # iterating over logged-in users
     for i in list_with_envs:
-        username, display_env, dbus_env = i[0], i[1], i[2]
-        display_tuple = display_env.partition('=')
+        username, dbus_env = i[0], i[2]
         dbus_tuple = dbus_env.partition('=')
-        display_key, display_value = display_tuple[0], display_tuple[2]
         dbus_key, dbus_value = dbus_tuple[0], dbus_tuple[2]
 
-        with Popen(['sudo', '-u', username,
-                    'notify-send', '--icon=dialog-warning',
-                    argv[1], argv[2]
-                    ], env={
-            display_key: display_value,
-            dbus_key: dbus_value
-        }) as proc:
+        with Popen([
+            'sudo', '-u', username,
+            'env', 'DBUS_SESSION_BUS_ADDRESS=' + dbus_value,
+            'notify-send', '--icon=dialog-warning', argv[1], argv[2]
+        ]) as proc:
             try:
                 proc.wait(timeout=wait_time)
             except TimeoutExpired:
                 proc.kill()
-                print('TimeoutExpired: notify' + username)
-
+                print('TimeoutExpired: notify user:' + username)
 else:
     print('Nobody logged-in with GUI. Nothing to do.')
