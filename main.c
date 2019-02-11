@@ -244,8 +244,12 @@ int main(int argc, char* argv[])
      */
     userspace_kill(args, 0);
 
-    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0)
-        perror("Could not lock memory - continuing anyway");
+    if (mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT) != 0) {
+        // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
+        if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+            perror("Could not lock memory - continuing anyway");
+        }
+    }
 
     // Jump into main poll loop
     poll_loop(args);
