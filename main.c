@@ -19,6 +19,14 @@
 #include "meminfo.h"
 #include "msg.h"
 
+/* Don't fail compilation if the user has an old glibc that
+ * does not define MCL_ONFAULT. The kernel may still be recent
+ * enough to support the flag.
+ */
+#ifndef MCL_ONFAULT
+#define MCL_ONFAULT 4
+#endif
+
 /* Arbitrary identifiers for long options that do not have a short
  * version */
 enum {
@@ -244,11 +252,13 @@ int main(int argc, char* argv[])
      */
     userspace_kill(args, 0);
 
-    if (mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT) != 0) {
-        // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
-        if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
-            perror("Could not lock memory - continuing anyway");
-        }
+    int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
+    // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
+    if (err != 0) {
+        err = mlockall(MCL_CURRENT | MCL_FUTURE);
+    }
+    if (err != 0) {
+        perror("Could not lock memory - continuing anyway");
     }
 
     // Jump into main poll loop
