@@ -57,7 +57,7 @@ victims (see below).
   written in Python and with additional features and configuration options.
 * facebooks's pressure stall information (psi) [kernel patches](http://git.cmpxchg.org/cgit.cgi/linux-psi.git/)
   and the accompanying [oomd](https://github.com/facebookincubator/oomd) userspace helper.
-  The patches are not not yet merged into the mainline kernel as of 2018-07-21.
+  The patches are now available in Linux 4.20 stable release.
 
 Why not trigger the kernel oom killer?
 --------------------------------------
