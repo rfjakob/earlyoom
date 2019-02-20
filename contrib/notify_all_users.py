@@ -10,68 +10,124 @@
 #   earlyoom
 #   Low memory! Killing/Terminating process 2233 tail
 
-import sys
-import subprocess
+from sys import argv
+from os import listdir
+from subprocess import Popen, TimeoutExpired
 
-if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+if len(argv) < 2 or argv[1] == "-h" or argv[1] == "--help":
     print("Usage:")
-    print("  %s [notify-send options] summary [body text]" % (sys.argv[0]))
+    print("  %s [notify-send options] summary [body text]" % (argv[0]))
     print("Examples:")
-    print("  %s mytitle mytext" % (sys.argv[0]))
+    print("  %s mytitle mytext" % (argv[0]))
     print("  %s -i dialog-warning earlyoom \"killing process X\"" %
-          (sys.argv[0]))
+          (argv[0]))
     exit(1)
+
+wait_time = 10
+
+display_env = 'DISPLAY='
+dbus_env = 'DBUS_SESSION_BUS_ADDRESS='
+user_env = 'USER='
+
+
+def rline1(path):
+    """read 1st line from path."""
+    with open(path) as f:
+        for line in f:
+            return line
+
+
+def re_pid_environ(pid):
+    """
+    read environ of 1 process
+    returns tuple with USER, DBUS, DISPLAY like follow:
+    ('user', 'DISPLAY=:0',
+     'DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus')
+    returns None if these vars is not in /proc/[pid]/environ
+    """
+    try:
+        env = str(rline1('/proc/' + pid + '/environ'))
+        if display_env in env and dbus_env in env and user_env in env:
+            env_list = env.split('\x00')
+
+            # iterating over a list of process environment variables
+            for i in env_list:
+                if i.startswith(user_env):
+                    user = i
+                    continue
+
+                if i.startswith(display_env):
+                    display = i[:10]
+                    continue
+
+                if i.startswith(dbus_env):
+                    dbus = i
+                    continue
+
+                if i.startswith('HOME='):
+                    # exclude Display Manager's user
+                    if i.startswith('HOME=/var'):
+                        return None
+
+            env = user.partition('USER=')[2], display, dbus
+            return env
+
+    except FileNotFoundError:
+        return None
+    except ProcessLookupError:
+        return None
 
 
 def root_notify_env():
-    """
-    return list of tuples with
-    username, DISPLAY and DBUS_SESSION_BUS_ADDRESS
-    """
-    ps_output_list = subprocess.Popen(['ps', 'ae'], stdout=subprocess.PIPE
-                                      ).communicate()[0].decode().split('\n')
-    lines_with_displays = []
-    for line in ps_output_list:
-        if ' DISPLAY=' in line and ' DBUS_SESSION_BUS_ADDRES' \
-                'S=' in line and ' USER=' in line:
-            lines_with_displays.append(line)
+    """return set(user, display, dbus)"""
+    unsorted_envs_list = []
+    # iterates over processes, find processes with suitable env
+    for pid in listdir('/proc'):
+        if pid[0].isdecimal() is False:
+            continue
+        one_env = re_pid_environ(pid)
+        unsorted_envs_list.append(one_env)
+    env = set(unsorted_envs_list)
+    env.discard(None)
 
-    # list of tuples with needments
-    deus = []
-    for i in lines_with_displays:
-        for i in i.split(' '):
-            if i.startswith('USER='):
-                user = i.strip('\n').split('=')[1]
-                continue
-            if i.startswith('DISPLAY='):
-                disp_value = i.strip('\n').split('=')[1][0:2]
-                disp = 'DISPLAY=' + disp_value
-                continue
-            if i.startswith('DBUS_SESSION_BUS_ADDRESS='):
-                dbus = i.strip('\n')
-        deus.append(tuple([user, disp, dbus]))
+    # deduplicate dbus
+    new_env = []
+    end = []
+    for i in env:
+        key = i[0] + i[1]
+        if key not in end:
+            end.append(key)
+            new_env.append(i)
+        else:
+            continue
 
-    # unique list of tuples
-    vult = []
-    for user_env_tuple in set(deus):
-        vult.append(user_env_tuple)
-
-    return vult
+    return new_env
 
 
-def send_notify(args):
-    b = root_notify_env()
+list_with_envs = root_notify_env()
 
-    for i in b:
+
+# if somebody logged in with GUI
+if len(list_with_envs) > 0:
+    # iterating over logged-in users
+    for i in list_with_envs:
         username, display_env, dbus_env = i[0], i[1], i[2]
-        cmdline = ['sudo', '-u', username, 'env', display_env,
-                   dbus_env, 'notify-send']
-        cmdline.extend(args)
-        print("Running notify-send: %r" % (cmdline))
-        try:
-            subprocess.run(cmdline, check=True, timeout=10)
-        except Exception as e:
-            print("Exception: %s" % (e))
+        display_tuple = display_env.partition('=')
+        dbus_tuple = dbus_env.partition('=')
+        display_value = display_tuple[2]
+        dbus_value = dbus_tuple[2]
 
-
-send_notify(sys.argv[1:])
+        with Popen([
+            'sudo', '-u', username,
+            'env',
+            'DISPLAY=' + display_value,
+            'DBUS_SESSION_BUS_ADDRESS=' + dbus_value,
+            'notify-send', '--icon=dialog-warning', argv[1], argv[2]
+        ]) as proc:
+            try:
+                proc.wait(timeout=wait_time)
+            except TimeoutExpired:
+                proc.kill()
+                print('TimeoutExpired: notify user:' + username)
+else:
+    print('Nobody logged-in with GUI. Nothing to do.')
