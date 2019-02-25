@@ -62,7 +62,8 @@ victims (see below).
 Why not trigger the kernel oom killer?
 --------------------------------------
 Earlyoom does not use `echo f > /proc/sysrq-trigger` because [the Chrome people made
-their browser always be the first (innocent!) victim by setting `oom_score_adj`
+their browser (and all electron-based apps - vscode, skype, discord etc) always be 
+the first (innocent!) victim by setting `oom_score_adj`
 very high]( https://code.google.com/p/chromium/issues/detail?id=333617).
 Instead, earlyoom finds out itself by reading through `/proc/*/status`
 (actually `/proc/*/statm`, which contains the same information but is easier to
