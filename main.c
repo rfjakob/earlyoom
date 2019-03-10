@@ -174,26 +174,31 @@ int main(int argc, char* argv[])
             break;
         case 'h':
             fprintf(stderr,
-                "Usage: earlyoom [OPTION]...\n"
+                "Usage: %s [OPTION]...\n"
                 "\n"
-                "  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total (default 10 %%).\n"
-                "                            earlyoom sends SIGTERM once below PERCENT, then SIGKILL once below\n"
-                "                            KILL_PERCENT (default PERCENT/2).\n"
-                "  -s PERCENT[,KILL_PERCENT] set free swap minimum to PERCENT of total (default 10 %%).\n"
-                "                            Note: both memory and swap must be below minimum for earlyoom to act.\n"
+                "  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total\n"
+                "                            (default 10 %%).\n"
+                "                            earlyoom sends SIGTERM once below PERCENT, then\n"
+                "                            SIGKILL once below KILL_PERCENT (default PERCENT/2).\n"
+                "  -s PERCENT[,KILL_PERCENT] set free swap minimum to PERCENT of total (default\n"
+                "                            10 %%).\n"
+                "                            Note: both memory and swap must be below minimum for\n"
+                "                            earlyoom to act.\n"
                 "  -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB\n"
                 "  -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB\n"
-                "  -i                        user-space oom killer should ignore positive oom_score_adj values\n"
+                "  -i                        user-space oom killer should ignore positive\n"
+                "                            oom_score_adj values\n"
                 "  -n                        enable notifications using \"notify-send\"\n"
                 "  -N COMMAND                enable notifications using COMMAND\n"
                 "  -d                        enable debugging messages\n"
                 "  -v                        print version information and exit\n"
-                "  -r INTERVAL               memory report interval in seconds (default 1), set to 0 to\n"
-                "                            disable completely\n"
-                "  -p                        set niceness of earlyoom to -20 and oom_score_adj to -1000\n"
+                "  -r INTERVAL               memory report interval in seconds (default 1), set\n"
+                "                            to 0 to disable completely\n"
+                "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
+                "                            -1000\n"
                 "  --prefer REGEX            prefer killing processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
-                "  -h, --help                this help text\n");
+                "  -h, --help                this help text\n", argv[0]);
             exit(0);
         case '?':
             fprintf(stderr, "Try 'earlyoom --help' for more information.\n");
