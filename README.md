@@ -62,7 +62,7 @@ victims (see below).
 Why not trigger the kernel oom killer?
 --------------------------------------
 Earlyoom does not use `echo f > /proc/sysrq-trigger` because [the Chrome people made
-their browser (and all electron-based apps - vscode, skype, discord etc) always be 
+their browser (and all electron-based apps - vscode, skype, discord etc) always be
 the first (innocent!) victim by setting `oom_score_adj`
 very high]( https://code.google.com/p/chromium/issues/detail?id=333617).
 Instead, earlyoom finds out itself by reading through `/proc/*/status`
@@ -211,20 +211,26 @@ Command line options
 earlyoom v1.2-10-ga8f30d7
 Usage: earlyoom [OPTION]...
 
-  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total (default 10 %).
-                            earlyoom sends SIGTERM once below PERCENT, then SIGKILL once below
-                            KILL_PERCENT (default PERCENT/2).
-  -s PERCENT[,KILL_PERCENT] set free swap minimum to PERCENT of total (default 10 %)
+  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
+                            (default 10 %).
+                            earlyoom sends SIGTERM once below PERCENT, then
+                            SIGKILL once below KILL_PERCENT (default PERCENT/2).
+  -s PERCENT[,KILL_PERCENT] set free swap minimum to PERCENT of total (default
+                            10 %).
+                            Note: both memory and swap must be below minimum for
+                            earlyoom to act.
   -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB
   -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB
-  -i                        user-space oom killer should ignore positive oom_score_adj values
+  -i                        user-space oom killer should ignore positive
+                            oom_score_adj values
   -n                        enable notifications using "notify-send"
   -N COMMAND                enable notifications using COMMAND
   -d                        enable debugging messages
   -v                        print version information and exit
-  -r INTERVAL               memory report interval in seconds (default 1), set to 0 to
-                            disable completely
-  -p                        set niceness of earlyoom to -20 and oom_score_adj to -1000
+  -r INTERVAL               memory report interval in seconds (default 1), set
+                            to 0 to disable completely
+  -p                        set niceness of earlyoom to -20 and oom_score_adj to
+                            -1000
   --prefer REGEX            prefer killing processes matching REGEX
   --avoid REGEX             avoid killing processes matching REGEX
   -h, --help                this help text
