@@ -8,7 +8,7 @@ The oom-killer generally has a bad reputation among Linux users. This may be
 part of the reason Linux invokes it only when it has absolutely no other choice.
 It will swap out the desktop environment, drop the whole page cache and empty
 every buffer before it will ultimately kill a process. At least that's what I
-think what it will do. I have yet to be patient enough to wait for it, sitting
+think that it will do. I have yet to be patient enough to wait for it, sitting
 in front of an unresponsive system.
 
 This made me and other people wonder if the oom-killer could be configured to
@@ -19,7 +19,7 @@ In the user space, however, we can do whatever we want.
 
 What does it do
 ---------------
-earlyoom checks the amount of available memory and free swap to to 10
+earlyoom checks the amount of available memory and free swap up to 10
 times a second (less often if there is a lot of free memory).
 By default if both are below 10%, it will kill the largest process (highest `oom_score`).
 The percentage value is configurable via command line
@@ -141,7 +141,7 @@ mem avail: 4704 of 7834 MiB (60 %), swap free:    0 of    0 MiB ( 0 %)
 ```
 
 If the values drop below the minimum, processes are killed until it
-is above the minimum again. Every action is logged to stderr. If you are on
+is above the minimum again. Every action is logged to stderr. If you are
 running earlyoom as a systemd service, you can view the last 10 lines
 using
 
