@@ -49,7 +49,7 @@ static void maybe_notify(char* notif_command, char* notif_args)
     if (!notif_command)
         return;
 
-    char notif[600];
+    char notif[PATH_MAX + 2000];
     snprintf(notif, sizeof(notif), "%s %s", notif_command, notif_args);
     if (system(notif) != 0)
         warn("system('%s') failed: %s\n", notif, strerror(errno));
@@ -92,8 +92,8 @@ void kill_largest_process(poll_loop_args_t args, int sig)
     int victim_pid = 0;
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
-    char name[PATH_MAX];
-    char victim_name[PATH_MAX] = { 0 };
+    char name[256] = { 0 };
+    char victim_name[256] = { 0 };
     struct procinfo p;
     int badness;
     struct timespec t0 = { 0 }, t1 = { 0 };
@@ -147,9 +147,9 @@ void kill_largest_process(poll_loop_args_t args, int sig)
         snprintf(buf, sizeof(buf), "%d/stat", pid);
         FILE* stat = fopen(buf, "r");
         if (stat) {
-            if (fscanf(stat, "%*d (%[^)]s", name) < 1)
+            if (fscanf(stat, "%*d (%255[^)]s", name) < 1) {
                 warn("fscanf() stat name failed: %s\n", strerror(errno));
-
+            }
             fclose(stat);
         } else {
             warn("could not read process name: %s", strerror(errno));
@@ -169,13 +169,13 @@ void kill_largest_process(poll_loop_args_t args, int sig)
             victim_pid = pid;
             victim_badness = badness;
             victim_vm_rss = p.VmRSSkiB;
-            strncpy(victim_name, name, sizeof(victim_name) - 1);
+            strncpy(victim_name, name, sizeof(victim_name));
             if (enable_debug)
                 printf("    ^ new victim (higher badness)\n");
         } else if (badness == victim_badness && p.VmRSSkiB > victim_vm_rss) {
             victim_pid = pid;
             victim_vm_rss = p.VmRSSkiB;
-            strncpy(victim_name, name, sizeof(victim_name) - 1);
+            strncpy(victim_name, name, sizeof(victim_name));
             if (enable_debug)
                 printf("    ^ new victim (higher vm_rss)\n");
         }
