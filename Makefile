@@ -32,6 +32,7 @@ clean:
 install: earlyoom.service install-bin install-default install-man
 	install -d $(DESTDIR)$(SYSTEMDUNITDIR)
 	install -m 644 $< $(DESTDIR)$(SYSTEMDUNITDIR)
+	-chcon -t systemd_unit_file_t $(DESTDIR)$(SYSTEMDUNITDIR)/$<
 	-systemctl enable earlyoom
 
 install-initscript: earlyoom.initscript install-bin install-default
