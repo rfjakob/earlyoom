@@ -78,7 +78,8 @@ int kill_wait(pid_t pid, int sig) {
         }
     }
     warn("timeout waiting for pid %d after signal %d\n", pid, sig);
-    return -ETIMEDOUT;
+    errno = -ETIMEDOUT;
+    return -1;
 }
 
 /*
@@ -201,6 +202,7 @@ void kill_largest_process(poll_loop_args_t args, int sig)
     }
 
     int res = kill_wait(victim_pid, sig);
+    int saved_errno = errno;
 
     if (enable_debug) {
         clock_gettime(CLOCK_MONOTONIC, &t1);
@@ -223,7 +225,7 @@ void kill_largest_process(poll_loop_args_t args, int sig)
     // In that case, trying again in 100ms will just yield the same error.
     // Throttle ourselves to not spam the log.
     if (sig != 0 && res != 0) {
-        warn("kill failed: %s. Sleeping 1 second\n", strerror(errno));
+        warn("kill failed: %s. Sleeping 1 second\n", strerror(saved_errno));
         maybe_notify(args.notif_command,
             "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);
