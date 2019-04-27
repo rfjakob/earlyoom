@@ -15,10 +15,10 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "globals.h"
 #include "kill.h"
 #include "meminfo.h"
 #include "msg.h"
-#include "globals.h"
 
 /* Don't fail compilation if the user has an old glibc that
  * does not define MCL_ONFAULT. The kernel may still be recent
@@ -191,7 +191,8 @@ int main(int argc, char* argv[])
                 "                            -1000\n"
                 "  --prefer REGEX            prefer killing processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
-                "  -h, --help                this help text\n", argv[0]);
+                "  -h, --help                this help text\n",
+                argv[0]);
             exit(0);
         case '?':
             fprintf(stderr, "Try 'earlyoom --help' for more information.\n");

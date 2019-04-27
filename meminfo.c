@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "globals.h"
 #include "meminfo.h"
 #include "msg.h"
-#include "globals.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: MemTotal) */
@@ -104,7 +104,8 @@ meminfo_t parse_meminfo()
     return m;
 }
 
-bool is_alive(int pid) {
+bool is_alive(int pid)
+{
     char buf[256];
     // Read /proc/[pid]/stat
     snprintf(buf, sizeof(buf), "/proc/%d/stat", pid);
@@ -144,7 +145,7 @@ struct procinfo get_process_stats(int pid)
     if (f == NULL) {
         // ENOENT just means that process has already exited.
         // Not need to bug the user.
-        if(errno != ENOENT) {
+        if (errno != ENOENT) {
             printf(fopen_msg, buf, strerror(errno));
         }
         p.exited = 1;

@@ -15,8 +15,8 @@
 #include <unistd.h>
 
 #include "kill.h"
-#include "msg.h"
 #include "meminfo.h"
+#include "msg.h"
 
 #define BADNESS_PREFER 300
 #define BADNESS_AVOID -300
@@ -59,7 +59,8 @@ static void maybe_notify(char* notif_command, char* notif_args)
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
  */
-int kill_wait(const poll_loop_args_t args, pid_t pid, int sig) {
+int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
+{
     meminfo_t m = { 0 };
     const int poll_ms = 100;
     int res = kill(pid, sig);
@@ -70,11 +71,11 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig) {
     if (sig == 0) {
         return 0;
     }
-    for(int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100; i++) {
         usleep(poll_ms * 1000);
-        if(!is_alive(pid)) {
+        if (!is_alive(pid)) {
             printf("process %d exited after %.1f seconds\n",
-                pid, ((float)i)*poll_ms/1000);
+                pid, ((float)i) * poll_ms / 1000);
             return 0;
         }
         /* abort wait if we drop below the SIGKILL limits */
@@ -108,7 +109,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
     }
 
     // main() makes sure that we are in /proc
-    DIR *procdir = opendir(".");
+    DIR* procdir = opendir(".");
     if (procdir == NULL) {
         fatal(5, "Could not open /proc: %s", strerror(errno));
     }
@@ -156,7 +157,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             int n = fread(name, 1, TASK_COMM_LEN, comm);
             // Strip trailing newline
             if (n > 1) {
-                name[n-1] = 0;
+                name[n - 1] = 0;
             } else {
                 warn("reading %s failed: %s", buf, strerror(errno));
             }
