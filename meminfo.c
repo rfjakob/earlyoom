@@ -142,7 +142,11 @@ struct procinfo get_process_stats(int pid)
     snprintf(buf, sizeof(buf), "%d/oom_score", pid);
     f = fopen(buf, "r");
     if (f == NULL) {
-        printf(fopen_msg, buf, strerror(errno));
+        // ENOENT just means that process has already exited.
+        // Not need to bug the user.
+        if(errno != ENOENT) {
+            printf(fopen_msg, buf, strerror(errno));
+        }
         p.exited = 1;
         return p;
     }
