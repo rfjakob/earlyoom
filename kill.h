@@ -5,8 +5,6 @@
 #include <stdbool.h>
 
 typedef struct {
-    /* directory file handle to /proc */
-    DIR* procdir;
     /* if the available memory AND swap goes below these percentages,
      * we start killing processes */
     int mem_term_percent;

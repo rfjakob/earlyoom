@@ -68,11 +68,6 @@ int main(int argc, char* argv[])
         fatal(4, "Could not cd to /proc: %s", strerror(errno));
     }
 
-    args.procdir = opendir(".");
-    if (args.procdir == NULL) {
-        fatal(5, "Could not open /proc: %s", strerror(errno));
-    }
-
     meminfo_t m = parse_meminfo();
 
     int c;

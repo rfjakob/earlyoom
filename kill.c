@@ -138,10 +138,15 @@ void userspace_kill(poll_loop_args_t args, int sig)
         clock_gettime(CLOCK_MONOTONIC, &t0);
     }
 
-    rewinddir(args.procdir);
+    // main() makes sure that we are in /proc
+    DIR *procdir = opendir(".");
+    if (procdir == NULL) {
+        fatal(5, "Could not open /proc: %s", strerror(errno));
+    }
+
     while (1) {
         errno = 0;
-        d = readdir(args.procdir);
+        d = readdir(procdir);
         if (d == NULL) {
             if (errno != 0)
                 warn("userspace_kill: readdir error: %s", strerror(errno));
@@ -211,6 +216,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
                 printf("    ^ new victim (higher vm_rss)\n");
         }
     } // end of while(1) loop
+    closedir(procdir);
 
     if (victim_pid == 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
