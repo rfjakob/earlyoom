@@ -18,6 +18,7 @@
 #include "kill.h"
 #include "meminfo.h"
 #include "msg.h"
+#include "globals.h"
 
 /* Don't fail compilation if the user has an old glibc that
  * does not define MCL_ONFAULT. The kernel may still be recent
@@ -37,9 +38,6 @@ enum {
 static int set_oom_score_adj(int);
 static void print_mem_stats(bool lowmem, const meminfo_t m);
 static void poll_loop(const poll_loop_args_t args);
-
-int enable_debug = 0;
-long page_size = 0;
 
 int main(int argc, char* argv[])
 {

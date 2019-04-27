@@ -2,6 +2,8 @@
 #ifndef MEMINFO_H
 #define MEMINFO_H
 
+#include <stdbool.h>
+
 typedef struct {
     // Values from /proc/meminfo, in KiB or converted to MiB.
     long MemTotalKiB;
@@ -15,6 +17,15 @@ typedef struct {
     int SwapFreePercent; // percent of total swap that is free
 } meminfo_t;
 
+struct procinfo {
+    int oom_score;
+    int oom_score_adj;
+    unsigned long VmRSSkiB;
+    int exited;
+};
+
 meminfo_t parse_meminfo();
+bool is_alive(int pid);
+struct procinfo get_process_stats(int pid);
 
 #endif

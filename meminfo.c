@@ -11,6 +11,7 @@
 
 #include "meminfo.h"
 #include "msg.h"
+#include "globals.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: MemTotal) */
@@ -101,4 +102,82 @@ meminfo_t parse_meminfo()
     m.SwapFreeMiB = SwapFree / 1024;
 
     return m;
+}
+
+bool is_alive(int pid) {
+    char buf[256];
+    // Read /proc/[pid]/stat
+    snprintf(buf, sizeof(buf), "/proc/%d/stat", pid);
+    FILE* f = fopen(buf, "r");
+    if (f == NULL) {
+        // Process is gone - good.
+        return false;
+    }
+    // File content looks like this:
+    // 10751 (cat) R 2663 10751 2663[...]
+    char state;
+    if (fscanf(f, "%*d %*s %c", &state) < 1) {
+        warn("is_alive: fscanf() failed: %s\n", strerror(errno));
+        return false;
+    }
+    fclose(f);
+    if (state == 'Z') {
+        // A zombie process does not use any memory. Consider it dead.
+        return false;
+    }
+    return true;
+}
+
+/* Read /proc/pid/{oom_score, oom_score_adj, statm}
+ * Caller must ensure that we are already in the /proc/ directory
+ */
+struct procinfo get_process_stats(int pid)
+{
+    const char* const fopen_msg = "fopen %s failed: %s\n";
+    char buf[256];
+    FILE* f;
+    struct procinfo p = { 0 };
+
+    // Read /proc/[pid]/oom_score
+    snprintf(buf, sizeof(buf), "%d/oom_score", pid);
+    f = fopen(buf, "r");
+    if (f == NULL) {
+        printf(fopen_msg, buf, strerror(errno));
+        p.exited = 1;
+        return p;
+    }
+    if (fscanf(f, "%d", &(p.oom_score)) < 1)
+        warn("fscanf() oom_score failed: %s\n", strerror(errno));
+    fclose(f);
+
+    // Read /proc/[pid]/oom_score_adj
+    snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
+    f = fopen(buf, "r");
+    if (f == NULL) {
+        printf(fopen_msg, buf, strerror(errno));
+        p.exited = 1;
+        return p;
+    }
+    if (fscanf(f, "%d", &(p.oom_score_adj)) < 1)
+        warn("fscanf() oom_score_adj failed: %s\n", strerror(errno));
+
+    fclose(f);
+
+    // Read VmRSS from /proc/[pid]/statm (in pages)
+    snprintf(buf, sizeof(buf), "%d/statm", pid);
+    f = fopen(buf, "r");
+    if (f == NULL) {
+        printf(fopen_msg, buf, strerror(errno));
+        p.exited = 1;
+        return p;
+    }
+    if (fscanf(f, "%*u %lu", &(p.VmRSSkiB)) < 1) {
+        warn("fscanf() vm_rss failed: %s\n", strerror(errno));
+    }
+    // Value is in pages. Convert to kiB.
+    p.VmRSSkiB = p.VmRSSkiB * page_size / 1024;
+
+    fclose(f);
+
+    return p;
 }

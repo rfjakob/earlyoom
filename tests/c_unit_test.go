@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"os"
 	"testing"
 )
 
@@ -64,6 +65,23 @@ func TestParseTuple(t *testing.T) {
 		}
 		if kill != tc.kill {
 			t.Errorf("case %v: kill=%d", tc, kill)
+		}
+	}
+}
+
+func TestIsAlive(t *testing.T) {
+	tcs := []struct {
+		pid int
+		res bool
+	}{
+		{os.Getpid(), true},
+		{1, true},
+		{999999, false},
+		{0, false},
+	}
+	for _, tc := range tcs {
+		if res := is_alive(tc.pid); res != tc.res {
+			t.Errorf("pid %d: expected %v, got %v", tc.pid, tc.res, res)
 		}
 	}
 }

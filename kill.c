@@ -16,6 +16,7 @@
 
 #include "kill.h"
 #include "msg.h"
+#include "meminfo.h"
 
 #define BADNESS_PREFER 300
 #define BADNESS_AVOID -300
@@ -23,13 +24,6 @@
 extern int enable_debug;
 extern long page_size;
 void sanitize(char* s);
-
-struct procinfo {
-    int oom_score;
-    int oom_score_adj;
-    unsigned long VmRSSkiB;
-    int exited;
-};
 
 static int isnumeric(char* str)
 {
@@ -61,59 +55,30 @@ static void maybe_notify(char* notif_command, char* notif_args)
         warn("system('%s') failed: %s\n", notif, strerror(errno));
 }
 
-const char* const fopen_msg = "fopen %s failed: %s\n";
-
-/* Read /proc/pid/{oom_score, oom_score_adj, statm}
- * Caller must ensure that we are already in the /proc/ directory
+/*
+ * Send the selected signal to "pid" and wait for the process to exit
+ * (max 10 seconds)
  */
-static struct procinfo get_process_stats(int pid)
-{
-    char buf[256];
-    FILE* f;
-    struct procinfo p = { 0 };
-
-    // Read /proc/[pid]/oom_score
-    snprintf(buf, sizeof(buf), "%d/oom_score", pid);
-    f = fopen(buf, "r");
-    if (f == NULL) {
-        printf(fopen_msg, buf, strerror(errno));
-        p.exited = 1;
-        return p;
+int kill_wait(pid_t pid, int sig) {
+    const int poll_ms = 100;
+    int res = kill(pid, sig);
+    if (res != 0) {
+        return res;
     }
-    if (fscanf(f, "%d", &(p.oom_score)) < 1)
-        warn("fscanf() oom_score failed: %s\n", strerror(errno));
-    fclose(f);
-
-    // Read /proc/[pid]/oom_score_adj
-    snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
-    f = fopen(buf, "r");
-    if (f == NULL) {
-        printf(fopen_msg, buf, strerror(errno));
-        p.exited = 1;
-        return p;
+    /* signal 0 does not kill the process. Don't wait for it to exit */
+    if (sig == 0) {
+        return 0;
     }
-    if (fscanf(f, "%d", &(p.oom_score_adj)) < 1)
-        warn("fscanf() oom_score_adj failed: %s\n", strerror(errno));
-
-    fclose(f);
-
-    // Read VmRSS from /proc/[pid]/statm (in pages)
-    snprintf(buf, sizeof(buf), "%d/statm", pid);
-    f = fopen(buf, "r");
-    if (f == NULL) {
-        printf(fopen_msg, buf, strerror(errno));
-        p.exited = 1;
-        return p;
+    for(int i = 0; i < 100; i++) {
+        usleep(poll_ms * 1000);
+        if(!is_alive(pid)) {
+            printf("process exited after %.1f seconds\n",
+                ((float)i)*poll_ms/1000);
+            return 0;
+        }
     }
-    if (fscanf(f, "%*u %lu", &(p.VmRSSkiB)) < 1) {
-        warn("fscanf() vm_rss failed: %s\n", strerror(errno));
-    }
-    // Value is in pages. Convert to kiB.
-    p.VmRSSkiB = p.VmRSSkiB * page_size / 1024;
-
-    fclose(f);
-
-    return p;
+    warn("timeout waiting for pid %d after signal %d\n", pid, sig);
+    return -ETIMEDOUT;
 }
 
 /*
@@ -232,7 +197,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
             victim_name, sig, victim_pid, victim_badness, victim_vm_rss / 1024);
     }
 
-    int res = kill(victim_pid, sig);
+    int res = kill_wait(victim_pid, sig);
 
     if (enable_debug) {
         clock_gettime(CLOCK_MONOTONIC, &t1);
