@@ -92,7 +92,6 @@ void kill_largest_process(poll_loop_args_t args, int sig)
     int victim_pid = 0;
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
-    char name[256] = { 0 };
     char victim_name[256] = { 0 };
     struct procinfo p;
     int badness;
@@ -143,16 +142,21 @@ void kill_largest_process(poll_loop_args_t args, int sig)
         if (args.ignore_oom_score_adj && p.oom_score_adj > 0)
             badness -= p.oom_score_adj;
 
-        name[0] = 0;
-        snprintf(buf, sizeof(buf), "%d/stat", pid);
-        FILE* stat = fopen(buf, "r");
-        if (stat) {
-            if (fscanf(stat, "%*d (%255[^)]s", name) < 1) {
-                warn("fscanf() stat name failed: %s\n", strerror(errno));
+        char name[256] = { 0 };
+        snprintf(buf, sizeof(buf), "%d/comm", pid);
+        FILE* comm = fopen(buf, "r");
+        if (comm) {
+            const int TASK_COMM_LEN = 16;
+            int n = fread(name, 1, TASK_COMM_LEN, comm);
+            // Strip trailing newline
+            if (n > 1) {
+                name[n-1] = 0;
+            } else {
+                warn("reading %s failed: %s", buf, strerror(errno));
             }
-            fclose(stat);
+            fclose(comm);
         } else {
-            warn("could not read process name: %s", strerror(errno));
+            warn("could not open %s: %s", buf, strerror(errno));
         }
 
         if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
