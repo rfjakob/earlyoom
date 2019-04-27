@@ -78,10 +78,12 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
                 pid, ((float)i) * poll_ms / 1000);
             return 0;
         }
-        /* abort wait if we drop below the SIGKILL limits */
-        m = parse_meminfo();
-        if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-            break;
+        /* abort wait for SIGTERM response if we drop below the SIGKILL limits */
+        if (sig != SIGKILL) {
+            m = parse_meminfo();
+            if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+                break;
+            }
         }
     }
     errno = ETIME;
