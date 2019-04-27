@@ -247,7 +247,11 @@ accept
 
 Changelog
 ---------
-* v1.2.1, in progress
+* v1.3, in progress
+  * Wait for processes to actually exit when sending a signal
+    * This fixes the problem that earlyoom sometimes kills more than
+      one process when one would be enough
+      ([issue #121](https://github.com/rfjakob/earlyoom/issues/121))
   * Be more liberal in what limits to accepts for SIGTERM and SIGKILL
     ([issue #97](https://github.com/rfjakob/earlyoom/issues/97))
     * Don't exit with a fatal error if SIGTERM limit < SIGKILL limit
