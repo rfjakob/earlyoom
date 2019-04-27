@@ -72,8 +72,8 @@ int kill_wait(pid_t pid, int sig) {
     for(int i = 0; i < 100; i++) {
         usleep(poll_ms * 1000);
         if(!is_alive(pid)) {
-            printf("process exited after %.1f seconds\n",
-                ((float)i)*poll_ms/1000);
+            printf("process %d exited after %.1f seconds\n",
+                pid, ((float)i)*poll_ms/1000);
             return 0;
         }
     }
@@ -83,9 +83,8 @@ int kill_wait(pid_t pid, int sig) {
 
 /*
  * Find the process with the largest oom_score and kill it.
- * See trigger_kernel_oom() for the reason why this is done in userspace.
  */
-void userspace_kill(poll_loop_args_t args, int sig)
+void kill_largest_process(poll_loop_args_t args, int sig)
 {
     struct dirent* d;
     char buf[256];
@@ -193,8 +192,8 @@ void userspace_kill(poll_loop_args_t args, int sig)
 
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0) {
-        warn("Killing process '%s' with signal %d, pid: %d, badness: %d, VmRSS: %lu MiB\n",
-            victim_name, sig, victim_pid, victim_badness, victim_vm_rss / 1024);
+        warn("killing process %d \"%s\" with signal %d: badness %d, VmRSS %lu MiB\n",
+            victim_pid, victim_name, sig, victim_badness, victim_vm_rss / 1024);
     }
 
     int res = kill_wait(victim_pid, sig);
@@ -220,7 +219,7 @@ void userspace_kill(poll_loop_args_t args, int sig)
     // In that case, trying again in 100ms will just yield the same error.
     // Throttle ourselves to not spam the log.
     if (sig != 0 && res != 0) {
-        warn("kill() failed: %s. Sleeping 1 second\n", strerror(errno));
+        warn("kill failed: %s. Sleeping 1 second\n", strerror(errno));
         maybe_notify(args.notif_command,
             "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
         sleep(1);

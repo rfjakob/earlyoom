@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
     // Print memory limits
     fprintf(stderr, "mem total: %4d MiB, swap total: %4d MiB\n",
         m.MemTotalMiB, m.SwapTotalMiB);
-    fprintf(stderr, "Sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
+    fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
         args.mem_term_percent, args.swap_term_percent);
     fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
         args.mem_kill_percent, args.swap_kill_percent);
@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
      */
-    userspace_kill(args, 0);
+    kill_largest_process(args, 0);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
@@ -267,15 +267,16 @@ int main(int argc, char* argv[])
 
 /* Print a status line like
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
- * to the fd passed in out_fd.
+ * as an informational message to stdout (default), or
+ * as a warning to stderr.
  */
-static void print_mem_stats(bool lowmem, const meminfo_t m)
+static void print_mem_stats(bool urgent, const meminfo_t m)
 {
     int (*out_func)(const char* fmt, ...) = &printf;
-    if (lowmem) {
+    if (urgent) {
         out_func = &warn;
     }
-    out_func("mem avail: %4d of %4d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
+    out_func("mem avail: %5d of %5d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
         m.MemAvailableMiB,
         m.MemTotalMiB,
         m.MemAvailablePercent,
@@ -345,34 +346,26 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
 static void poll_loop(const poll_loop_args_t args)
 {
     meminfo_t m = { 0 };
+    // Print a a memory report when this reaches zero. We start at zero so
+    // we print the first report immediately.
     int report_countdown_ms = 0;
-    // extra time to sleep after a kill
-    const int cooldown_ms = 200;
 
     while (1) {
         int sig = 0;
         m = parse_meminfo();
         if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-            warn("Low memory! At or below SIGKILL limits (mem: %d %%, swap: %d %%)\n",
+            print_mem_stats(1, m);
+            warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
                 args.mem_kill_percent, args.swap_kill_percent);
             sig = SIGKILL;
         } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
-            warn("Low Memory! At or below SIGTERM limits (mem: %d %%, swap: %d %%)\n",
+            print_mem_stats(1, m);
+            warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
                 args.mem_term_percent, args.swap_term_percent);
             sig = SIGTERM;
         }
         if (sig) {
-            print_mem_stats(1, m);
-            userspace_kill(args, sig);
-            // With swap enabled, the kernel seems to need more than 100ms to free the memory
-            // of the killed process. This means that earlyoom would immediately kill another
-            // process. Sleep a little extra to give the kernel time to free the memory.
-            // (Yes, this will sleep even if the kill has failed. Does no harm and keeps the
-            // code simple.)
-            if (m.SwapTotalMiB > 0) {
-                usleep(cooldown_ms * 1000);
-                report_countdown_ms -= cooldown_ms;
-            }
+            kill_largest_process(args, sig);
         } else if (args.report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(0, m);
             report_countdown_ms = args.report_interval_ms;

@@ -22,6 +22,6 @@ typedef struct {
     int report_interval_ms;
 } poll_loop_args_t;
 
-void userspace_kill(poll_loop_args_t args, int sig);
+void kill_largest_process(poll_loop_args_t args, int sig);
 
 #endif
