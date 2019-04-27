@@ -59,7 +59,8 @@ static void maybe_notify(char* notif_command, char* notif_args)
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
  */
-int kill_wait(pid_t pid, int sig) {
+int kill_wait(const poll_loop_args_t args, pid_t pid, int sig) {
+    meminfo_t m = { 0 };
     const int poll_ms = 100;
     int res = kill(pid, sig);
     if (res != 0) {
@@ -76,16 +77,20 @@ int kill_wait(pid_t pid, int sig) {
                 pid, ((float)i)*poll_ms/1000);
             return 0;
         }
+        /* abort wait if we drop below the SIGKILL limits */
+        m = parse_meminfo();
+        if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+            break;
+        }
     }
-    warn("timeout waiting for pid %d after signal %d\n", pid, sig);
-    errno = -ETIMEDOUT;
+    errno = ETIME;
     return -1;
 }
 
 /*
  * Find the process with the largest oom_score and kill it.
  */
-void kill_largest_process(poll_loop_args_t args, int sig)
+void kill_largest_process(const poll_loop_args_t args, int sig)
 {
     struct dirent* d;
     char buf[256];
@@ -201,7 +206,7 @@ void kill_largest_process(poll_loop_args_t args, int sig)
             victim_pid, victim_name, sig, victim_badness, victim_vm_rss / 1024);
     }
 
-    int res = kill_wait(victim_pid, sig);
+    int res = kill_wait(args, victim_pid, sig);
     int saved_errno = errno;
 
     if (enable_debug) {
@@ -221,13 +226,20 @@ void kill_largest_process(poll_loop_args_t args, int sig)
         maybe_notify(args.notif_command, notif_args);
     }
 
-    // Killing the process may have failed because we are not running as root.
-    // In that case, trying again in 100ms will just yield the same error.
-    // Throttle ourselves to not spam the log.
-    if (sig != 0 && res != 0) {
-        warn("kill failed: %s. Sleeping 1 second\n", strerror(saved_errno));
+    if (sig == 0) {
+        return;
+    }
+
+    if (res != 0) {
+        warn("kill failed: %s\n", strerror(saved_errno));
         maybe_notify(args.notif_command,
-            "-i dialog-error 'earlyoom' 'Error: Failed to kill process. Sleeping 1 second.'");
-        sleep(1);
+            "-i dialog-error 'earlyoom' 'Error: Failed to kill process'");
+        // Killing the process may have failed because we are not running as root.
+        // In that case, trying again in 100ms will just yield the same error.
+        // Throttle ourselves to not spam the log.
+        if (saved_errno == EPERM) {
+            warn("sleeping 1 second\n");
+            sleep(1);
+        }
     }
 }
