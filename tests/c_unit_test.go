@@ -3,6 +3,7 @@ package tests
 import (
 	"os"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestSanitize(t *testing.T) {
@@ -82,6 +83,20 @@ func TestIsAlive(t *testing.T) {
 	for _, tc := range tcs {
 		if res := is_alive(tc.pid); res != tc.res {
 			t.Errorf("pid %d: expected %v, got %v", tc.pid, tc.res, res)
+		}
+	}
+}
+
+func Test_fix_truncated_utf8(t *testing.T) {
+	// From https://gist.github.com/w-vi/67fe49106c62421992a2
+	str := "___😀∮ E⋅da = Q,  n → ∞, 𐍈∑ f(i) = ∏ g(i)"
+	// a range loop will split at runes - we *want* broken utf8 so use raw
+	// counter.
+	for i := 3; i < len(str); i++ {
+		truncated := str[:i]
+		fixed := fix_truncated_utf8(truncated)
+		if !utf8.Valid([]byte(fixed)) {
+			t.Errorf("Invalid utf8: %q", fixed)
 		}
 	}
 }

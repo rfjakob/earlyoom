@@ -118,3 +118,33 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
     }
     return tuple;
 }
+
+// Credit to https://gist.github.com/w-vi/67fe49106c62421992a2
+// Only works for string of length 3 and up. This is good enough
+// for our use case, which is fixing the 16-byte value we get
+// from /proc/[pid]/comm.
+//
+// Tested in unit_test.go: Test_fix_truncated_utf8()
+void fix_truncated_utf8(char *str) {
+    int len = strlen(str);
+    if (len < 3) {
+        return;
+    }
+    // We only need to look at the last three bytes
+    char *b = str + len - 3;
+    // Last byte is ascii
+    if ((b[2] & 0x80) == 0) {
+        return;
+    }
+    // Last byte is multi-byte sequence start
+    if (b[2] & 0x40) {
+        b[2] = 0;
+    }
+    // Truncated 3-byte sequence
+    else if ((b[1] & 0xe0) == 0xe0) {
+        b[1] = 0;
+    // Truncated 4-byte sequence
+    } else if ((b[0] & 0xf0) == 0xf0) {
+        b[0] = 0;
+    }
+}

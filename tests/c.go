@@ -31,3 +31,9 @@ func is_alive(pid int) bool {
 	res := C.is_alive(C.int(pid))
 	return bool(res)
 }
+
+func fix_truncated_utf8(str string) string {
+	cstr := C.CString(str)
+	C.fix_truncated_utf8(cstr)
+	return C.GoString(cstr)
+}
