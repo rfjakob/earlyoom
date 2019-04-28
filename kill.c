@@ -174,6 +174,10 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         } else {
             warn("could not open %s: %s", buf, strerror(errno));
         }
+        // The kernel truncates /proc/[pid]/comm at 16 bytes. This
+        // may result in broken utf8, which causes problems when
+        // viewing the logs. Fix it.
+        fix_truncated_utf8(name);
 
         if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
             badness += BADNESS_PREFER;
