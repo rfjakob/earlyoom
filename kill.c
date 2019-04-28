@@ -72,19 +72,26 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         return 0;
     }
     for (int i = 0; i < 100; i++) {
-        usleep(poll_ms * 1000);
-        if (!is_alive(pid)) {
-            printf("process %d exited after %.1f seconds\n",
-                pid, ((float)i) * poll_ms / 1000);
-            return 0;
-        }
-        /* abort wait for SIGTERM response if we drop below the SIGKILL limits */
+        float secs = ((float)i) * poll_ms / 1000;
+        // We have sent SIGTERM but now have dropped below SIGKILL limits.
+        // Escalate to SIGKILL.
         if (sig != SIGKILL) {
             m = parse_meminfo();
             if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-                break;
+                sig = SIGKILL;
+                res = kill(pid, sig);
+                // kill first, print after
+                warn("escalating to SIGKILL after %.1f seconds\n", secs);
+                if (res != 0) {
+                    return res;
+                }
             }
         }
+        if (!is_alive(pid)) {
+            warn("process exited after %.1f seconds\n", secs);
+            return 0;
+        }
+        usleep(poll_ms * 1000);
     }
     errno = ETIME;
     return -1;
