@@ -203,10 +203,16 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         return;
     }
 
+    char* sig_name = "?";
+    if (sig == SIGTERM) {
+        sig_name = "SIGTERM";
+    } else if (sig == SIGKILL) {
+        sig_name = "SIGKILL";
+    }
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0) {
-        warn("killing process %d \"%s\" with signal %d: badness %d, VmRSS %lu MiB\n",
-            victim_pid, victim_name, sig, victim_badness, victim_vm_rss / 1024);
+        warn("sending %s to process %d \"%s\": badness %d, VmRSS %lu MiB\n",
+            sig_name, victim_pid, victim_name, victim_badness, victim_vm_rss / 1024);
     }
 
     int res = kill_wait(args, victim_pid, sig);
