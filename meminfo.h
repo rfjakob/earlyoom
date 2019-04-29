@@ -27,5 +27,6 @@ struct procinfo {
 meminfo_t parse_meminfo();
 bool is_alive(int pid);
 struct procinfo get_process_stats(int pid);
+void print_mem_stats(bool urgent, const meminfo_t m);
 
 #endif

@@ -77,6 +77,9 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         // Escalate to SIGKILL.
         if (sig != SIGKILL) {
             m = parse_meminfo();
+            if (enable_debug) {
+                print_mem_stats(0, m);
+            }
             if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
                 sig = SIGKILL;
                 res = kill(pid, sig);
@@ -86,6 +89,9 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
                     return res;
                 }
             }
+        } else if (enable_debug) {
+            m = parse_meminfo();
+            print_mem_stats(0, m);
         }
         if (!is_alive(pid)) {
             warn("process exited after %.1f seconds\n", secs);
@@ -214,6 +220,12 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         return;
     }
 
+    if (enable_debug) {
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        long delta = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
+        printf("selecting victim took %ld.%03ld ms\n", delta / 1000, delta % 1000);
+    }
+
     char* sig_name = "?";
     if (sig == SIGTERM) {
         sig_name = "SIGTERM";
@@ -228,12 +240,6 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
     int res = kill_wait(args, victim_pid, sig);
     int saved_errno = errno;
-
-    if (enable_debug) {
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-        long delta = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
-        printf("selecting victim and sending signal took %ld.%03ld ms\n", delta / 1000, delta % 1000);
-    }
 
     // Send the GUI notification AFTER killing a process. This makes it more likely
     // that there is enough memory to spawn the notification helper.

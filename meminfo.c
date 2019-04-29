@@ -122,6 +122,7 @@ bool is_alive(int pid)
         return false;
     }
     fclose(f);
+    if (enable_debug) printf("process state: %c\n", state);
     if (state == 'Z') {
         // A zombie process does not use any memory. Consider it dead.
         return false;
@@ -185,4 +186,24 @@ struct procinfo get_process_stats(int pid)
     fclose(f);
 
     return p;
+}
+
+/* Print a status line like
+ *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
+ * as an informational message to stdout (default), or
+ * as a warning to stderr.
+ */
+void print_mem_stats(bool urgent, const meminfo_t m)
+{
+    int (*out_func)(const char* fmt, ...) = &printf;
+    if (urgent) {
+        out_func = &warn;
+    }
+    out_func("mem avail: %5d of %5d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
+        m.MemAvailableMiB,
+        m.MemTotalMiB,
+        m.MemAvailablePercent,
+        m.SwapFreeMiB,
+        m.SwapTotalMiB,
+        m.SwapFreePercent);
 }

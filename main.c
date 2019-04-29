@@ -36,7 +36,6 @@ enum {
 };
 
 static int set_oom_score_adj(int);
-static void print_mem_stats(bool lowmem, const meminfo_t m);
 static void poll_loop(const poll_loop_args_t args);
 
 int main(int argc, char* argv[])
@@ -250,6 +249,7 @@ int main(int argc, char* argv[])
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
      */
+    if (enable_debug) printf("dry-running kill_largest_process()...\n");
     kill_largest_process(args, 0);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
@@ -264,26 +264,6 @@ int main(int argc, char* argv[])
     // Jump into main poll loop
     poll_loop(args);
     return 0;
-}
-
-/* Print a status line like
- *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
- * as an informational message to stdout (default), or
- * as a warning to stderr.
- */
-static void print_mem_stats(bool urgent, const meminfo_t m)
-{
-    int (*out_func)(const char* fmt, ...) = &printf;
-    if (urgent) {
-        out_func = &warn;
-    }
-    out_func("mem avail: %5d of %5d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
-        m.MemAvailableMiB,
-        m.MemTotalMiB,
-        m.MemAvailablePercent,
-        m.SwapFreeMiB,
-        m.SwapTotalMiB,
-        m.SwapFreePercent);
 }
 
 // Returns errno (success = 0)
