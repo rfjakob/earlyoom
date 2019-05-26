@@ -125,13 +125,14 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
 // from /proc/[pid]/comm.
 //
 // Tested in unit_test.go: Test_fix_truncated_utf8()
-void fix_truncated_utf8(char *str) {
+void fix_truncated_utf8(char* str)
+{
     int len = strlen(str);
     if (len < 3) {
         return;
     }
     // We only need to look at the last three bytes
-    char *b = str + len - 3;
+    char* b = str + len - 3;
     // Last byte is ascii
     if ((b[2] & 0x80) == 0) {
         return;
@@ -143,7 +144,7 @@ void fix_truncated_utf8(char *str) {
     // Truncated 3-byte sequence
     else if ((b[1] & 0xe0) == 0xe0) {
         b[1] = 0;
-    // Truncated 4-byte sequence
+        // Truncated 4-byte sequence
     } else if ((b[0] & 0xf0) == 0xf0) {
         b[0] = 0;
     }

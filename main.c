@@ -249,7 +249,8 @@ int main(int argc, char* argv[])
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
      */
-    if (enable_debug) printf("dry-running kill_largest_process()...\n");
+    if (enable_debug)
+        printf("dry-running kill_largest_process()...\n");
     kill_largest_process(args, 0);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);

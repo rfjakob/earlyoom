@@ -122,7 +122,8 @@ bool is_alive(int pid)
         return false;
     }
     fclose(f);
-    if (enable_debug) printf("process state: %c\n", state);
+    if (enable_debug)
+        printf("process state: %c\n", state);
     if (state == 'Z') {
         // A zombie process does not use any memory. Consider it dead.
         return false;
