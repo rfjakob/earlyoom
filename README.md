@@ -247,7 +247,7 @@ accept
 
 Changelog
 ---------
-* v1.3, in progress
+* v1.3, 2019-05-26
   * Wait for processes to actually exit when sending a signal
     * This fixes the problem that earlyoom sometimes kills more than
       one process when one would be enough
@@ -262,6 +262,8 @@ Changelog
     helper script
   * Add [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) (Contributor Covenant 1.4)
     ([#102](https://github.com/rfjakob/earlyoom/issues/102))
+  * Fix possibly truncated UTF8 app names in log output
+    ([#110](https://github.com/rfjakob/earlyoom/issues/110))
 
 * v1.2, 2018-10-28
   * Implement adaptive sleep time (= adaptive poll rate) to lower CPU
