@@ -17,7 +17,8 @@ func main() {
 	if err != nil {
 		fmt.Printf("warning: mlockall: %v. Run as root?\n", err)
 	}
-	fmt.Println("Time MemAvail SwapFree Some Full")
+	fmt.Println("Time MemAvail SwapFree /proc/pressure/memory")
+	fmt.Println("   s      MiB      MiB some full")
 	some2, full2 := pressure()
 	const interval = 100
 	for {
