@@ -15,25 +15,40 @@ func main() {
 	t0 := time.Now()
 	err := unix.Mlockall(unix.MCL_CURRENT | unix.MCL_FUTURE | unix.MCL_ONFAULT)
 	if err != nil {
-		fmt.Printf("warning: mlockall: %v. Run as root?\n", err)
+		fmt.Printf("warning: mlockall: %v. Run as root?\n\n", err)
 	}
-	fmt.Println("Time MemAvail SwapFree /proc/pressure/memory")
-	fmt.Println("   s      MiB      MiB some full")
-	some2, full2 := pressure()
+	fmt.Println("     | /proc/meminfo     | /proc/pressure/memory")
+	fmt.Println("Time | MemAvail SwapFree | some avg10 full avg10")
+	fmt.Println("   s |      MiB      MiB |    %     %    %     %")
+	fmt.Println("     -                   -                      ")
+	p2 := pressure()
 	const interval = 100
 	for {
 		t1 := time.Now()
 		t := t1.Sub(t0).Seconds()
-		some, full := pressure()
+		p := pressure()
 		m := meminfo()
-		fmt.Printf("%4.1f    %5d     %4d  %3d   %2d\n", t, m.memAvailableMiB, m.swapFreeMiB,
-			(some-some2)/interval/10, (full-full2)/interval/10)
-		some2, full2 = some, full
+		fmt.Printf("%4.1f | %8d %8d | %4d %5d %4d %5d\n",
+			t,
+			m.memAvailableMiB,
+			m.swapFreeMiB,
+			(p.someTotal-p2.someTotal)/interval/10,
+			int(p.someAvg10),
+			(p.fullTotal-p2.fullTotal)/interval/10,
+			int(p.fullAvg10))
+		p2 = p
 		time.Sleep(interval * time.Millisecond)
 	}
 }
 
-func pressure() (some int, full int) {
+type pressureVals struct {
+	someAvg10 float64
+	someTotal int
+	fullAvg10 float64
+	fullTotal int
+}
+
+func pressure() (p pressureVals) {
 	/*
 	   $ cat /proc/pressure/memory
 	   some avg10=0.00 avg60=0.03 avg300=0.65 total=28851712
@@ -44,11 +59,19 @@ func pressure() (some int, full int) {
 		log.Fatal(err)
 	}
 	fields := strings.Fields(string(buf))
-	some, err = strconv.Atoi(fields[4][6:])
+	p.someAvg10, err = strconv.ParseFloat(fields[1][len("avg10="):], 64)
 	if err != nil {
 		log.Fatal(err)
 	}
-	full, err = strconv.Atoi(fields[9][6:])
+	p.someTotal, err = strconv.Atoi(fields[4][len("total="):])
+	if err != nil {
+		log.Fatal(err)
+	}
+	p.fullAvg10, err = strconv.ParseFloat(fields[6][len("avg10="):], 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p.fullTotal, err = strconv.Atoi(fields[9][len("total="):])
 	if err != nil {
 		log.Fatal(err)
 	}
