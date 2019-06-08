@@ -16,5 +16,7 @@ if len(sys.argv) != 2:
 
 count = int(sys.argv[1])
 data = bytearray(1024*1024*count)
-os.system("grep VmRSS /proc/%d/status" % (os.getpid()))
-time.sleep(3600*999999)
+
+while True:
+	os.system("grep VmRSS /proc/%d/status" % (os.getpid()))
+	time.sleep(1)
