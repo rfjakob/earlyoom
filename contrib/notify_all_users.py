@@ -1,33 +1,28 @@
 #!/usr/bin/env python3
-#
+
+# This script is part of earlyoom package.
+
 # Send a GUI notification to all logged-in users.
-# Written by https://github.com/hakavlad .
-#
+
+# Written by https://github.com/hakavlad
+
+# Why it was written:
+#   https://github.com/rfjakob/earlyoom/issues/72
+
 # Example:
-#   ./notify_all_users.py earlyoom "Low memory! Killing/Terminating process 2233 tail"
-#
+#   ./notify_all_users.py -i dialog-warning earlyoom "Low memory! Killing process 2233 tail"
+
+# Usage:
+#   earlyoom -N notify_all_users.py
+
 # Notification that should pop up:
 #   earlyoom
-#   Low memory! Killing/Terminating process 2233 tail
+#   Low memory! Killing process 2233 tail
+
 
 from sys import argv
 from os import listdir
 from subprocess import Popen, TimeoutExpired
-
-if len(argv) < 2 or argv[1] == "-h" or argv[1] == "--help":
-    print("Usage:")
-    print("  %s [notify-send options] summary [body text]" % (argv[0]))
-    print("Examples:")
-    print("  %s mytitle mytext" % (argv[0]))
-    print("  %s -i dialog-warning earlyoom \"killing process X\"" %
-          (argv[0]))
-    exit(1)
-
-wait_time = 10
-
-display_env = 'DISPLAY='
-dbus_env = 'DBUS_SESSION_BUS_ADDRESS='
-user_env = 'USER='
 
 
 def rline1(path):
@@ -54,6 +49,8 @@ def re_pid_environ(pid):
             for i in env_list:
                 if i.startswith(user_env):
                     user = i
+                    if user == 'USER=root':
+                        return None
                     continue
 
                 if i.startswith(display_env):
@@ -104,26 +101,67 @@ def root_notify_env():
     return new_env
 
 
+help_message = '''Usage:
+  {} [notify-send options] summary [body text]
+Examples:
+  {} mytitle mytext
+  {} -i dialog-warning earlyoom "killing process X"'''.format(
+    argv[0], argv[0], argv[0])
+
+
+if len(argv) == 1:
+    print(help_message)
+    exit(1)
+
+
+if len(argv) == 2:
+    if argv[1] == '-h' or argv[1] == '--help':
+        print(help_message)
+        exit()
+
+
+# This script should be executed with euid=0
+try:
+    rline1('/proc/1/environ')
+except PermissionError:
+    print('{}: PermissionError'.format(argv[0]))
+    exit(1)
+
+
+wait_time = 10
+
+
+display_env = 'DISPLAY='
+dbus_env = 'DBUS_SESSION_BUS_ADDRESS='
+user_env = 'USER='
+
+
 list_with_envs = root_notify_env()
 
 
 # if somebody logged in with GUI
 if len(list_with_envs) > 0:
+
     # iterating over logged-in users
     for i in list_with_envs:
+
         username, display_env, dbus_env = i[0], i[1], i[2]
         display_tuple = display_env.partition('=')
         dbus_tuple = dbus_env.partition('=')
         display_value = display_tuple[2]
         dbus_value = dbus_tuple[2]
 
-        with Popen([
+        cmd = [
             'sudo', '-u', username,
             'env',
             'DISPLAY=' + display_value,
             'DBUS_SESSION_BUS_ADDRESS=' + dbus_value,
-            'notify-send', '--icon=dialog-warning', argv[1], argv[2]
-        ]) as proc:
+            'notify-send'
+        ]
+
+        cmd.extend(argv[1:])
+
+        with Popen(cmd) as proc:
             try:
                 proc.wait(timeout=wait_time)
             except TimeoutExpired:
