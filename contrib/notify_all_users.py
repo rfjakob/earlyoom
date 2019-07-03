@@ -45,7 +45,7 @@ def re_pid_environ(pid):
             for i in env_list:
                 if i.startswith(user_env):
                     user = i
-                    if user == 'root':
+                    if user == 'USER=root':
                         return None
                     continue
 
