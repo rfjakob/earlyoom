@@ -9,12 +9,16 @@
 # Why it was written:
 #   https://github.com/rfjakob/earlyoom/issues/72
 
+# Example:
+#   ./notify_all_users.py -i dialog-warning earlyoom "Low memory! Killing process 2233 tail"
+
 # Usage:
 #   earlyoom -N notify_all_users.py
 
 # Notification that should pop up:
 #   earlyoom
 #   Low memory! Killing process 2233 tail
+
 
 from sys import argv
 from os import listdir
@@ -97,18 +101,30 @@ def root_notify_env():
     return new_env
 
 
-if len(argv) != 5:
-    print('Invalid input.')
-    print('Usage:')
-    print('    earlyoom -N notify_all_users.py')
+help_message = '''Usage:
+  {} [notify-send options] summary [body text]
+Examples:
+  {} mytitle mytext
+  {} -i dialog-warning earlyoom "killing process X"'''.format(
+    argv[0], argv[0], argv[0])
+
+
+if len(argv) == 1:
+    print(help_message)
     exit(1)
+
+
+if len(argv) == 2:
+    if argv[1] == '-h' or argv[1] == '--help':
+        print(help_message)
+        exit()
 
 
 # This script should be executed with euid=0
 try:
     rline1('/proc/1/environ')
 except PermissionError:
-    print('notify_all_users.py: PermissionError')
+    print('{}: PermissionError'.format(argv[0]))
     exit(1)
 
 
