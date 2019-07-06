@@ -18,5 +18,5 @@ count = int(sys.argv[1])
 data = bytearray(1024*1024*count)
 
 while True:
-	os.system("grep VmRSS /proc/%d/status" % (os.getpid()))
-	time.sleep(1)
+    os.system("grep VmRSS /proc/%d/status" % (os.getpid()))
+    time.sleep(1)
