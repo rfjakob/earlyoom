@@ -72,7 +72,7 @@ func TestCli(t *testing.T) {
 		{args: nil, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		{args: []string{"-p"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-v"}, code: 0, stderrContains: "earlyoom v", stdoutEmpty: true},
-		{args: []string{"-d"}, code: -1, stdoutContains: "^ new victim (higher badness)"},
+		{args: []string{"-d"}, code: -1, stdoutContains: "^ new victim"},
 		{args: []string{"-m", "1"}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
 		{args: []string{"-m", "0"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "-10"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
