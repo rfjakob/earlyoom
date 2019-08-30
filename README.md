@@ -108,7 +108,17 @@ sudo make install-initscript   # non-systemd
 
 For Debian 10+ and Ubuntu 18.04+, there's a [Debian package](https://packages.debian.org/search?keywords=earlyoom):
 ```bash
-apt install earlyoom
+sudo apt install earlyoom
+```
+
+For Fedora:
+```bash
+sudo dnf install earlyoom
+```
+
+For RHEL8 with EPEL:
+```bash
+sudo yum install earlyoom
 ```
 
 For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/).
