@@ -111,14 +111,9 @@ For Debian 10+ and Ubuntu 18.04+, there's a [Debian package](https://packages.de
 sudo apt install earlyoom
 ```
 
-For Fedora:
+For Fedora and RHEL8 with EPEL:
 ```bash
 sudo dnf install earlyoom
-```
-
-For RHEL8 with EPEL:
-```bash
-sudo yum install earlyoom
 ```
 
 For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/).
