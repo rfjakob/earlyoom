@@ -105,6 +105,7 @@ Start earlyoom automatically by registering it as a service:
 sudo make install              # systemd
 sudo make install-initscript   # non-systemd
 ```
+_Note that for systems with SELinux disabled (Ubuntu 19.04, Debian 9 ...) chcon warnings reporting failure to set the context can be safely ignored._
 
 For Debian 10+ and Ubuntu 18.04+, there's a [Debian package](https://packages.debian.org/search?keywords=earlyoom):
 ```bash
