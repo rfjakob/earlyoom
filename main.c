@@ -213,14 +213,14 @@ int main(int argc, char* argv[])
         if (regcomp(args.prefer_regex, prefer_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
             fatal(6, "could not compile regexp '%s'\n", prefer_cmds);
         }
-        fprintf(stderr, "Prefering to kill process names that match regex '%s'\n", prefer_cmds);
+        fprintf(stderr, "Preferring to kill process names that match regex '%s'\n", prefer_cmds);
     }
     if (avoid_cmds) {
         args.avoid_regex = &_avoid_regex;
         if (regcomp(args.avoid_regex, avoid_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
             fatal(6, "could not compile regexp '%s'\n", avoid_cmds);
         }
-        fprintf(stderr, "Avoiding to kill process names that match regex '%s'\n", avoid_cmds);
+        fprintf(stderr, "Will avoid killing process names that match regex '%s'\n", avoid_cmds);
     }
     if (set_my_priority) {
         bool fail = 0;
