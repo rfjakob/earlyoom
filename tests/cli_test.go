@@ -89,8 +89,8 @@ func TestCli(t *testing.T) {
 		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		// Test --avoid and --prefer
-		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Avoiding to kill", stdoutContains: memReport},
-		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Prefering to kill", stdoutContains: memReport},
+		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Will avoid killing", stdoutContains: memReport},
+		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Preferring to kill", stdoutContains: memReport},
 		// Extra arguments should error out
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
