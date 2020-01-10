@@ -110,6 +110,8 @@ _Note that for systems with SELinux disabled (Ubuntu 19.04, Debian 9 ...) chcon 
 For Debian 10+ and Ubuntu 18.04+, there's a [Debian package](https://packages.debian.org/search?keywords=earlyoom):
 ```bash
 sudo apt install earlyoom
+sudo systemctl enable earlyoom
+sudo systemctl start earlyoom
 ```
 
 For Fedora and RHEL 8 with EPEL, there's a [Fedora package](https://apps.fedoraproject.org/packages/earlyoom):
