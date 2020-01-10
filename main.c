@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
                 "                            to 0 to disable completely\n"
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -1000\n"
-                "  --prefer REGEX            prefer killing processes matching REGEX\n"
+                "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  -h, --help                this help text\n",
                 argv[0]);

@@ -215,8 +215,8 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v1.2-10-ga8f30d7
-Usage: earlyoom [OPTION]...
+earlyoom v1.3-15
+Usage: ./earlyoom [OPTION]...
 
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
                             (default 10 %).
@@ -238,7 +238,7 @@ Usage: earlyoom [OPTION]...
                             to 0 to disable completely
   -p                        set niceness of earlyoom to -20 and oom_score_adj to
                             -1000
-  --prefer REGEX            prefer killing processes matching REGEX
+  --prefer REGEX            prefer to kill processes matching REGEX
   --avoid REGEX             avoid killing processes matching REGEX
   -h, --help                this help text
 ```
