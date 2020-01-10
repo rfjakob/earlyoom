@@ -115,6 +115,7 @@ sudo apt install earlyoom
 For Fedora and RHEL 8 with EPEL, there's a [Fedora package](https://apps.fedoraproject.org/packages/earlyoom):
 ```bash
 sudo dnf install earlyoom
+sudo systemctl enable --now earlyoom
 ```
 
 For Arch Linux, there's an [AUR package](https://aur.archlinux.org/packages/earlyoom/).
