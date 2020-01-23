@@ -115,6 +115,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
     char victim_name[256] = { 0 };
+    char victim_cmd[256] = { 0 };
     struct procinfo p;
     int badness;
     struct timespec t0 = { 0 }, t1 = { 0 };
@@ -185,6 +186,29 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         // viewing the logs. Fix it.
         fix_truncated_utf8(name);
 
+        char cmd[256] = { 0 };
+        snprintf(buf, sizeof(buf), "%d/cmdline", pid);
+        FILE* cmdline = fopen(buf, "r");
+        if (cmdline) {
+            const int MAX_CMDLINE = 255;
+            int n = fread(cmd, 1, MAX_CMDLINE, cmdline);
+            if (n > 1) {
+                // nulls to spaces if there is more text
+                for (int i=0; i < (n-1); i++ ) {
+                    if (cmd[i] == 0 && cmd[i+1] != 0 ) {
+                        cmd[i] = ' ';
+                    }
+                }
+            } else {
+                warn("reading %s failed: %s", buf, strerror(errno));
+            }
+            fclose(cmdline);
+        } else {
+            warn("could not open %s: %s", buf, strerror(errno));
+        }
+
+        fix_truncated_utf8(cmd);
+
         if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
             badness += BADNESS_PREFER;
         }
@@ -200,12 +224,14 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             victim_badness = badness;
             victim_vm_rss = p.VmRSSkiB;
             strncpy(victim_name, name, sizeof(victim_name));
+            strncpy(victim_cmd, cmd, sizeof(victim_cmd));
             if (enable_debug)
                 printf("    ^ new victim (higher badness)\n");
         } else if (badness == victim_badness && p.VmRSSkiB > victim_vm_rss) {
             victim_pid = pid;
             victim_vm_rss = p.VmRSSkiB;
             strncpy(victim_name, name, sizeof(victim_name));
+            strncpy(victim_cmd, cmd, sizeof(victim_cmd));
             if (enable_debug)
                 printf("    ^ new victim (higher vm_rss)\n");
         }
@@ -234,8 +260,8 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
     }
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0) {
-        warn("sending %s to process %d \"%s\": badness %d, VmRSS %lu MiB\n",
-            sig_name, victim_pid, victim_name, victim_badness, victim_vm_rss / 1024);
+        warn("sending %s to process %d \"%s\":\"%s\": badness %d, VmRSS %lu MiB\n",
+            sig_name, victim_pid, victim_name, victim_cmd, victim_badness, victim_vm_rss / 1024);
     }
 
     int res = kill_wait(args, victim_pid, sig);
