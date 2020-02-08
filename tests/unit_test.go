@@ -95,6 +95,9 @@ func Test_fix_truncated_utf8(t *testing.T) {
 	for i := 3; i < len(str); i++ {
 		truncated := str[:i]
 		fixed := fix_truncated_utf8(truncated)
+		if len(fixed) < 3 {
+			t.Fatalf("truncated: %q", fixed)
+		}
 		if !utf8.Valid([]byte(fixed)) {
 			t.Errorf("Invalid utf8: %q", fixed)
 		}
