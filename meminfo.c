@@ -117,11 +117,12 @@ bool is_alive(int pid)
     // File content looks like this:
     // 10751 (cat) R 2663 10751 2663[...]
     char state;
-    if (fscanf(f, "%*d %*s %c", &state) < 1) {
+    int res = fscanf(f, "%*d %*s %c", &state);
+    fclose(f);
+    if (res < 1) {
         warn("is_alive: fscanf() failed: %s\n", strerror(errno));
         return false;
     }
-    fclose(f);
     if (enable_debug)
         printf("process state: %c\n", state);
     if (state == 'Z') {
