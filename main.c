@@ -53,7 +53,6 @@ int main(int argc, char* argv[])
     char* avoid_cmds = NULL;
     regex_t _prefer_regex;
     regex_t _avoid_regex;
-    page_size = sysconf(_SC_PAGESIZE);
 
     /* request line buffering for stdout - otherwise the output
      * may lag behind stderr */

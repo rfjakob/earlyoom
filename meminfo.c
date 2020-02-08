@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "globals.h"
 #include "meminfo.h"
@@ -184,6 +185,11 @@ struct procinfo get_process_stats(int pid)
     }
     if (fscanf(f, "%*u %lu", &(p.VmRSSkiB)) < 1) {
         warn("fscanf() vm_rss failed: %s\n", strerror(errno));
+    }
+    // Read and cache page size
+    static int page_size;
+    if (page_size == 0) {
+        page_size = sysconf(_SC_PAGESIZE);
     }
     // Value is in pages. Convert to kiB.
     p.VmRSSkiB = p.VmRSSkiB * page_size / 1024;

@@ -22,7 +22,6 @@
 #define BADNESS_AVOID -300
 
 extern int enable_debug;
-extern long page_size;
 void sanitize(char* s);
 
 static int isnumeric(char* str)
