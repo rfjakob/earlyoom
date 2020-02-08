@@ -56,12 +56,15 @@ static long available_guesstimate(const char* buf)
 meminfo_t parse_meminfo()
 {
     static FILE* fd;
+    // On Linux 5.3, "wc -c /proc/meminfo" counts 1391 bytes.
+    // 8192 should be enough for the foreseeable future.
     static char buf[8192];
     static int guesstimate_warned = 0;
     meminfo_t m;
 
     if (fd == NULL)
-        fd = fopen("/proc/meminfo", "r");
+        // main() makes sure that we are in /proc
+        fd = fopen("meminfo", "r");
     if (fd == NULL) {
         fatal(102, "could not open /proc/meminfo: %s\n", strerror(errno));
     }
