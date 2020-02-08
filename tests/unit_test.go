@@ -100,3 +100,15 @@ func Test_fix_truncated_utf8(t *testing.T) {
 		}
 	}
 }
+
+func Test_get_process_stats(t *testing.T) {
+	pid := os.Getpid()
+	st := get_process_stats(pid)
+	if int(st.exited) == 1 {
+		t.Fatal("we have obviously not exited")
+	}
+	if int(st.VmRSSkiB) == 0 {
+		t.Fatal("our rss can't be zero")
+	}
+	t.Logf("result for pid %d: %#v", pid, st)
+}
