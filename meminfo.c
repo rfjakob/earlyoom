@@ -64,8 +64,7 @@ meminfo_t parse_meminfo()
     meminfo_t m = {0};
 
     if (fd == NULL)
-        // main() makes sure that we are in /proc
-        fd = fopen("meminfo", "r");
+        fd = fopen("/proc/meminfo", "r");
     if (fd == NULL) {
         fatal(102, "could not open /proc/meminfo: %s\n", strerror(errno));
     }

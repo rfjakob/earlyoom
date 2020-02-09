@@ -57,3 +57,7 @@ func get_process_stats(pid int) C.struct_procinfo {
 
 	return C.get_process_stats(C.int(pid))
 }
+
+func parse_meminfo() C.meminfo_t {
+	return C.parse_meminfo()
+}

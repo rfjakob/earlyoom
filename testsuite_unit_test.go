@@ -114,3 +114,9 @@ func Test_get_process_stats(t *testing.T) {
 		t.Fatal("our rss can't be zero")
 	}
 }
+
+func Benchmark_parse_meminfo(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		parse_meminfo()
+	}
+}
