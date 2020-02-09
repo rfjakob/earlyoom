@@ -28,6 +28,10 @@
 #define MCL_ONFAULT 4
 #endif
 
+#ifndef VERSION
+#define VERSION "*** unknown version ***"
+#endif
+
 /* Arbitrary identifiers for long options that do not have a short
  * version */
 enum {
