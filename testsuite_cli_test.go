@@ -114,45 +114,47 @@ func TestCli(t *testing.T) {
 		testcases = append(testcases, tc...)
 	}
 
-	for i, tc := range testcases {
-		t.Logf("Testcase #%d: earlyoom %s", i, strings.Join(tc.args, " "))
-		pass := true
-		res := runEarlyoom(t, tc.args...)
-		if res.code != tc.code {
-			t.Errorf("wrong exit code: have=%d want=%d", res.code, tc.code)
-			pass = false
-		}
-		if tc.stdoutEmpty && res.stdout != "" {
-			t.Errorf("stdout should be empty but is not")
-			pass = false
-		}
-		if !strings.Contains(res.stdout, tc.stdoutContains) {
-			t.Errorf("stdout should contain %q, but does not", tc.stdoutContains)
-			pass = false
-		}
-		if tc.stderrEmpty && res.stderr != "" {
-			t.Errorf("stderr should be empty, but is not")
-			pass = false
-		}
-		if !strings.Contains(res.stderr, tc.stderrContains) {
-			t.Errorf("stderr should contain %q, but does not", tc.stderrContains)
-			pass = false
-		}
-		if res.rss > rssMax {
-			t.Errorf("rss=%d above limit=%d", res.rss, rssMax)
-			pass = false
-		}
-		if !pass {
-			const empty = "(empty)"
-			if res.stderr == "" {
-				res.stderr = empty
+	for _, tc := range testcases {
+		name := fmt.Sprintf("%s", strings.Join(tc.args, " "))
+		t.Run(name, func(t *testing.T) {
+			pass := true
+			res := runEarlyoom(t, tc.args...)
+			if res.code != tc.code {
+				t.Errorf("wrong exit code: have=%d want=%d", res.code, tc.code)
+				pass = false
 			}
-			if res.stdout == "" {
-				res.stdout = empty
+			if tc.stdoutEmpty && res.stdout != "" {
+				t.Errorf("stdout should be empty but is not")
+				pass = false
 			}
-			t.Logf("stderr:\n%s", res.stderr)
-			t.Logf("stdout:\n%s", res.stdout)
-		}
+			if !strings.Contains(res.stdout, tc.stdoutContains) {
+				t.Errorf("stdout should contain %q, but does not", tc.stdoutContains)
+				pass = false
+			}
+			if tc.stderrEmpty && res.stderr != "" {
+				t.Errorf("stderr should be empty, but is not")
+				pass = false
+			}
+			if !strings.Contains(res.stderr, tc.stderrContains) {
+				t.Errorf("stderr should contain %q, but does not", tc.stderrContains)
+				pass = false
+			}
+			if res.rss > rssMax {
+				t.Errorf("rss=%d above limit=%d", res.rss, rssMax)
+				pass = false
+			}
+			if !pass {
+				const empty = "(empty)"
+				if res.stderr == "" {
+					res.stderr = empty
+				}
+				if res.stdout == "" {
+					res.stdout = empty
+				}
+				t.Logf("stderr:\n%s", res.stderr)
+				t.Logf("stdout:\n%s", res.stdout)
+			}
+		})
 	}
 }
 
