@@ -113,5 +113,4 @@ func Test_get_process_stats(t *testing.T) {
 	if int(st.VmRSSkiB) == 0 {
 		t.Fatal("our rss can't be zero")
 	}
-	t.Logf("result for pid %d: %#v", pid, st)
 }
