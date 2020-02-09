@@ -15,6 +15,7 @@ type exitVals struct {
 	code   int
 	stdout string
 	stderr string
+	rss    uint64
 }
 
 const earlyoomBinary = "./earlyoom"
@@ -70,6 +71,7 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 		}
 	}
 	timer.Stop()
+	rss := getRss(cmd.Process.Pid)
 	cmd.Process.Kill()
 	err = cmd.Wait()
 
@@ -77,6 +79,7 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 		code:   extractCmdExitCode(err),
 		stdout: string(stdoutBuf.Bytes()),
 		stderr: string(stderrBuf.Bytes()),
+		rss:    rss,
 	}
 }
 

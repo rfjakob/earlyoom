@@ -38,6 +38,12 @@ func fix_truncated_utf8(str string) string {
 	return C.GoString(cstr)
 }
 
+// getRss returns the RSS of process `pid` in kiB.
+func getRss(pid int) uint64 {
+	st := get_process_stats(pid)
+	return uint64(st.VmRSSkiB)
+}
+
 func get_process_stats(pid int) C.struct_procinfo {
 	oldwd, err := os.Getwd()
 	if err != nil {

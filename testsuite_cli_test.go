@@ -3,11 +3,9 @@ package earlyoom_testsuite
 import (
 	"fmt"
 	"io/ioutil"
-	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 )
 
 type cliTestCase struct {
@@ -152,19 +150,12 @@ func TestCli(t *testing.T) {
 }
 
 func TestRss(t *testing.T) {
-	cmd := exec.Command(earlyoomBinary)
-	err := cmd.Start()
-	if err != nil {
-		t.Fatal(err)
+	res := runEarlyoom(t)
+	if res.rss == 0 {
+		t.Error("rss is zero!?")
 	}
-	// wait for earlyoom to start up
-	// TODO: less stupid synchronisation method than sleep
-	time.Sleep(100 * time.Millisecond)
-	st := get_process_stats(cmd.Process.Pid)
-	if st.exited == 1 {
-		t.Fatal("process died")
+	if res.rss > 1024 {
+		t.Error("rss above 1 MiB")
 	}
-	cmd.Process.Kill()
-	rss := int(st.VmRSSkiB)
-	t.Logf("earlyoom RSS: %d kiB", rss)
+	t.Logf("earlyoom RSS: %d kiB", res.rss)
 }
