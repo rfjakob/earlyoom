@@ -1,15 +1,14 @@
-package tests
+package earlyoom_testsuite
 
 import (
 	"fmt"
 	"os"
 )
 
-// #cgo CFLAGS: -std=gnu99
-// #include "../globals.c"
-// #include "../sanitize.c"
-// #include "../msg.c"
-// #include "../meminfo.c"
+// #cgo CFLAGS: -std=gnu99 -DCGO
+// #include "meminfo.h"
+// #include "kill.h"
+// #include "msg.h"
 import "C"
 
 func sanitize(s string) string {

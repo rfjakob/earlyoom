@@ -81,7 +81,4 @@ format: earlyoom
 	clang-format -i *.h *.c
 
 test: earlyoom
-# Go does not notice when the C code changes, so we have to
-# use `go clean` and `go test -a`.
-# See https://github.com/golang/go/issues/24355 .
-	cd tests && go clean -cache -testcache . && go test -a -v
+	go test -v

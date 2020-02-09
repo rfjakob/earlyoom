@@ -1,4 +1,4 @@
-package tests
+package earlyoom_testsuite
 
 import (
 	"fmt"
@@ -154,7 +154,7 @@ func TestCli(t *testing.T) {
 }
 
 func TestRss(t *testing.T) {
-	cmd := exec.Command("../earlyoom")
+	cmd := exec.Command(earlyoomBinary)
 	err := cmd.Start()
 	if err != nil {
 		t.Fatal(err)

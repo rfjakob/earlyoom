@@ -1,4 +1,4 @@
-package tests
+package earlyoom_testsuite
 
 import (
 	"os"

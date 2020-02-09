@@ -1,4 +1,4 @@
-package tests
+package earlyoom_testsuite
 
 import (
 	"bytes"
@@ -16,10 +16,12 @@ type exitVals struct {
 	stderr string
 }
 
+const earlyoomBinary = "./earlyoom"
+
 // runEarlyoom runs earlyoom with a timeout
 func runEarlyoom(t *testing.T, args ...string) exitVals {
 	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd := exec.Command("../earlyoom", args...)
+	cmd := exec.Command(earlyoomBinary, args...)
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 
