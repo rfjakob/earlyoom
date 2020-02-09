@@ -42,6 +42,12 @@ enum {
 static int set_oom_score_adj(int);
 static void poll_loop(const poll_loop_args_t args);
 
+// Prevent Golang / Cgo name collision when the test suite runs -
+// Cgo generates it's own main function.
+#ifdef CGO
+#define main main2
+#endif
+
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
