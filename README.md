@@ -1,5 +1,5 @@
-The Early OOM Daemon
-====================
+earlyoom - The Early OOM Daemon
+===============================
 
 [![Build Status](https://api.travis-ci.org/rfjakob/earlyoom.svg)](https://travis-ci.org/rfjakob/earlyoom)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
