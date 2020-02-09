@@ -52,6 +52,9 @@ func parseMeminfo() (memTotal int64, swapTotal int64) {
 	return
 }
 
+// earlyoom RSS should never be above 1 MiB
+const rssMax = 1024
+
 func TestCli(t *testing.T) {
 	memTotal, swapTotal := parseMeminfo()
 	mem1percent := fmt.Sprintf("%d", memTotal*2/101)   // slightly below 2 percent
@@ -135,6 +138,10 @@ func TestCli(t *testing.T) {
 			t.Errorf("stderr should contain %q, but does not", tc.stderrContains)
 			pass = false
 		}
+		if res.rss > rssMax {
+			t.Errorf("rss=%d above limit=%d", res.rss, rssMax)
+			pass = false
+		}
 		if !pass {
 			const empty = "(empty)"
 			if res.stderr == "" {
@@ -154,7 +161,7 @@ func TestRss(t *testing.T) {
 	if res.rss == 0 {
 		t.Error("rss is zero!?")
 	}
-	if res.rss > 1024 {
+	if res.rss > rssMax {
 		t.Error("rss above 1 MiB")
 	}
 	t.Logf("earlyoom RSS: %d kiB", res.rss)
