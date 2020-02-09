@@ -2,7 +2,6 @@ package earlyoom_testsuite
 
 import (
 	"fmt"
-	"os"
 )
 
 // #cgo CFLAGS: -std=gnu99 -DCGO
@@ -45,16 +44,6 @@ func getRss(pid int) uint64 {
 }
 
 func get_process_stats(pid int) C.struct_procinfo {
-	oldwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	err = os.Chdir("/proc")
-	if err != nil {
-		panic(err)
-	}
-	defer os.Chdir(oldwd)
-
 	return C.get_process_stats(C.int(pid))
 }
 

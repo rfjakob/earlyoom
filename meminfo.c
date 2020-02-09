@@ -144,7 +144,7 @@ struct procinfo get_process_stats(int pid)
     struct procinfo p = { 0 };
 
     // Read /proc/[pid]/oom_score
-    snprintf(buf, sizeof(buf), "%d/oom_score", pid);
+    snprintf(buf, sizeof(buf), "/proc/%d/oom_score", pid);
     FILE* f = fopen(buf, "r");
     if (f == NULL) {
         // ENOENT just means that process has already exited.
@@ -160,7 +160,7 @@ struct procinfo get_process_stats(int pid)
     fclose(f);
 
     // Read /proc/[pid]/oom_score_adj
-    snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
+    snprintf(buf, sizeof(buf), "/proc/%d/oom_score_adj", pid);
     f = fopen(buf, "r");
     if (f == NULL) {
         printf(fopen_msg, buf, strerror(errno));
@@ -173,7 +173,7 @@ struct procinfo get_process_stats(int pid)
     fclose(f);
 
     // Read VmRSS from /proc/[pid]/statm (in pages)
-    snprintf(buf, sizeof(buf), "%d/statm", pid);
+    snprintf(buf, sizeof(buf), "/proc/%d/statm", pid);
     f = fopen(buf, "r");
     if (f == NULL) {
         printf(fopen_msg, buf, strerror(errno));

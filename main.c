@@ -282,7 +282,7 @@ static int set_oom_score_adj(int oom_score_adj)
     char buf[256];
     pid_t pid = getpid();
 
-    snprintf(buf, sizeof(buf), "%d/oom_score_adj", pid);
+    snprintf(buf, sizeof(buf), "/proc/%d/oom_score_adj", pid);
     FILE* f = fopen(buf, "w");
     if (f == NULL) {
         return -1;

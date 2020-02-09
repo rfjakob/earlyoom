@@ -114,8 +114,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         clock_gettime(CLOCK_MONOTONIC, &t0);
     }
 
-    // main() makes sure that we are in /proc
-    DIR* procdir = opendir(".");
+    DIR* procdir = opendir("/proc");
     if (procdir == NULL) {
         fatal(5, "Could not open /proc: %s", strerror(errno));
     }
@@ -157,7 +156,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
         char name[256] = { 0 };
         char buf[256] = { 0 };
-        snprintf(buf, sizeof(buf), "%d/comm", pid);
+        snprintf(buf, sizeof(buf), "/proc/%d/comm", pid);
         FILE* comm = fopen(buf, "r");
         if (comm) {
             const int TASK_COMM_LEN = 16;
