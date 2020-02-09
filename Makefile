@@ -81,4 +81,5 @@ format: earlyoom
 	clang-format -i *.h *.c
 
 test: earlyoom
+	cppcheck -q . || echo "skipping optional cppcheck"
 	go test -v
