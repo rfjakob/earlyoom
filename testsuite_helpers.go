@@ -1,6 +1,7 @@
 package earlyoom_testsuite
 
 import (
+	"bufio"
 	"bytes"
 	"log"
 	"os"
@@ -18,21 +19,59 @@ type exitVals struct {
 
 const earlyoomBinary = "./earlyoom"
 
+// The periodic memory report looks like this:
+//   mem avail: 4998 MiB (63 %), swap free: 0 MiB (0 %)
+const memReport = "mem avail: "
+
 // runEarlyoom runs earlyoom with a timeout
 func runEarlyoom(t *testing.T, args ...string) exitVals {
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd := exec.Command(earlyoomBinary, args...)
-	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
+	p, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdoutScanner := bufio.NewScanner(p)
 
-	// Start with 100 ms timeout
+	// If "-r=0" is passed, earlyoom will not print a memory report,
+	// so we set a shorter timeout and not report an error on timeout
+	// kill.
+	expectMemReport := true
+	for _, a := range args {
+		if a == "-r=0" {
+			expectMemReport = false
+		}
+	}
 	var timer *time.Timer
-	timer = time.AfterFunc(100*time.Millisecond, func() {
-		timer.Stop()
-		cmd.Process.Kill()
-	})
-	err := cmd.Run()
+	if expectMemReport {
+		timer = time.AfterFunc(10*time.Second, func() {
+			t.Error("timeout")
+			cmd.Process.Kill()
+		})
+	} else {
+		timer = time.AfterFunc(100*time.Millisecond, func() {
+			cmd.Process.Kill()
+		})
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Read until the first status line, looks like this:
+	// mem avail: 19377 of 23915 MiB (81 %), swap free:    0 of    0 MiB ( 0 %)
+	for stdoutScanner.Scan() {
+		line := stdoutScanner.Bytes()
+		stdoutBuf.Write(line)
+		if bytes.HasPrefix(line, []byte(memReport)) {
+			break
+		}
+	}
 	timer.Stop()
+	cmd.Process.Kill()
+	err = cmd.Wait()
 
 	return exitVals{
 		code:   extractCmdExitCode(err),

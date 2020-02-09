@@ -58,9 +58,6 @@ func TestCli(t *testing.T) {
 	memTotal, swapTotal := parseMeminfo()
 	mem1percent := fmt.Sprintf("%d", memTotal*2/101)   // slightly below 2 percent
 	swap2percent := fmt.Sprintf("%d", swapTotal*3/101) // slightly below 3 percent
-	// The periodic memory report looks like this:
-	//   mem avail: 4998 MiB (63 %), swap free: 0 MiB (0 %)
-	const memReport = "mem avail: "
 	// earlyoom startup looks like this:
 	//   earlyoom v1.1-5-g74a364b-dirty
 	//   mem total: 7836 MiB, min: 783 MiB (10 %)
@@ -88,7 +85,8 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "-10"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-M", mem1percent}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
 		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-r", "0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
+		// We use "-r=0" instead of "-r", "0" so runEarlyoom() can detect that there will be no output
+		{args: []string{"-r=0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		// Test --avoid and --prefer
 		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Will avoid killing", stdoutContains: memReport},
