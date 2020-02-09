@@ -60,8 +60,8 @@ meminfo_t parse_meminfo()
     static int guesstimate_warned = 0;
     // On Linux 5.3, "wc -c /proc/meminfo" counts 1391 bytes.
     // 8192 should be enough for the foreseeable future.
-    char buf[8192];
-    meminfo_t m = {0};
+    char buf[8192] = { 0 };
+    meminfo_t m = { 0 };
 
     if (fd == NULL)
         fd = fopen("/proc/meminfo", "r");
@@ -74,7 +74,6 @@ meminfo_t parse_meminfo()
     if (len == 0) {
         fatal(102, "could not read /proc/meminfo: %s\n", strerror(errno));
     }
-    buf[len] = 0; // Make sure buf is zero-terminated
 
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
     m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
