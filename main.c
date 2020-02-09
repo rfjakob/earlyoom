@@ -336,14 +336,13 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
 
 static void poll_loop(const poll_loop_args_t args)
 {
-    meminfo_t m = { 0 };
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.
     int report_countdown_ms = 0;
 
     while (1) {
         int sig = 0;
-        m = parse_meminfo();
+        meminfo_t m = parse_meminfo();
         if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
             print_mem_stats(1, m);
             warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
