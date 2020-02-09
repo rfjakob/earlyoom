@@ -2,8 +2,8 @@
 #ifndef KILL_H
 #define KILL_H
 
-#include <stdbool.h>
 #include <regex.h>
+#include <stdbool.h>
 
 typedef struct {
     /* if the available memory AND swap goes below these percentages,

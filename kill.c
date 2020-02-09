@@ -13,14 +13,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "globals.h"
 #include "kill.h"
 #include "meminfo.h"
 #include "msg.h"
 
 #define BADNESS_PREFER 300
 #define BADNESS_AVOID -300
-
-extern int enable_debug;
 
 static int isnumeric(char* str)
 {
@@ -105,15 +104,10 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
  */
 void kill_largest_process(const poll_loop_args_t args, int sig)
 {
-    struct dirent* d;
-    char buf[256];
-    int pid;
     int victim_pid = 0;
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
     char victim_name[256] = { 0 };
-    struct procinfo p;
-    int badness;
     struct timespec t0 = { 0 }, t1 = { 0 };
 
     if (enable_debug) {
@@ -128,7 +122,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
     while (1) {
         errno = 0;
-        d = readdir(procdir);
+        struct dirent* d = readdir(procdir);
         if (d == NULL) {
             if (errno != 0)
                 warn("userspace_kill: readdir error: %s", strerror(errno));
@@ -141,13 +135,13 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (!isnumeric(d->d_name))
             continue;
 
-        pid = strtoul(d->d_name, NULL, 10);
+        int pid = strtoul(d->d_name, NULL, 10);
 
         if (pid <= 1)
             // Let's not kill init.
             continue;
 
-        p = get_process_stats(pid);
+        struct procinfo p = get_process_stats(pid);
 
         if (p.exited == 1)
             // Process may have died in the meantime
@@ -157,11 +151,12 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             // Skip kernel threads
             continue;
 
-        badness = p.oom_score;
+        int badness = p.oom_score;
         if (args.ignore_oom_score_adj && p.oom_score_adj > 0)
             badness -= p.oom_score_adj;
 
         char name[256] = { 0 };
+        char buf[256] = { 0 };
         snprintf(buf, sizeof(buf), "%d/comm", pid);
         FILE* comm = fopen(buf, "r");
         if (comm) {
