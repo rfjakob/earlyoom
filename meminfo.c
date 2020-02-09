@@ -57,11 +57,11 @@ static long available_guesstimate(const char* buf)
 meminfo_t parse_meminfo()
 {
     static FILE* fd;
+    static int guesstimate_warned = 0;
     // On Linux 5.3, "wc -c /proc/meminfo" counts 1391 bytes.
     // 8192 should be enough for the foreseeable future.
-    static char buf[8192];
-    static int guesstimate_warned = 0;
-    meminfo_t m;
+    char buf[8192];
+    meminfo_t m = {0};
 
     if (fd == NULL)
         // main() makes sure that we are in /proc
@@ -143,12 +143,11 @@ struct procinfo get_process_stats(int pid)
 {
     const char* const fopen_msg = "fopen %s failed: %s\n";
     char buf[256];
-    FILE* f;
     struct procinfo p = { 0 };
 
     // Read /proc/[pid]/oom_score
     snprintf(buf, sizeof(buf), "%d/oom_score", pid);
-    f = fopen(buf, "r");
+    FILE* f = fopen(buf, "r");
     if (f == NULL) {
         // ENOENT just means that process has already exited.
         // Not need to bug the user.
