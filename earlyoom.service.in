@@ -5,6 +5,22 @@ Documentation=man:earlyoom(1) https://github.com/rfjakob/earlyoom
 [Service]
 EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
 ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
+Restart=always
+TasksMax=20
+MemoryMax=100M
+CapabilityBoundingSet=CAP_KILL CAP_IPC_LOCK CAP_DAC_READ_SEARCH CAP_AUDIT_WRITE CAP_SETUID CAP_SETGID CAP_SYS_RESOURCE CAP_SYS_NICE
+AmbientCapabilities=CAP_KILL CAP_IPC_LOCK CAP_DAC_READ_SEARCH CAP_AUDIT_WRITE CAP_SETUID CAP_SETGID CAP_SYS_RESOURCE CAP_SYS_NICE
+ReadOnlyPaths=/
+ReadWritePaths=/var /run /dev/shm /tmp /proc
+InaccessiblePaths=/home /root
+PrivateTmp=true
+MemoryDenyWriteExecute=yes
+ProtectKernelModules=true
+ProtectKernelTunables=true
+LockPersonality=yes
+RestrictNamespaces=yes
+CPUSchedulingResetOnFork=true
+RestrictRealtime=yes
 
 [Install]
 WantedBy=multi-user.target
