@@ -5,6 +5,14 @@ Documentation=man:earlyoom(1) https://github.com/rfjakob/earlyoom
 [Service]
 EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
 ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
+# Run as an unprivileged user with random user id
+DynamicUser=true
+# Allow killing processes and calling mlockall()
+AmbientCapabilities=CAP_KILL CAP_IPC_LOCK
+# We don't need write access anywhere
+ProtectSystem=strict
+# We don't need /home at all, make it inaccessible
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target
