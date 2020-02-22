@@ -50,3 +50,8 @@ func get_process_stats(pid int) C.struct_procinfo {
 func parse_meminfo() C.meminfo_t {
 	return C.parse_meminfo()
 }
+
+func kill_largest_process() {
+	var args C.poll_loop_args_t
+	C.kill_largest_process(args, 0)
+}

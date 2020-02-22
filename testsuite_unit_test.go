@@ -120,3 +120,9 @@ func Benchmark_parse_meminfo(b *testing.B) {
 		parse_meminfo()
 	}
 }
+
+func Benchmark_kill_largest_process(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		kill_largest_process()
+	}
+}
