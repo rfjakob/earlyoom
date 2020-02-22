@@ -12,6 +12,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "globals.h"
 #include "kill.h"
@@ -105,6 +106,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
 void kill_largest_process(const poll_loop_args_t args, int sig)
 {
     int victim_pid = 0;
+    int victim_uid = -1;
     int victim_badness = 0;
     unsigned long victim_vm_rss = 0;
     char victim_name[256] = { 0 };
@@ -154,6 +156,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (args.ignore_oom_score_adj && p.oom_score_adj > 0)
             badness -= p.oom_score_adj;
 
+        int uid = -1;
         char name[256] = { 0 };
         char buf[256] = { 0 };
         snprintf(buf, sizeof(buf), "/proc/%d/comm", pid);
@@ -166,6 +169,17 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
                 name[n - 1] = 0;
             } else {
                 warn("reading %s failed: %s", buf, strerror(errno));
+            }
+            struct stat st = {0};
+            if(fstat(fileno(comm), &st) == 0) {
+                /* After reading the Linux kernel source, the uid of the
+                 * files in /proc/PID seems to be the EUID of the process.
+                 * The EUID is what `ps un` calls "USER", let's call it 
+                 * just "uid".
+                 */
+                uid = st.st_uid;
+            } else {
+                warn("fstat %s failed: %s", buf, strerror(errno));
             }
             fclose(comm);
         } else {
@@ -184,10 +198,11 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         }
 
         if (enable_debug)
-            printf("pid %5d: badness %3d vm_rss %6lu %s\n", pid, badness, p.VmRSSkiB, name);
+            printf("pid %5d: badness %3d vm_rss %7lu uid %4d %s\n", pid, badness, p.VmRSSkiB, victim_uid, name);
 
         if (badness > victim_badness) {
             victim_pid = pid;
+            victim_uid = uid;
             victim_badness = badness;
             victim_vm_rss = p.VmRSSkiB;
             strncpy(victim_name, name, sizeof(victim_name));
@@ -222,11 +237,13 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         sig_name = "SIGTERM";
     } else if (sig == SIGKILL) {
         sig_name = "SIGKILL";
+    } else if (sig == 0) {
+        sig_name = "0 (no-op signal)";
     }
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
-    if (sig != 0) {
-        warn("sending %s to process %d \"%s\": badness %d, VmRSS %lu MiB\n",
-            sig_name, victim_pid, victim_name, victim_badness, victim_vm_rss / 1024);
+    if (sig != 0 || enable_debug) {
+        warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lu MiB\n",
+            sig_name, victim_uid, victim_pid, victim_name, victim_badness, victim_vm_rss / 1024);
     }
 
     int res = kill_wait(args, victim_pid, sig);
