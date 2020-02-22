@@ -3,6 +3,7 @@ package earlyoom_testsuite
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -12,10 +13,14 @@ import (
 )
 
 type exitVals struct {
-	code   int
 	stdout string
 	stderr string
-	rss    uint64
+	// Exit code
+	code int
+	// RSS in kiB
+	rss uint64
+	// Number of file descriptors
+	fds int
 }
 
 const earlyoomBinary = "./earlyoom"
@@ -72,6 +77,7 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 	}
 	timer.Stop()
 	rss := getRss(cmd.Process.Pid)
+	fds := countFds(cmd.Process.Pid)
 	cmd.Process.Kill()
 	err = cmd.Wait()
 
@@ -80,7 +86,23 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 		stdout: string(stdoutBuf.Bytes()),
 		stderr: string(stderrBuf.Bytes()),
 		rss:    rss,
+		fds:    fds,
 	}
+}
+
+func countFds(pid int) int {
+	dir := fmt.Sprintf("/proc/%d/fd", pid)
+	f, err := os.Open(dir)
+	if err != nil {
+		return -1
+	}
+	defer f.Close()
+	// Note: Readdirnames filters "." and ".."
+	names, err := f.Readdirnames(0)
+	if err != nil {
+		return -1
+	}
+	return len(names)
 }
 
 // extractCmdExitCode extracts the exit code from an error value that was

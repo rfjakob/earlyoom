@@ -140,8 +140,21 @@ func TestCli(t *testing.T) {
 				pass = false
 			}
 			if res.rss > rssMax {
-				t.Errorf("rss=%d above limit=%d", res.rss, rssMax)
+				t.Errorf("Memory usage too high! actual rss: %d, rssMax: %d", res.rss, rssMax)
 				pass = false
+			}
+			/*
+				$ ls -l /proc/42277/fd
+				total 0
+				lrwx------. 1 jakob jakob 64 Feb 22 14:36 0 -> /dev/pts/2
+				lrwx------. 1 jakob jakob 64 Feb 22 14:36 1 -> /dev/pts/2
+				lrwx------. 1 jakob jakob 64 Feb 22 14:36 2 -> /dev/pts/2
+				lr-x------. 1 jakob jakob 64 Feb 22 14:36 3 -> /proc/meminfo
+
+				Plus one for /proc/[pid]/stat which may possibly be open as well
+			*/
+			if res.fds > 5 {
+				t.Fatalf("High number of open file descriptors: %d", res.fds)
 			}
 			if !pass {
 				const empty = "(empty)"
