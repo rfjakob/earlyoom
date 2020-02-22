@@ -59,3 +59,11 @@ func kill_largest_process() {
 func get_oom_score(pid int) int {
 	return int(C.get_oom_score(C.int(pid)))
 }
+
+func get_oom_score_adj(pid int) int {
+	return int(C.get_oom_score_adj(C.int(pid)))
+}
+
+func get_vm_rss_kib(pid int) int {
+	return int(C.get_vm_rss_kib(C.int(pid)))
+}

@@ -141,3 +141,24 @@ func Benchmark_kill_largest_process(b *testing.B) {
 		kill_largest_process()
 	}
 }
+
+func Benchmark_get_oom_score(b *testing.B) {
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		get_oom_score(pid)
+	}
+}
+
+func Benchmark_get_oom_score_adj(b *testing.B) {
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		get_oom_score_adj(pid)
+	}
+}
+
+func Benchmark_get_vm_rss_kib(b *testing.B) {
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		get_vm_rss_kib(pid)
+	}
+}
