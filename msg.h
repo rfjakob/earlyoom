@@ -6,6 +6,7 @@
 
 void fatal(int code, char* fmt, ...);
 int warn(const char* fmt, ...);
+int debug(const char* fmt, ...);
 
 typedef struct {
     // If the conversion failed, err contains the error message.
