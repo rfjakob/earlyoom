@@ -198,7 +198,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         }
 
         if (enable_debug)
-            printf("pid %5d: badness %3d vm_rss %7lu uid %4d %s\n", pid, badness, p.VmRSSkiB, victim_uid, name);
+            printf("pid %5d: badness %3d vm_rss %7lu uid %4d %s\n", pid, badness, p.VmRSSkiB, uid, name);
 
         if (badness > victim_badness) {
             victim_pid = pid;
