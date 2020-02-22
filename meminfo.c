@@ -134,13 +134,14 @@ bool is_alive(int pid)
     return true;
 }
 
-/* Read /proc/[pid]/oom_score.
+/* Read /proc/[pid]/[name]
  * Returns the value or -1 on error.
  */
-int get_oom_score(int pid) {
-    int oom_score = -1;
-    char path[PATH_LEN] = {0};
-    snprintf(path, sizeof(path), "/proc/%d/oom_score", pid);
+static int read_proc_file_integer(int pid, char* name)
+{
+    int out = -1;
+    char path[PATH_LEN] = { 0 };
+    snprintf(path, sizeof(path), "/proc/%d/%s", pid, name);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
         // ENOENT just means that process has already exited.
@@ -150,60 +151,92 @@ int get_oom_score(int pid) {
         }
         return -1;
     }
-    if (fscanf(f, "%d", &oom_score) < 1)
-        warn("fscanf() oom_score failed: %s\n", strerror(errno));
+    int matches = fscanf(f, "%d", &out);
     fclose(f);
-    return oom_score;
+    if (matches != 1) {
+        warn("fscanf() %s failed: %s\n", name, strerror(errno));
+    }
+    return out;
+}
+
+/* Read /proc/[pid]/oom_score.
+ * Returns the value or -1 on error.
+ */
+int get_oom_score(int pid)
+{
+    return read_proc_file_integer(pid, "oom_score");
+}
+
+/* Read /proc/[pid]/oom_score_adj.
+ * Returns the value or -1 on error.
+ */
+int get_oom_score_adj(int pid)
+{
+    return read_proc_file_integer(pid, "oom_score_adj");
+}
+
+// Read VmRSS from /proc/[pid]/statm and convert to kib
+long get_vm_rss_kib(int pid)
+{
+    long vm_rss_kib = -1;
+    char path[PATH_LEN] = { 0 };
+
+    // Read VmRSS from /proc/[pid]/statm (in pages)
+    snprintf(path, sizeof(path), "/proc/%d/statm", pid);
+    FILE* f = fopen(path, "r");
+    if (f == NULL) {
+        return -1;
+    }
+    int res = fscanf(f, "%*u %ld", &vm_rss_kib);
+    fclose(f);
+    if (res < 1) {
+        warn("fscanf() vm_rss_kib failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    // Read and cache page size
+    static int page_size;
+    if (page_size == 0) {
+        page_size = sysconf(_SC_PAGESIZE);
+    }
+
+    // Convert to kiB
+    vm_rss_kib = vm_rss_kib * page_size / 1024;
+    return vm_rss_kib;
 }
 
 /* Read /proc/pid/{oom_score, oom_score_adj, statm}
  */
 struct procinfo get_process_stats(int pid)
 {
-    const char* const fopen_msg = "fopen %s failed: %s\n";
-    char buf[256];
     struct procinfo p = { 0 };
 
-    int res = get_oom_score(pid);
-    if(res < 0) {
-        p.exited = 1;
-        return p;
+    {
+        int res = get_oom_score(pid);
+        if (res < 0) {
+            p.exited = 1;
+            return p;
+        }
+        p.oom_score = res;
     }
-    p.oom_score = res;
 
-    // Read /proc/[pid]/oom_score_adj
-    snprintf(buf, sizeof(buf), "/proc/%d/oom_score_adj", pid);
-    FILE *f = fopen(buf, "r");
-    if (f == NULL) {
-        printf(fopen_msg, buf, strerror(errno));
-        p.exited = 1;
-        return p;
+    {
+        int res = get_oom_score_adj(pid);
+        if (res < 0) {
+            p.exited = 1;
+            return p;
+        }
+        p.oom_score_adj = res;
     }
-    if (fscanf(f, "%d", &(p.oom_score_adj)) < 1)
-        warn("fscanf() oom_score_adj failed: %s\n", strerror(errno));
 
-    fclose(f);
-
-    // Read VmRSS from /proc/[pid]/statm (in pages)
-    snprintf(buf, sizeof(buf), "/proc/%d/statm", pid);
-    f = fopen(buf, "r");
-    if (f == NULL) {
-        printf(fopen_msg, buf, strerror(errno));
-        p.exited = 1;
-        return p;
+    {
+        long res = get_vm_rss_kib(pid);
+        if (res < 0) {
+            p.exited = 1;
+            return p;
+        }
+        p.VmRSSkiB = res;
     }
-    if (fscanf(f, "%*u %lu", &(p.VmRSSkiB)) < 1) {
-        warn("fscanf() vm_rss failed: %s\n", strerror(errno));
-    }
-    // Read and cache page size
-    static int page_size;
-    if (page_size == 0) {
-        page_size = sysconf(_SC_PAGESIZE);
-    }
-    // Value is in pages. Convert to kiB.
-    p.VmRSSkiB = p.VmRSSkiB * page_size / 1024;
-
-    fclose(f);
 
     return p;
 }

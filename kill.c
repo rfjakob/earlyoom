@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/stat.h>
 
 #include "globals.h"
 #include "kill.h"
@@ -170,8 +170,8 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             } else {
                 warn("reading %s failed: %s", buf, strerror(errno));
             }
-            struct stat st = {0};
-            if(fstat(fileno(comm), &st) == 0) {
+            struct stat st = { 0 };
+            if (fstat(fileno(comm), &st) == 0) {
                 /* After reading the Linux kernel source, the uid of the
                  * files in /proc/PID seems to be the EUID of the process.
                  * The EUID is what `ps un` calls "USER", let's call it 
