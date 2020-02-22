@@ -149,6 +149,10 @@ does not slow down in low memory situations.
 If there is zero total swap on earlyoom startup, any `-S` (uppercase "S") values
 are ignored, a warning is printed, and default swap percentages are used.
 
+For processes matched by `--prefer`, negative `oom_score_adj` values are not
+taken into account, and the process gets an effective `oom_score` of at least
+300. See https://github.com/rfjakob/earlyoom/issues/159 for details.
+
 # AUTHOR
 
 The author of earlyoom is Jakob Unterwurzacher ⟨jakobunt@gmail.com⟩.
