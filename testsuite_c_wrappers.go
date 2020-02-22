@@ -55,3 +55,7 @@ func kill_largest_process() {
 	var args C.poll_loop_args_t
 	C.kill_largest_process(args, 0)
 }
+
+func get_oom_score(pid int) int {
+	return int(C.get_oom_score(C.int(pid)))
+}

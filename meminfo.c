@@ -134,8 +134,29 @@ bool is_alive(int pid)
     return true;
 }
 
+/* Read /proc/[pid]/oom_score.
+ * Returns the value or -1 on error.
+ */
+int get_oom_score(int pid) {
+    int oom_score = -1;
+    char path[PATH_LEN] = {0};
+    snprintf(path, sizeof(path), "/proc/%d/oom_score", pid);
+    FILE* f = fopen(path, "r");
+    if (f == NULL) {
+        // ENOENT just means that process has already exited.
+        // Not need to bug the user.
+        if (errno != ENOENT) {
+            warn("fopen %s failed: %s", path, strerror(errno));
+        }
+        return -1;
+    }
+    if (fscanf(f, "%d", &oom_score) < 1)
+        warn("fscanf() oom_score failed: %s\n", strerror(errno));
+    fclose(f);
+    return oom_score;
+}
+
 /* Read /proc/pid/{oom_score, oom_score_adj, statm}
- * Caller must ensure that we are already in the /proc/ directory
  */
 struct procinfo get_process_stats(int pid)
 {
@@ -143,25 +164,16 @@ struct procinfo get_process_stats(int pid)
     char buf[256];
     struct procinfo p = { 0 };
 
-    // Read /proc/[pid]/oom_score
-    snprintf(buf, sizeof(buf), "/proc/%d/oom_score", pid);
-    FILE* f = fopen(buf, "r");
-    if (f == NULL) {
-        // ENOENT just means that process has already exited.
-        // Not need to bug the user.
-        if (errno != ENOENT) {
-            printf(fopen_msg, buf, strerror(errno));
-        }
+    int res = get_oom_score(pid);
+    if(res < 0) {
         p.exited = 1;
         return p;
     }
-    if (fscanf(f, "%d", &(p.oom_score)) < 1)
-        warn("fscanf() oom_score failed: %s\n", strerror(errno));
-    fclose(f);
+    p.oom_score = res;
 
     // Read /proc/[pid]/oom_score_adj
     snprintf(buf, sizeof(buf), "/proc/%d/oom_score_adj", pid);
-    f = fopen(buf, "r");
+    FILE *f = fopen(buf, "r");
     if (f == NULL) {
         printf(fopen_msg, buf, strerror(errno));
         p.exited = 1;

@@ -115,6 +115,21 @@ func Test_get_process_stats(t *testing.T) {
 	}
 }
 
+func Test_get_oom_score(t *testing.T) {
+	res := get_oom_score(os.Getpid())
+	// On systems with a lot of RAM, our process may actually have a score of
+	// zero. At least check that get_oom_score did not return an error.
+	if res < 0 {
+		t.Error(res)
+	}
+	// On Fedora 31 (Linux 5.4), /proc/sys/kernel/pid_max = 4194304.
+	const INT32_MAX = 2147483647
+	res = get_oom_score(INT32_MAX)
+	if res != -1 {
+		t.Errorf("want -1, but have %d", res)
+	}
+}
+
 func Benchmark_parse_meminfo(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		parse_meminfo()

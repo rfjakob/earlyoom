@@ -2,6 +2,8 @@
 #ifndef MEMINFO_H
 #define MEMINFO_H
 
+#define PATH_LEN 256
+
 #include <stdbool.h>
 
 typedef struct {
@@ -28,5 +30,6 @@ meminfo_t parse_meminfo();
 bool is_alive(int pid);
 struct procinfo get_process_stats(int pid);
 void print_mem_stats(bool urgent, const meminfo_t m);
+int get_oom_score(int pid);
 
 #endif
