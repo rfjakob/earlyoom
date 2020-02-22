@@ -33,5 +33,7 @@ void print_mem_stats(bool urgent, const meminfo_t m);
 int get_oom_score(int pid);
 int get_oom_score_adj(int pid);
 long get_vm_rss_kib(int pid);
+int get_comm(int pid, char* out, int outlen);
+int get_uid(int pid);
 
 #endif

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "globals.h"
@@ -173,6 +174,39 @@ int get_oom_score(int pid)
 int get_oom_score_adj(int pid)
 {
     return read_proc_file_integer(pid, "oom_score_adj");
+}
+
+/* Read /proc/[pid]/comm.
+ * Returns -1 on error.
+ */
+int get_comm(int pid, char* out, int outlen)
+{
+    char path[PATH_LEN] = { 0 };
+    snprintf(path, sizeof(path), "/proc/%d/comm", pid);
+    FILE* f = fopen(path, "r");
+    if (f == NULL) {
+        return -1;
+    }
+    int n = fread(out, 1, outlen - 1, f);
+    fclose(f);
+    // Strip trailing newline
+    if (n > 1) {
+        out[n - 1] = 0;
+    }
+    return 0;
+}
+
+int get_uid(int pid)
+{
+    char path[PATH_LEN] = { 0 };
+    snprintf(path, sizeof(path), "/proc/%d", pid);
+    struct stat st = { 0 };
+    int res = stat(path, &st);
+    if (res < 0) {
+        perror("stat /proc/[pid]");
+        return -1;
+    }
+    return st.st_uid;
 }
 
 // Read VmRSS from /proc/[pid]/statm and convert to kib

@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -156,39 +155,13 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (args.ignore_oom_score_adj && p.oom_score_adj > 0)
             badness -= p.oom_score_adj;
 
-        int uid = -1;
         char name[256] = { 0 };
-        char buf[256] = { 0 };
-        snprintf(buf, sizeof(buf), "/proc/%d/comm", pid);
-        FILE* comm = fopen(buf, "r");
-        if (comm) {
-            const int TASK_COMM_LEN = 16;
-            int n = fread(name, 1, TASK_COMM_LEN, comm);
-            // Strip trailing newline
-            if (n > 1) {
-                name[n - 1] = 0;
-            } else {
-                warn("reading %s failed: %s", buf, strerror(errno));
-            }
-            struct stat st = { 0 };
-            if (fstat(fileno(comm), &st) == 0) {
-                /* After reading the Linux kernel source, the uid of the
-                 * files in /proc/PID seems to be the EUID of the process.
-                 * The EUID is what `ps un` calls "USER", let's call it 
-                 * just "uid".
-                 */
-                uid = st.st_uid;
-            } else {
-                warn("fstat %s failed: %s", buf, strerror(errno));
-            }
-            fclose(comm);
-        } else {
-            warn("could not open %s: %s", buf, strerror(errno));
+        if (get_comm(pid, name, sizeof(name)) < 0) {
+            name[0] = '_';
         }
-        // The kernel truncates /proc/[pid]/comm at 16 bytes. This
-        // may result in broken utf8, which causes problems when
-        // viewing the logs. Fix it.
         fix_truncated_utf8(name);
+
+        int uid = get_uid(pid);
 
         if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
             badness += BADNESS_PREFER;
