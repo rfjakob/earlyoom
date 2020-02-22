@@ -83,3 +83,7 @@ format: earlyoom
 test: earlyoom
 	cppcheck -q . || echo "skipping optional cppcheck"
 	go test -v
+
+.PHONY: bench
+bench:
+	go test -run=NONE -bench=.
