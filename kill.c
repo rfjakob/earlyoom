@@ -150,13 +150,14 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             cur.badness = res;
         }
         if (args.ignore_oom_score_adj) {
-            int res = get_oom_score_adj(cur.pid, &cur.oom_score_adj);
+            int oom_score_adj = 0;
+            int res = get_oom_score_adj(cur.pid, &oom_score_adj);
             if (res == -1) {
                 debug(" error reading oom_score_adj\n");
                 continue;
             }
-            if (res > 0) {
-                cur.badness -= res;
+            if (oom_score_adj > 0) {
+                cur.badness -= oom_score_adj;
             }
         }
 
