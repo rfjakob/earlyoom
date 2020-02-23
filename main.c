@@ -258,8 +258,7 @@ int main(int argc, char* argv[])
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
      */
-    if (enable_debug)
-        printf("dry-running kill_largest_process()...\n");
+    debug("dry-running kill_largest_process()...\n");
     kill_largest_process(args, 0);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
@@ -361,9 +360,7 @@ static void poll_loop(const poll_loop_args_t args)
             report_countdown_ms = args.report_interval_ms;
         }
         int sleep_ms = sleep_time_ms(&args, &m);
-        if (enable_debug) {
-            printf("adaptive sleep time: %d ms\n", sleep_ms);
-        }
+        debug("adaptive sleep time: %d ms\n", sleep_ms);
         usleep(sleep_ms * 1000);
         report_countdown_ms -= sleep_ms;
     }

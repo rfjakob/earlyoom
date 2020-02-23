@@ -126,8 +126,7 @@ bool is_alive(int pid)
         warn("is_alive: fscanf() failed: %s\n", strerror(errno));
         return false;
     }
-    if (enable_debug)
-        printf("process state: %c\n", state);
+    debug("process state: %c\n", state);
     if (state == 'Z') {
         // A zombie process does not use any memory. Consider it dead.
         return false;
