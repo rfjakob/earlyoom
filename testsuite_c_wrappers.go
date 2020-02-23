@@ -60,8 +60,11 @@ func get_oom_score(pid int) int {
 	return int(C.get_oom_score(C.int(pid)))
 }
 
-func get_oom_score_adj(pid int) int {
-	return int(C.get_oom_score_adj(C.int(pid)))
+func get_oom_score_adj(pid int, out *int) int {
+	var out2 C.int
+	res := C.get_oom_score_adj(C.int(pid), &out2)
+	*out = int(out2)
+	return int(res)
 }
 
 func get_vm_rss_kib(pid int) int {

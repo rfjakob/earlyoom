@@ -134,49 +134,53 @@ bool is_alive(int pid)
     return true;
 }
 
-/* Read /proc/[pid]/[name]
- * Returns the value or -1 on error.
+/* Read /proc/[pid]/[name] and convert to integer.
+ * As the value may legitimately be < 0 (think oom_score_adj),
+ * it is stored in the `out` pointer, and the return value is either
+ * 0 (sucess) or -1 (failure).
  */
-static int read_proc_file_integer(int pid, char* name)
+static int read_proc_file_integer(const int pid, const char* name, int* out)
 {
-    int out = -1;
     char path[PATH_LEN] = { 0 };
     snprintf(path, sizeof(path), "/proc/%d/%s", pid, name);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
-        // ENOENT just means that process has already exited.
-        // Not need to bug the user.
-        if (errno != ENOENT) {
-            warn("fopen %s failed: %s", path, strerror(errno));
-        }
         return -1;
     }
-    int matches = fscanf(f, "%d", &out);
+    int matches = fscanf(f, "%d", out);
     fclose(f);
     if (matches != 1) {
-        warn("fscanf() %s failed: %s\n", name, strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
+/* Read /proc/[pid]/oom_score.
+ * Returns the value (>= 0) or -1 on error.
+ */
+int get_oom_score(const int pid)
+{
+    int out = 0;
+    int res = read_proc_file_integer(pid, "oom_score", &out);
+    if (res == -1) {
+        return -1;
     }
     return out;
 }
 
-/* Read /proc/[pid]/oom_score.
- * Returns the value or -1 on error.
- */
-int get_oom_score(int pid)
-{
-    return read_proc_file_integer(pid, "oom_score");
-}
-
 /* Read /proc/[pid]/oom_score_adj.
- * Returns the value or -1 on error.
+ * As the value may legitimately be negative, the return value is
+ * only used for error indication, and the value is stored in
+ * the `out` pointer.
+ * Returns 0 on success and -1 on error.
  */
-int get_oom_score_adj(int pid)
+int get_oom_score_adj(const int pid, int* out)
 {
-    return read_proc_file_integer(pid, "oom_score_adj");
+    return read_proc_file_integer(pid, "oom_score_adj", out);
 }
 
-/* Read /proc/[pid]/comm.
- * Returns -1 on error.
+/* Read /proc/[pid]/comm (process name truncated to 16 bytes).
+ * Returns 0 on success and -1 on error.
  */
 int get_comm(int pid, char* out, int outlen)
 {
@@ -188,13 +192,18 @@ int get_comm(int pid, char* out, int outlen)
     }
     int n = fread(out, 1, outlen - 1, f);
     fclose(f);
-    // Strip trailing newline
-    if (n > 1) {
-        out[n - 1] = 0;
+    // We should get at least one letter and a newline
+    if (n < 2) {
+        return -1;
     }
+    // Strip trailing newline
+    out[n - 1] = 0;
+    fix_truncated_utf8(out);
     return 0;
 }
 
+// Get the effective uid (EUID) of `pid`.
+// Returns the uid (>= 0) or -1 on error.
 int get_uid(int pid)
 {
     char path[PATH_LEN] = { 0 };
@@ -202,13 +211,13 @@ int get_uid(int pid)
     struct stat st = { 0 };
     int res = stat(path, &st);
     if (res < 0) {
-        perror("stat /proc/[pid]");
         return -1;
     }
     return st.st_uid;
 }
 
-// Read VmRSS from /proc/[pid]/statm and convert to kib
+// Read VmRSS from /proc/[pid]/statm and convert to kiB.
+// Returns the value (>= 0) or -1 on error.
 long get_vm_rss_kib(int pid)
 {
     long vm_rss_kib = -1;
@@ -220,10 +229,9 @@ long get_vm_rss_kib(int pid)
     if (f == NULL) {
         return -1;
     }
-    int res = fscanf(f, "%*u %ld", &vm_rss_kib);
+    int matches = fscanf(f, "%*u %ld", &vm_rss_kib);
     fclose(f);
-    if (res < 1) {
-        warn("fscanf() vm_rss_kib failed: %s\n", strerror(errno));
+    if (matches < 1) {
         return -1;
     }
 
@@ -254,7 +262,7 @@ struct procinfo get_process_stats(int pid)
     }
 
     {
-        int res = get_oom_score_adj(pid);
+        int res = get_oom_score_adj(pid, &p.oom_score_adj);
         if (res < 0) {
             p.exited = 1;
             return p;

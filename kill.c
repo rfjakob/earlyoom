@@ -102,11 +102,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
  */
 void kill_largest_process(const poll_loop_args_t args, int sig)
 {
-    int victim_pid = 0;
-    int victim_uid = -1;
-    int victim_badness = 0;
-    unsigned long victim_vm_rss = 0;
-    char victim_name[256] = { 0 };
+    struct procinfo victim = { 0 };
     struct timespec t0 = { 0 }, t1 = { 0 };
 
     if (enable_debug) {
@@ -124,7 +120,6 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (d == NULL) {
             if (errno != 0)
                 warn("userspace_kill: readdir error: %s", strerror(errno));
-
             break;
         }
 
@@ -133,63 +128,105 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (!isnumeric(d->d_name))
             continue;
 
-        int pid = strtoul(d->d_name, NULL, 10);
+        struct procinfo cur = {
+            .pid = strtoul(d->d_name, NULL, 10),
+            .uid = -1,
+            .badness = -1,
+            .VmRSSkiB = -1,
+        };
 
-        if (pid <= 1)
+        if (cur.pid <= 1)
             // Let's not kill init.
             continue;
 
-        struct procinfo p = get_process_stats(pid);
+        debug("pid %5d: ", cur.pid);
 
-        if (p.exited == 1)
-            // Process may have died in the meantime
+        {
+            int res = get_oom_score(cur.pid);
+            if (res == -1) {
+                debug(" error reading oom_score\n");
+                continue;
+            }
+            cur.badness = res;
+        }
+        if (args.ignore_oom_score_adj) {
+            int res = get_oom_score_adj(cur.pid, &cur.oom_score_adj);
+            if (res == -1) {
+                debug(" error reading oom_score_adj\n");
+                continue;
+            }
+            if (res > 0) {
+                cur.badness -= res;
+            }
+        }
+
+        if ((args.prefer_regex || args.avoid_regex)) {
+            if (get_comm(cur.pid, cur.name, sizeof(cur.name)) == -1) {
+                debug(" error reading process name\n");
+                continue;
+            }
+            if (args.prefer_regex && regexec(args.prefer_regex, cur.name, (size_t)0, NULL, 0) == 0) {
+                cur.badness += BADNESS_PREFER;
+            }
+            if (args.avoid_regex && regexec(args.avoid_regex, cur.name, (size_t)0, NULL, 0) == 0) {
+                cur.badness += BADNESS_AVOID;
+            }
+        }
+
+        debug(" badness %3d", cur.badness);
+
+        if (cur.badness < victim.badness) {
+            // skip "type 1", encoded as 1 space
+            debug(" \n");
             continue;
+        }
 
-        if (p.VmRSSkiB == 0)
-            // Skip kernel threads
+        {
+            long res = get_vm_rss_kib(cur.pid);
+            if (res == -1) {
+                debug(" error reading rss\n");
+                continue;
+            }
+            cur.VmRSSkiB = res;
+        }
+        debug(" vm_rss %7lu", cur.VmRSSkiB);
+        if (cur.VmRSSkiB == 0) {
+            // Kernel threads have zero rss
+            // skip "type 2", encoded as 2 spaces
+            debug("  \n");
             continue;
-
-        int badness = p.oom_score;
-        if (args.ignore_oom_score_adj && p.oom_score_adj > 0)
-            badness -= p.oom_score_adj;
-
-        char name[256] = { 0 };
-        if (get_comm(pid, name, sizeof(name)) < 0) {
-            name[0] = '_';
         }
-        fix_truncated_utf8(name);
-
-        int uid = get_uid(pid);
-
-        if (args.prefer_regex && regexec(args.prefer_regex, name, (size_t)0, NULL, 0) == 0) {
-            badness += BADNESS_PREFER;
-        }
-        if (args.avoid_regex && regexec(args.avoid_regex, name, (size_t)0, NULL, 0) == 0) {
-            badness += BADNESS_AVOID;
+        if (cur.badness == victim.badness && cur.VmRSSkiB <= victim.VmRSSkiB) {
+            // skip "type 3", encoded as 3 spaces
+            debug("   \n");
+            continue;
         }
 
-        if (enable_debug)
-            printf("pid %5d: badness %3d vm_rss %7lu uid %4d %s\n", pid, badness, p.VmRSSkiB, uid, name);
-
-        if (badness > victim_badness) {
-            victim_pid = pid;
-            victim_uid = uid;
-            victim_badness = badness;
-            victim_vm_rss = p.VmRSSkiB;
-            strncpy(victim_name, name, sizeof(victim_name));
-            if (enable_debug)
-                printf("    ^ new victim (higher badness)\n");
-        } else if (badness == victim_badness && p.VmRSSkiB > victim_vm_rss) {
-            victim_pid = pid;
-            victim_vm_rss = p.VmRSSkiB;
-            strncpy(victim_name, name, sizeof(victim_name));
-            if (enable_debug)
-                printf("    ^ new victim (higher vm_rss)\n");
+        // Fill out remaining fields
+        if (strlen(cur.name) == 0) {
+            int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
+            if (res == -1) {
+                debug(" error reading process name\n");
+                continue;
+            }
         }
+        {
+            int res = get_uid(cur.pid);
+            if (res == -1) {
+                debug(" error reading uid\n");
+                continue;
+            }
+            cur.uid = res;
+        }
+
+        // Save new victim
+        victim = cur;
+        debug(" uid %4d \"%s\" <--- new victim\n", victim.uid, victim.name);
+
     } // end of while(1) loop
     closedir(procdir);
 
-    if (victim_pid == 0) {
+    if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         maybe_notify(args.notif_command,
             "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
@@ -218,10 +255,10 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             fflush(stdout);
         }
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lu MiB\n",
-            sig_name, victim_uid, victim_pid, victim_name, victim_badness, victim_vm_rss / 1024);
+            sig_name, victim.pid, victim.uid, victim.name, victim.badness, victim.VmRSSkiB / 1024);
     }
 
-    int res = kill_wait(args, victim_pid, sig);
+    int res = kill_wait(args, victim.pid, sig);
     int saved_errno = errno;
 
     // Send the GUI notification AFTER killing a process. This makes it more likely
@@ -229,9 +266,9 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
     if (sig != 0) {
         char notif_args[PATH_MAX + 1000];
         // maybe_notify() calls system(). We must sanitize the strings we pass.
-        sanitize(victim_name);
+        sanitize(victim.name);
         snprintf(notif_args, sizeof(notif_args),
-            "-i dialog-warning 'earlyoom' 'Low memory! Killing process %d %s'", victim_pid, victim_name);
+            "-i dialog-warning 'earlyoom' 'Low memory! Killing process %d %s'", victim.pid, victim.name);
         maybe_notify(args.notif_command, notif_args);
     }
 

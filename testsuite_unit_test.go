@@ -152,7 +152,8 @@ func Benchmark_get_oom_score(b *testing.B) {
 func Benchmark_get_oom_score_adj(b *testing.B) {
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
-		get_oom_score_adj(pid)
+		var out int
+		get_oom_score_adj(pid, &out)
 	}
 }
 
