@@ -48,7 +48,7 @@ int warn(const char* fmt, ...)
     return ret;
 }
 
-// Print a gray debug message to stderr. No prefix is added.
+// Print a gray debug message to stdout. No prefix is added.
 int debug(const char* fmt, ...)
 {
     if (!enable_debug) {
@@ -65,7 +65,7 @@ int debug(const char* fmt, ...)
     snprintf(fmt2, sizeof(fmt2), "%s%s%s", color, fmt, reset);
     va_list args;
     va_start(args, fmt); // yes fmt, NOT fmt2!
-    ret = vfprintf(stderr, fmt2, args);
+    ret = vfprintf(stdout, fmt2, args);
     va_end(args);
     return ret;
 }
