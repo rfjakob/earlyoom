@@ -127,6 +127,15 @@ func Test_get_oom_score(t *testing.T) {
 	}
 }
 
+func Test_get_comm(t *testing.T) {
+	pid := os.Getpid()
+	comm := get_comm(pid)
+	if len(comm) == 0 {
+		t.Fatalf("empty process name %q", comm)
+	}
+	t.Logf("process name %q", comm)
+}
+
 func Benchmark_parse_meminfo(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		parse_meminfo()
@@ -160,6 +169,16 @@ func Benchmark_get_vm_rss_kib(b *testing.B) {
 		rss := get_vm_rss_kib(pid)
 		if rss <= 0 {
 			b.Fatalf("rss <= 0: %d", rss)
+		}
+	}
+}
+
+func Benchmark_get_comm(b *testing.B) {
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		comm := get_comm(pid)
+		if len(comm) == 0 {
+			b.Fatalf("empty process name %q", comm)
 		}
 	}
 }

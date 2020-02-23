@@ -2,6 +2,7 @@ package earlyoom_testsuite
 
 import (
 	"fmt"
+	"strings"
 )
 
 // #cgo CFLAGS: -std=gnu99 -DCGO
@@ -59,4 +60,10 @@ func get_oom_score_adj(pid int, out *int) int {
 
 func get_vm_rss_kib(pid int) int {
 	return int(C.get_vm_rss_kib(C.int(pid)))
+}
+
+func get_comm(pid int) string {
+	cstr := C.CString(strings.Repeat("\000", 256))
+	C.get_comm(C.int(pid), cstr, 256)
+	return C.GoString(cstr)
 }
