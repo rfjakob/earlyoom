@@ -18,7 +18,7 @@ type exitVals struct {
 	// Exit code
 	code int
 	// RSS in kiB
-	rss uint64
+	rss int
 	// Number of file descriptors
 	fds int
 }
@@ -76,7 +76,7 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 		}
 	}
 	timer.Stop()
-	rss := getRss(cmd.Process.Pid)
+	rss := get_vm_rss_kib(cmd.Process.Pid)
 	fds := countFds(cmd.Process.Pid)
 	cmd.Process.Kill()
 	err = cmd.Wait()

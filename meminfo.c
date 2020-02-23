@@ -246,42 +246,6 @@ long get_vm_rss_kib(int pid)
     return vm_rss_kib;
 }
 
-/* Read /proc/pid/{oom_score, oom_score_adj, statm}
- */
-struct procinfo get_process_stats(int pid)
-{
-    struct procinfo p = { 0 };
-
-    {
-        int res = get_oom_score(pid);
-        if (res < 0) {
-            p.exited = 1;
-            return p;
-        }
-        p.oom_score = res;
-    }
-
-    {
-        int res = get_oom_score_adj(pid, &p.oom_score_adj);
-        if (res < 0) {
-            p.exited = 1;
-            return p;
-        }
-        p.oom_score_adj = res;
-    }
-
-    {
-        long res = get_vm_rss_kib(pid);
-        if (res < 0) {
-            p.exited = 1;
-            return p;
-        }
-        p.VmRSSkiB = res;
-    }
-
-    return p;
-}
-
 /* Print a status line like
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * as an informational message to stdout (default), or

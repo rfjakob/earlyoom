@@ -104,14 +104,11 @@ func Test_fix_truncated_utf8(t *testing.T) {
 	}
 }
 
-func Test_get_process_stats(t *testing.T) {
+func Test_get_vm_rss_kib(t *testing.T) {
 	pid := os.Getpid()
-	st := get_process_stats(pid)
-	if int(st.exited) == 1 {
-		t.Fatal("we have obviously not exited")
-	}
-	if int(st.VmRSSkiB) == 0 {
-		t.Fatal("our rss can't be zero")
+	rss := get_vm_rss_kib(pid)
+	if rss <= 0 {
+		t.Fatalf("our rss can't be <= 0, but we got %d", rss)
 	}
 }
 
@@ -160,6 +157,9 @@ func Benchmark_get_oom_score_adj(b *testing.B) {
 func Benchmark_get_vm_rss_kib(b *testing.B) {
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
-		get_vm_rss_kib(pid)
+		rss := get_vm_rss_kib(pid)
+		if rss <= 0 {
+			b.Fatalf("rss <= 0: %d", rss)
+		}
 	}
 }
