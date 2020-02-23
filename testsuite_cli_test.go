@@ -9,12 +9,18 @@ import (
 )
 
 type cliTestCase struct {
-	args           []string
-	code           int
+	// arguments to pass to earlyoom
+	args []string
+	// expected exit code
+	code int
+	// stdout must contain
 	stdoutContains string
-	stdoutEmpty    bool
+	// stdout must be empty?
+	stdoutEmpty bool
+	// stderr must contain
 	stderrContains string
-	stderrEmpty    bool
+	// stderr must be empty?
+	stderrEmpty bool
 }
 
 func paseMeminfoLine(l string) int64 {
@@ -72,7 +78,7 @@ func TestCli(t *testing.T) {
 		{args: nil, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		{args: []string{"-p"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-v"}, code: 0, stderrContains: "earlyoom v", stdoutEmpty: true},
-		{args: []string{"-d"}, code: -1, stdoutContains: "^ new victim"},
+		{args: []string{"-d"}, code: -1, stdoutContains: "new victim"},
 		{args: []string{"-m", "1"}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
 		{args: []string{"-m", "0"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "-10"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
@@ -86,12 +92,13 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "-10"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-M", mem1percent}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
 		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		// We use "-r=0" instead of "-r", "0" so runEarlyoom() can detect that there will be no output
+		// We use {"-r=0"} instead of {"-r", "0"} so runEarlyoom() can detect that there will be no output
 		{args: []string{"-r=0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		// Test --avoid and --prefer
 		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Will avoid killing", stdoutContains: memReport},
 		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Preferring to kill", stdoutContains: memReport},
+		{args: []string{"-i"}, code: -1, stderrContains: "Ignoring positive oom_score_adj values"},
 		// Extra arguments should error out
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},

@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
             break;
         case 'i':
             args.ignore_oom_score_adj = 1;
-            fprintf(stderr, "Ignoring oom_score_adj\n");
+            fprintf(stderr, "Ignoring positive oom_score_adj values (-i)\n");
             break;
         case 'n':
             args.notif_command = "notify-send";
