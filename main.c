@@ -343,12 +343,12 @@ static void poll_loop(const poll_loop_args_t args)
         int sig = 0;
         meminfo_t m = parse_meminfo();
         if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-            print_mem_stats(1, m);
+            print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
                 args.mem_kill_percent, args.swap_kill_percent);
             sig = SIGKILL;
         } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
-            print_mem_stats(1, m);
+            print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
                 args.mem_term_percent, args.swap_term_percent);
             sig = SIGTERM;
@@ -356,7 +356,7 @@ static void poll_loop(const poll_loop_args_t args)
         if (sig) {
             kill_largest_process(args, sig);
         } else if (args.report_interval_ms && report_countdown_ms <= 0) {
-            print_mem_stats(0, m);
+            print_mem_stats(printf, m);
             report_countdown_ms = args.report_interval_ms;
         }
         int sleep_ms = sleep_time_ms(&args, &m);

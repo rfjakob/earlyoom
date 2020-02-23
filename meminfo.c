@@ -279,12 +279,8 @@ struct procinfo get_process_stats(int pid)
  * as an informational message to stdout (default), or
  * as a warning to stderr.
  */
-void print_mem_stats(bool urgent, const meminfo_t m)
+void print_mem_stats(int (*out_func)(const char* fmt, ...), const meminfo_t m)
 {
-    int (*out_func)(const char* fmt, ...) = &printf;
-    if (urgent) {
-        out_func = &warn;
-    }
     out_func("mem avail: %5d of %5d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
         m.MemAvailableMiB,
         m.MemTotalMiB,
