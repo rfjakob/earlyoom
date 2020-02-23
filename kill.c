@@ -250,10 +250,6 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
     }
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0 || enable_debug) {
-        if(enable_debug) {
-            // Make all debug messages are out before we send this on stderr
-            fflush(stdout);
-        }
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lu MiB\n",
             sig_name, victim.pid, victim.uid, victim.name, victim.badness, victim.VmRSSkiB / 1024);
     }

@@ -4,7 +4,9 @@
 
 #include <stdbool.h>
 
-void fatal(int code, char* fmt, ...);
+#define MSG_LEN 256
+
+int fatal(int code, char* fmt, ...);
 int warn(const char* fmt, ...);
 int debug(const char* fmt, ...);
 

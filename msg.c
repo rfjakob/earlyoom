@@ -10,42 +10,50 @@
 #include "globals.h"
 #include "msg.h"
 
+// color_log writed to `f`, prefixing the `color` code if `f` is a tty.
+static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
+{
+    char* reset = "\033[0m";
+    if (!isatty(fileno(stderr))) {
+        color = "";
+        reset = "";
+    }
+    fprintf(f, color);
+    vfprintf(f, fmt, vl);
+    fprintf(f, reset);
+    // The `reset` control was not flushed out by the
+    // newline as it was sent after. Manually flush
+    // it now to prevent artifacts when stderr and stdout
+    // mix.
+    if (fmt[strlen(fmt) - 1] == '\n') {
+        fflush(f);
+    }
+}
+
 // Print message, prefixed with "fatal: ", to stderr and exit with "code".
 // Example: fatal(6, "could not compile regexp '%s'\n", regex_str);
-void fatal(int code, char* fmt, ...)
+int fatal(int code, char* fmt, ...)
 {
-    char* red = "";
-    char* reset = "";
-    if (isatty(fileno(stderr))) {
-        red = "\033[31m";
-        reset = "\033[0m";
-    }
-    char fmt2[100];
-    snprintf(fmt2, sizeof(fmt2), "%sfatal: %s%s", red, fmt, reset);
-    va_list args;
-    va_start(args, fmt); // yes fmt, NOT fmt2!
-    vfprintf(stderr, fmt2, args);
-    va_end(args);
+    const char* red = "\033[31m";
+    char fmt2[MSG_LEN] = { 0 };
+    snprintf(fmt2, sizeof(fmt2), "fatal: %s", fmt);
+    va_list vl;
+    va_start(vl, fmt);
+    color_log(stderr, red, fmt2, vl);
+    va_end(vl);
     exit(code);
+    return 0;
 }
 
 // Print a yellow warning message to stderr. No "warning" prefix is added.
 int warn(const char* fmt, ...)
 {
-    int ret = 0;
-    char* yellow = "";
-    char* reset = "";
-    if (isatty(fileno(stderr))) {
-        yellow = "\033[33m";
-        reset = "\033[0m";
-    }
-    char fmt2[100];
-    snprintf(fmt2, sizeof(fmt2), "%s%s%s", yellow, fmt, reset);
-    va_list args;
-    va_start(args, fmt); // yes fmt, NOT fmt2!
-    ret = vfprintf(stderr, fmt2, args);
-    va_end(args);
-    return ret;
+    const char* yellow = "\033[33m";
+    va_list vl;
+    va_start(vl, fmt);
+    color_log(stderr, yellow, fmt, vl);
+    va_end(vl);
+    return 0;
 }
 
 // Print a gray debug message to stdout. No prefix is added.
@@ -54,20 +62,12 @@ int debug(const char* fmt, ...)
     if (!enable_debug) {
         return 0;
     }
-    int ret = 0;
-    char* color = "";
-    char* reset = "";
-    if (isatty(fileno(stderr))) {
-        color = "\033[2m";
-        reset = "\033[0m";
-    }
-    char fmt2[100];
-    snprintf(fmt2, sizeof(fmt2), "%s%s%s", color, fmt, reset);
-    va_list args;
-    va_start(args, fmt); // yes fmt, NOT fmt2!
-    ret = vfprintf(stdout, fmt2, args);
-    va_end(args);
-    return ret;
+    const char* gray = "\033[2m";
+    va_list vl;
+    va_start(vl, fmt);
+    color_log(stdout, gray, fmt, vl);
+    va_end(vl);
+    return 0;
 }
 
 // Parse the "123[,456]" tuple in optarg.
