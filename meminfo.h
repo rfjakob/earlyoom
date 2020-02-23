@@ -25,10 +25,6 @@ struct procinfo {
     int badness;
     unsigned long VmRSSkiB;
     char name[PATH_LEN];
-    // remove later
-    int exited;
-    int oom_score;
-    int oom_score_adj;
 };
 
 meminfo_t parse_meminfo();
