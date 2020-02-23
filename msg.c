@@ -7,8 +7,8 @@
 #include <string.h> // need strlen()
 #include <unistd.h>
 
-#include "msg.h"
 #include "globals.h"
+#include "msg.h"
 
 // Print message, prefixed with "fatal: ", to stderr and exit with "code".
 // Example: fatal(6, "could not compile regexp '%s'\n", regex_str);
@@ -51,8 +51,8 @@ int warn(const char* fmt, ...)
 // Print a gray debug message to stderr. No prefix is added.
 int debug(const char* fmt, ...)
 {
-    if(!enable_debug) {
-        return;
+    if (!enable_debug) {
+        return 0;
     }
     int ret = 0;
     char* color = "";
