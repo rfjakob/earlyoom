@@ -192,8 +192,9 @@ int get_comm(int pid, char* out, int outlen)
     }
     int n = fread(out, 1, outlen - 1, f);
     fclose(f);
-    // We should get at least one letter and a newline
-    if (n < 2) {
+    // Process name may be empty, but we should get at least a newline
+    // Example for empty process name: perl -MPOSIX -e '$0=""; pause'
+    if (n < 1) {
         return -1;
     }
     // Strip trailing newline
