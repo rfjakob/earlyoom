@@ -39,7 +39,7 @@ static long get_entry_fatal(const char* name, const char* buf)
 {
     long val = get_entry(name, buf);
     if (val < 0) {
-        fatal(104, "could not find entry '%s' in /proc/meminfo\n");
+        fatal(104, "could not find entry '%s' in /proc/meminfo: %s\n", name, strerror(-val));
     }
     return val;
 }
