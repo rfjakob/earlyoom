@@ -2,9 +2,15 @@ package earlyoom_testsuite
 
 import (
 	"os"
+	"syscall"
 	"testing"
 	"unicode/utf8"
 )
+
+// On Fedora 31 (Linux 5.4), /proc/sys/kernel/pid_max = 4194304.
+// It's very unlikely that INT32_MAX will be a valid pid anytime soon.
+const INT32_MAX = 2147483647
+const ENOENT = 2
 
 func TestSanitize(t *testing.T) {
 	type testCase struct {
@@ -110,6 +116,11 @@ func Test_get_vm_rss_kib(t *testing.T) {
 	if rss <= 0 {
 		t.Fatalf("our rss can't be <= 0, but we got %d", rss)
 	}
+	// Error case
+	res := get_vm_rss_kib(INT32_MAX)
+	if res != -ENOENT {
+		t.Fail()
+	}
 }
 
 func Test_get_oom_score(t *testing.T) {
@@ -119,21 +130,30 @@ func Test_get_oom_score(t *testing.T) {
 	if res < 0 {
 		t.Error(res)
 	}
-	// On Fedora 31 (Linux 5.4), /proc/sys/kernel/pid_max = 4194304.
-	const INT32_MAX = 2147483647
 	res = get_oom_score(INT32_MAX)
-	if res != -1 {
-		t.Errorf("want -1, but have %d", res)
+	if res != -ENOENT {
+		t.Errorf("want %d, but have %d", syscall.ENOENT, res)
 	}
 }
 
 func Test_get_comm(t *testing.T) {
 	pid := os.Getpid()
-	comm := get_comm(pid)
+	res, comm := get_comm(pid)
+	if res != 0 {
+		t.Fatalf("error %d", res)
+	}
 	if len(comm) == 0 {
 		t.Fatalf("empty process name %q", comm)
 	}
 	t.Logf("process name %q", comm)
+	// Error case
+	res, comm = get_comm(INT32_MAX)
+	if res != -ENOENT {
+		t.Fail()
+	}
+	if comm != "" {
+		t.Fail()
+	}
 }
 
 func Benchmark_parse_meminfo(b *testing.B) {
@@ -176,9 +196,12 @@ func Benchmark_get_vm_rss_kib(b *testing.B) {
 func Benchmark_get_comm(b *testing.B) {
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
-		comm := get_comm(pid)
+		res, comm := get_comm(pid)
 		if len(comm) == 0 {
 			b.Fatalf("empty process name %q", comm)
+		}
+		if res != 0 {
+			b.Fatalf("error %d", res)
 		}
 	}
 }

@@ -143,8 +143,8 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
         {
             int res = get_oom_score(cur.pid);
-            if (res == -1) {
-                debug(" error reading oom_score\n");
+            if (res < 0) {
+                debug(" error reading oom_score: %s\n", strerror(-res));
                 continue;
             }
             cur.badness = res;
@@ -152,8 +152,8 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (args.ignore_oom_score_adj) {
             int oom_score_adj = 0;
             int res = get_oom_score_adj(cur.pid, &oom_score_adj);
-            if (res == -1) {
-                debug(" error reading oom_score_adj\n");
+            if (res < 0) {
+                debug(" error reading oom_score_adj: %s\n", strerror(-res));
                 continue;
             }
             if (oom_score_adj > 0) {
@@ -162,8 +162,9 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         }
 
         if ((args.prefer_regex || args.avoid_regex)) {
-            if (get_comm(cur.pid, cur.name, sizeof(cur.name)) == -1) {
-                debug(" error reading process name\n");
+            int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
+            if (res < 0) {
+                debug(" error reading process name: %s\n", strerror(-res));
                 continue;
             }
             if (args.prefer_regex && regexec(args.prefer_regex, cur.name, (size_t)0, NULL, 0) == 0) {
@@ -184,8 +185,8 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
         {
             long res = get_vm_rss_kib(cur.pid);
-            if (res == -1) {
-                debug(" error reading rss\n");
+            if (res < 0) {
+                debug(" error reading rss: %s\n", strerror(-res));
                 continue;
             }
             cur.VmRSSkiB = res;
@@ -206,15 +207,15 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         // Fill out remaining fields
         if (strlen(cur.name) == 0) {
             int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
-            if (res == -1) {
-                debug(" error reading process name\n");
+            if (res < 0) {
+                debug(" error reading process name: \n", strerror(-res));
                 continue;
             }
         }
         {
             int res = get_uid(cur.pid);
-            if (res == -1) {
-                debug(" error reading uid\n");
+            if (res < 0) {
+                debug(" error reading uid: %d\n", strerror(-res));
                 continue;
             }
             cur.uid = res;

@@ -62,8 +62,8 @@ func get_vm_rss_kib(pid int) int {
 	return int(C.get_vm_rss_kib(C.int(pid)))
 }
 
-func get_comm(pid int) string {
+func get_comm(pid int) (int, string) {
 	cstr := C.CString(strings.Repeat("\000", 256))
-	C.get_comm(C.int(pid), cstr, 256)
-	return C.GoString(cstr)
+	res := C.get_comm(C.int(pid), cstr, 256)
+	return int(res), C.GoString(cstr)
 }

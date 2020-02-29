@@ -16,19 +16,20 @@
 #include "msg.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
- * (example: MemTotal) */
+ * (example: MemTotal)
+ * Returns -errno if the entry cannot be found. */
 static long get_entry(const char* name, const char* buf)
 {
     char* hit = strstr(buf, name);
     if (hit == NULL) {
-        return -1;
+        return -ENODATA;
     }
 
     errno = 0;
     long val = strtol(hit + strlen(name), NULL, 10);
     if (errno != 0) {
         perror("get_entry: strtol() failed");
-        return -1;
+        return -errno;
     }
     return val;
 }
@@ -37,7 +38,7 @@ static long get_entry(const char* name, const char* buf)
 static long get_entry_fatal(const char* name, const char* buf)
 {
     long val = get_entry(name, buf);
-    if (val == -1) {
+    if (val < 0) {
         fatal(104, "could not find entry '%s' in /proc/meminfo\n");
     }
     return val;
@@ -137,7 +138,7 @@ bool is_alive(int pid)
 /* Read /proc/[pid]/[name] and convert to integer.
  * As the value may legitimately be < 0 (think oom_score_adj),
  * it is stored in the `out` pointer, and the return value is either
- * 0 (sucess) or -1 (failure).
+ * 0 (sucess) or -errno (failure).
  */
 static int read_proc_file_integer(const int pid, const char* name, int* out)
 {
@@ -145,25 +146,25 @@ static int read_proc_file_integer(const int pid, const char* name, int* out)
     snprintf(path, sizeof(path), "/proc/%d/%s", pid, name);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
-        return -1;
+        return -errno;
     }
     int matches = fscanf(f, "%d", out);
     fclose(f);
     if (matches != 1) {
-        return -1;
+        return -ENODATA;
     }
     return 0;
 }
 
 /* Read /proc/[pid]/oom_score.
- * Returns the value (>= 0) or -1 on error.
+ * Returns the value (>= 0) or -errno on error.
  */
 int get_oom_score(const int pid)
 {
     int out = 0;
     int res = read_proc_file_integer(pid, "oom_score", &out);
-    if (res == -1) {
-        return -1;
+    if (res < 0) {
+        return res;
     }
     return out;
 }
@@ -172,7 +173,7 @@ int get_oom_score(const int pid)
  * As the value may legitimately be negative, the return value is
  * only used for error indication, and the value is stored in
  * the `out` pointer.
- * Returns 0 on success and -1 on error.
+ * Returns 0 on success and -errno on error.
  */
 int get_oom_score_adj(const int pid, int* out)
 {
@@ -180,7 +181,7 @@ int get_oom_score_adj(const int pid, int* out)
 }
 
 /* Read /proc/[pid]/comm (process name truncated to 16 bytes).
- * Returns 0 on success and -1 on error.
+ * Returns 0 on success and -errno on error.
  */
 int get_comm(int pid, char* out, int outlen)
 {
@@ -188,14 +189,14 @@ int get_comm(int pid, char* out, int outlen)
     snprintf(path, sizeof(path), "/proc/%d/comm", pid);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
-        return -1;
+        return -errno;
     }
     int n = fread(out, 1, outlen - 1, f);
     fclose(f);
     // Process name may be empty, but we should get at least a newline
     // Example for empty process name: perl -MPOSIX -e '$0=""; pause'
     if (n < 1) {
-        return -1;
+        return -ENODATA;
     }
     // Strip trailing newline
     out[n - 1] = 0;
@@ -204,7 +205,7 @@ int get_comm(int pid, char* out, int outlen)
 }
 
 // Get the effective uid (EUID) of `pid`.
-// Returns the uid (>= 0) or -1 on error.
+// Returns the uid (>= 0) or -errno on error.
 int get_uid(int pid)
 {
     char path[PATH_LEN] = { 0 };
@@ -212,13 +213,13 @@ int get_uid(int pid)
     struct stat st = { 0 };
     int res = stat(path, &st);
     if (res < 0) {
-        return -1;
+        return -errno;
     }
     return st.st_uid;
 }
 
 // Read VmRSS from /proc/[pid]/statm and convert to kiB.
-// Returns the value (>= 0) or -1 on error.
+// Returns the value (>= 0) or -errno on error.
 long get_vm_rss_kib(int pid)
 {
     long vm_rss_kib = -1;
@@ -228,12 +229,12 @@ long get_vm_rss_kib(int pid)
     snprintf(path, sizeof(path), "/proc/%d/statm", pid);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
-        return -1;
+        return -errno;
     }
     int matches = fscanf(f, "%*u %ld", &vm_rss_kib);
     fclose(f);
     if (matches < 1) {
-        return -1;
+        return -ENODATA;
     }
 
     // Read and cache page size
