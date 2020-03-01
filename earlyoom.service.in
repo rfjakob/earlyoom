@@ -13,6 +13,9 @@ AmbientCapabilities=CAP_KILL CAP_IPC_LOCK
 ProtectSystem=strict
 # We don't need /home at all, make it inaccessible
 ProtectHome=true
+# earlyoom never exits on it's own, so have systemd
+# restart it should it get killed for some reason.
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

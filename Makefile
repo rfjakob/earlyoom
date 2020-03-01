@@ -14,7 +14,7 @@ endif
 
 .PHONY: all clean install uninstall format test
 
-all: earlyoom earlyoom.1
+all: earlyoom earlyoom.1 earlyoom.service
 
 earlyoom: $(wildcard *.c *.h) Makefile
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
