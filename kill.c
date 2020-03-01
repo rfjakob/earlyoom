@@ -208,14 +208,14 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         if (strlen(cur.name) == 0) {
             int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
             if (res < 0) {
-                debug(" error reading process name: \n", strerror(-res));
+                debug(" error reading process name: %s\n", strerror(-res));
                 continue;
             }
         }
         {
             int res = get_uid(cur.pid);
             if (res < 0) {
-                debug(" error reading uid: %d\n", strerror(-res));
+                debug(" error reading uid: %s\n", strerror(-res));
                 continue;
             }
             cur.uid = res;
