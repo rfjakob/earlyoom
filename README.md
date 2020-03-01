@@ -258,6 +258,22 @@ accept
 
 Changelog
 ---------
+* v1.4, 2020-03-01
+  * Make victim selection logic 50% faster by lazy-loading process attributes
+  * Log the user id `uid` of killed processes in addition to pid and name
+  * Color debug log in light grey
+  * Code clean-up
+    * Use block-local variables where possible
+    * Introduce PATH_LEN to replace several hardcoded buffer lengths
+  * Expand testsuite (`make test`)
+  * Run `cppcheck` when available
+  * Add unit-test benchmarks (`make bench`)
+  * Drop root privileges in systemd unit file `earlyoom.service`
+
+* v1.3.1, 2020-02-27
+  * Fix spurious testsuite failure on systems with a lot of RAM
+    ([issue #156](https://github.com/rfjakob/earlyoom/issues/156))
+
 * v1.3, 2019-05-26
   * Wait for processes to actually exit when sending a signal
     * This fixes the problem that earlyoom sometimes kills more than
