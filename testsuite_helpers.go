@@ -29,7 +29,8 @@ const earlyoomBinary = "./earlyoom"
 //   mem avail: 4998 MiB (63 %), swap free: 0 MiB (0 %)
 const memReport = "mem avail: "
 
-// runEarlyoom runs earlyoom with a timeout
+// runEarlyoom runs earlyoom, waits for the first "mem avail:" status line,
+// and kills it.
 func runEarlyoom(t *testing.T, args ...string) exitVals {
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd := exec.Command(earlyoomBinary, args...)
@@ -71,6 +72,8 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 	for stdoutScanner.Scan() {
 		line := stdoutScanner.Bytes()
 		stdoutBuf.Write(line)
+		// Scanner strips the newline, add it back
+		stdoutBuf.Write([]byte{'\n'})
 		if bytes.HasPrefix(line, []byte(memReport)) {
 			break
 		}
