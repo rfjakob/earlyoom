@@ -139,7 +139,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             // Let's not kill init.
             continue;
 
-        debug("pid %5d: ", cur.pid);
+        debug("pid %5d:", cur.pid);
 
         {
             int res = get_oom_score(cur.pid);
