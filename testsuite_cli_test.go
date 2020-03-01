@@ -3,6 +3,8 @@ package earlyoom_testsuite
 import (
 	"fmt"
 	"io/ioutil"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -187,4 +189,38 @@ func TestRss(t *testing.T) {
 		t.Error("rss above 1 MiB")
 	}
 	t.Logf("earlyoom RSS: %d kiB", res.rss)
+}
+
+// TestI tests that `earlyoom -i` works as expected
+func TestI(t *testing.T) {
+	cmd := exec.Command("sleep", "60")
+	err := cmd.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cmd.Process.Kill()
+	path := fmt.Sprintf("/proc/%d/oom_score_adj", cmd.Process.Pid)
+	err = ioutil.WriteFile(path, []byte("1000"), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := runEarlyoom(t, "-d")
+	// We should see a line like this:
+	// pid 2308155: badness 1000 vm_rss     708 uid 1026 "sleep" <--- new victim
+	pattern := fmt.Sprintf(`pid\s+%d: badness 1000`, cmd.Process.Pid)
+	matched, err := regexp.MatchString(pattern, res.stdout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !matched {
+		t.Error("did not see badness 1000 in output")
+	}
+	res = runEarlyoom(t, "-d", "-i")
+	matched, err = regexp.MatchString(pattern, res.stdout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if matched {
+		t.Error("saw badness 1000, but should not have")
+	}
 }
