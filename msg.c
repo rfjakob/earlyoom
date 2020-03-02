@@ -18,9 +18,9 @@ static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
         color = "";
         reset = "";
     }
-    fprintf(f, color);
+    fprintf(f, "%s", color);
     vfprintf(f, fmt, vl);
-    fprintf(f, reset);
+    fprintf(f, "%s", reset);
     // The `reset` control was not flushed out by the
     // newline as it was sent after. Manually flush
     // it now to prevent artifacts when stderr and stdout
