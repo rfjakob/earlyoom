@@ -14,7 +14,7 @@
 static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
 {
     char* reset = "\033[0m";
-    if (!isatty(fileno(stderr))) {
+    if (!isatty(fileno(f))) {
         color = "";
         reset = "";
     }
