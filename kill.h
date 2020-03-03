@@ -21,6 +21,8 @@ typedef struct {
     regex_t* avoid_regex;
     /* memory report interval, in milliseconds */
     int report_interval_ms;
+    /* Flag --dryrun was passed */
+    bool dryrun;
 } poll_loop_args_t;
 
 void kill_largest_process(poll_loop_args_t args, int sig);

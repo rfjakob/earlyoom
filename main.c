@@ -37,6 +37,7 @@
 enum {
     LONG_OPT_PREFER = 513,
     LONG_OPT_AVOID,
+    LONG_OPT_DRYRUN,
 };
 
 static int set_oom_score_adj(int);
@@ -81,6 +82,7 @@ int main(int argc, char* argv[])
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
+        { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
@@ -173,6 +175,10 @@ int main(int argc, char* argv[])
         case LONG_OPT_AVOID:
             avoid_cmds = optarg;
             break;
+        case LONG_OPT_DRYRUN:
+            warn("dryrun mode enabled, will not kill anything\n");
+            args.dryrun = 1;
+            break;
         case 'h':
             fprintf(stderr,
                 "Usage: %s [OPTION]...\n"
@@ -199,6 +205,7 @@ int main(int argc, char* argv[])
                 "                            -1000\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
+                "  --dry-run                 dry run (do not kill any processes)\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);
