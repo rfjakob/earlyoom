@@ -57,6 +57,9 @@ static void maybe_notify(char* notif_command, char* notif_args)
  */
 int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
 {
+    if (dry_run) {
+        return 0;
+    }
     meminfo_t m = { 0 };
     const int poll_ms = 100;
     int res = kill(pid, sig);
