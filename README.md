@@ -257,6 +257,10 @@ accept
 
 Changelog
 ---------
+* vNEXT, in progress
+  * `-p`: set oom_score_adj to `-100` instead of `-1000`
+    ([#170](https://github.com/rfjakob/earlyoom/issues/170))
+
 * v1.4, 2020-03-01
   * Make victim selection logic 50% faster by lazy-loading process attributes
   * Log the user id `uid` of killed processes in addition to pid and name

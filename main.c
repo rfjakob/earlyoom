@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
                 "  -r INTERVAL               memory report interval in seconds (default 1), set\n"
                 "                            to 0 to disable completely\n"
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
-                "                            -1000\n"
+                "                            -100\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --dry-run                 dry run (do not kill any processes)\n"
@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
             warn("Could not set priority: %s. Continuing anyway\n", strerror(errno));
             fail = 1;
         }
-        int ret = set_oom_score_adj(-1000);
+        int ret = set_oom_score_adj(-100);
         if (ret != 0) {
             warn("Could not set oom_score_adj: %s. Continuing anyway\n", strerror(ret));
             fail = 1;
