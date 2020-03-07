@@ -1,3 +1,13 @@
+# Loadshift example
+#
+# You have an app that uses 70% of your RAM but is idle, and you 
+# have enough swap free. Then another app wants to use 70% of your 
+# RAM. PSI goes crazy, but the situation calms down as the idle app 
+# is swapped out. The right thing here is not killing anything.
+#
+# https://github.com/rfjakob/earlyoom/issues/100#issuecomment-508562342 
+
+
      | /proc/meminfo     | /proc/pressure/memory
 Time | MemAvail SwapFree | some avg10 full avg10
    s |      MiB      MiB |    %     %    %     %
