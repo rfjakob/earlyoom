@@ -4,7 +4,7 @@ oomstat is a very simple tool that prints available
 memory, free swap and memory pressure (PSI) information
 every 100ms.
 
-Example output with `tail -f /dev/zero` started in the
+Example output with `tail /dev/zero` started in the
 background is pasted below, more examples are available
 in the text files in this directory.
 
