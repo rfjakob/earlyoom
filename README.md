@@ -139,13 +139,14 @@ is, how much memory is available and how much swap is free.
 
 ```
 ./earlyoom
-earlyoom v1.2-10-ga8f30d7
-mem total: 7834 MiB, swap total:    0 MiB
-Sending SIGTERM when mem <= 10 % and swap <= 10 %,
+earlyoom v1.4-6-ga4021ae
+mem total: 9823 MiB, swap total: 9823 MiB
+sending SIGTERM when mem <= 10 % and swap <= 10 %,
         SIGKILL when mem <=  5 % and swap <=  5 %
-mem avail: 4667 of 7834 MiB (59 %), swap free:    0 of    0 MiB ( 0 %)
-mem avail: 4704 of 7834 MiB (60 %), swap free:    0 of    0 MiB ( 0 %)
-mem avail: 4704 of 7834 MiB (60 %), swap free:    0 of    0 MiB ( 0 %)
+Could not lock memory - continuing anyway: Cannot allocate memory
+mem avail:  5091 of  9823 MiB (51 %), swap free: 9823 of 9823 MiB (100 %)
+mem avail:  5084 of  9823 MiB (51 %), swap free: 9823 of 9823 MiB (100 %)
+mem avail:  5086 of  9823 MiB (51 %), swap free: 9823 of 9823 MiB (100 %)
 
 [...]
 ```
@@ -218,7 +219,7 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v1.3-15
+earlyoom v1.4-6-ga4021ae
 Usage: ./earlyoom [OPTION]...
 
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
@@ -240,9 +241,10 @@ Usage: ./earlyoom [OPTION]...
   -r INTERVAL               memory report interval in seconds (default 1), set
                             to 0 to disable completely
   -p                        set niceness of earlyoom to -20 and oom_score_adj to
-                            -1000
+                            -100
   --prefer REGEX            prefer to kill processes matching REGEX
   --avoid REGEX             avoid killing processes matching REGEX
+  --dry-run                 dry run (do not kill any processes)
   -h, --help                this help text
 ```
 
