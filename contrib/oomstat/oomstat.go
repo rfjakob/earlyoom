@@ -21,31 +21,40 @@ func main() {
 	fmt.Println("Time | MemAvail SwapFree | some avg10 full avg10")
 	fmt.Println("   s |      MiB      MiB |    %     %    %     %")
 	fmt.Println("     -                   -                      ")
-	p2 := pressure()
+	pOld := pressure()
 	const interval = 100
 	for {
 		t1 := time.Now()
 		t := t1.Sub(t0).Seconds()
 		p := pressure()
+		deltaUs := p.timestamp.Sub(pOld.timestamp).Microseconds()
+		someNow := (p.someTotal - pOld.someTotal) * 100 / deltaUs
+		fullNow := (p.fullTotal - pOld.fullTotal) * 100 / deltaUs
 		m := meminfo()
 		fmt.Printf("%4.1f | %8d %8d | %4d %5d %4d %5d\n",
 			t,
 			m.memAvailableMiB,
 			m.swapFreeMiB,
-			(p.someTotal-p2.someTotal)/interval/10,
+			someNow,
 			int(p.someAvg10),
-			(p.fullTotal-p2.fullTotal)/interval/10,
+			fullNow,
 			int(p.fullAvg10))
-		p2 = p
+		pOld = p
 		time.Sleep(interval * time.Millisecond)
 	}
 }
 
 type pressureVals struct {
+	// percent
 	someAvg10 float64
-	someTotal int
+	// microseconds
+	someTotal int64
+	// percent
 	fullAvg10 float64
-	fullTotal int
+	// microseconds
+	fullTotal int64
+	// Time when the values were read
+	timestamp time.Time
 }
 
 func pressure() (p pressureVals) {
@@ -58,12 +67,13 @@ func pressure() (p pressureVals) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	p.timestamp = time.Now()
 	fields := strings.Fields(string(buf))
 	p.someAvg10, err = strconv.ParseFloat(fields[1][len("avg10="):], 64)
 	if err != nil {
 		log.Fatal(err)
 	}
-	p.someTotal, err = strconv.Atoi(fields[4][len("total="):])
+	p.someTotal, err = strconv.ParseInt(fields[4][len("total="):], 10, 64)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +81,7 @@ func pressure() (p pressureVals) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	p.fullTotal, err = strconv.Atoi(fields[9][len("total="):])
+	p.fullTotal, err = strconv.ParseInt(fields[9][len("total="):], 10, 64)
 	if err != nil {
 		log.Fatal(err)
 	}
