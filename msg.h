@@ -10,7 +10,7 @@
  * The format attribute specifies that a function takes printf
  * style arguments that should be type-checked against a format string.
  */
-int fatal(int code, char* fmt, ...) __attribute__((format(printf, 2, 3)));
+int fatal(int code, char* fmt, ...) __attribute__((noreturn, format(printf, 2, 3)));
 int warn(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 int debug(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 

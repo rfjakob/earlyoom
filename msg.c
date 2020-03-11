@@ -42,7 +42,6 @@ int fatal(int code, char* fmt, ...)
     color_log(stderr, red, fmt2, vl);
     va_end(vl);
     exit(code);
-    return 0;
 }
 
 // Print a yellow warning message to stderr. No "warning" prefix is added.
