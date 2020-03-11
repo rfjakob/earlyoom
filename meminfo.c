@@ -18,7 +18,7 @@
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: MemTotal)
  * Returns -errno if the entry cannot be found. */
-static long get_entry(const char* name, const char* buf)
+static long long get_entry(const char* name, const char* buf)
 {
     char* hit = strstr(buf, name);
     if (hit == NULL) {
@@ -26,7 +26,7 @@ static long get_entry(const char* name, const char* buf)
     }
 
     errno = 0;
-    long val = strtol(hit + strlen(name), NULL, 10);
+    long long val = strtoll(hit + strlen(name), NULL, 10);
     if (errno != 0) {
         perror("get_entry: strtol() failed");
         return -errno;
@@ -35,9 +35,9 @@ static long get_entry(const char* name, const char* buf)
 }
 
 /* Like get_entry(), but exit if the value cannot be found */
-static long get_entry_fatal(const char* name, const char* buf)
+static long long get_entry_fatal(const char* name, const char* buf)
 {
-    long val = get_entry(name, buf);
+    long long val = get_entry(name, buf);
     if (val < 0) {
         fatal(104, "could not find entry '%s' in /proc/meminfo: %s\n", name, strerror(-val));
     }
@@ -46,12 +46,12 @@ static long get_entry_fatal(const char* name, const char* buf)
 
 /* If the kernel does not provide MemAvailable (introduced in Linux 3.14),
  * approximate it using other data we can get */
-static long available_guesstimate(const char* buf)
+static long long available_guesstimate(const char* buf)
 {
-    long Cached = get_entry_fatal("Cached:", buf);
-    long MemFree = get_entry_fatal("MemFree:", buf);
-    long Buffers = get_entry_fatal("Buffers:", buf);
-    long Shmem = get_entry_fatal("Shmem:", buf);
+    long long Cached = get_entry_fatal("Cached:", buf);
+    long long MemFree = get_entry_fatal("MemFree:", buf);
+    long long Buffers = get_entry_fatal("Buffers:", buf);
+    long long Shmem = get_entry_fatal("Shmem:", buf);
 
     return MemFree + Cached + Buffers - Shmem;
 }
@@ -79,9 +79,9 @@ meminfo_t parse_meminfo()
 
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
     m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
-    long SwapFree = get_entry_fatal("SwapFree:", buf);
+    long long SwapFree = get_entry_fatal("SwapFree:", buf);
 
-    long MemAvailable = get_entry("MemAvailable:", buf);
+    long long MemAvailable = get_entry("MemAvailable:", buf);
     if (MemAvailable == -1) {
         MemAvailable = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
@@ -108,7 +108,7 @@ meminfo_t parse_meminfo()
     return m;
 }
 
-bool is_alive(int pid)
+bool is_alive(pid_t pid)
 {
     char buf[256];
     // Read /proc/[pid]/stat
@@ -140,7 +140,7 @@ bool is_alive(int pid)
  * it is stored in the `out` pointer, and the return value is either
  * 0 (sucess) or -errno (failure).
  */
-static int read_proc_file_integer(const int pid, const char* name, int* out)
+static int read_proc_file_integer(const pid_t pid, const char* name, int* out)
 {
     char path[PATH_LEN] = { 0 };
     snprintf(path, sizeof(path), "/proc/%d/%s", pid, name);
@@ -159,7 +159,7 @@ static int read_proc_file_integer(const int pid, const char* name, int* out)
 /* Read /proc/[pid]/oom_score.
  * Returns the value (>= 0) or -errno on error.
  */
-int get_oom_score(const int pid)
+int get_oom_score(const pid_t pid)
 {
     int out = 0;
     int res = read_proc_file_integer(pid, "oom_score", &out);
@@ -175,7 +175,7 @@ int get_oom_score(const int pid)
  * the `out` pointer.
  * Returns 0 on success and -errno on error.
  */
-int get_oom_score_adj(const int pid, int* out)
+int get_oom_score_adj(const pid_t pid, int* out)
 {
     return read_proc_file_integer(pid, "oom_score_adj", out);
 }
@@ -183,7 +183,7 @@ int get_oom_score_adj(const int pid, int* out)
 /* Read /proc/[pid]/comm (process name truncated to 16 bytes).
  * Returns 0 on success and -errno on error.
  */
-int get_comm(int pid, char* out, int outlen)
+int get_comm(pid_t pid, char* out, int outlen)
 {
     char path[PATH_LEN] = { 0 };
     snprintf(path, sizeof(path), "/proc/%d/comm", pid);
@@ -206,7 +206,7 @@ int get_comm(int pid, char* out, int outlen)
 
 // Get the effective uid (EUID) of `pid`.
 // Returns the uid (>= 0) or -errno on error.
-int get_uid(int pid)
+int get_uid(pid_t pid)
 {
     char path[PATH_LEN] = { 0 };
     snprintf(path, sizeof(path), "/proc/%d", pid);
@@ -220,9 +220,9 @@ int get_uid(int pid)
 
 // Read VmRSS from /proc/[pid]/statm and convert to kiB.
 // Returns the value (>= 0) or -errno on error.
-long get_vm_rss_kib(int pid)
+long long get_vm_rss_kib(pid_t pid)
 {
-    long vm_rss_kib = -1;
+    long long vm_rss_kib = -1;
     char path[PATH_LEN] = { 0 };
 
     // Read VmRSS from /proc/[pid]/statm (in pages)
@@ -231,7 +231,7 @@ long get_vm_rss_kib(int pid)
     if (f == NULL) {
         return -errno;
     }
-    int matches = fscanf(f, "%*u %ld", &vm_rss_kib);
+    int matches = fscanf(f, "%*u %lld", &vm_rss_kib);
     fclose(f);
     if (matches < 1) {
         return -ENODATA;
@@ -253,9 +253,9 @@ long get_vm_rss_kib(int pid)
  * as an informational message to stdout (default), or
  * as a warning to stderr.
  */
-void print_mem_stats(int (*out_func)(const char* fmt, ...), const meminfo_t m)
+void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t m)
 {
-    out_func("mem avail: %5d of %5d MiB (%2d %%), swap free: %4d of %4d MiB (%2d %%)\n",
+    out_func("mem avail: %5lld of %5lld MiB (%2d %%), swap free: %4lld of %4lld MiB (%2d %%)\n",
         m.MemAvailableMiB,
         m.MemTotalMiB,
         m.MemAvailablePercent,

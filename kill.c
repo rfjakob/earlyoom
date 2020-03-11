@@ -188,14 +188,14 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         }
 
         {
-            long res = get_vm_rss_kib(cur.pid);
+            long long res = get_vm_rss_kib(cur.pid);
             if (res < 0) {
                 debug(" error reading rss: %s\n", strerror(-res));
                 continue;
             }
             cur.VmRSSkiB = res;
         }
-        debug(" vm_rss %7lu", cur.VmRSSkiB);
+        debug(" vm_rss %7llu", cur.VmRSSkiB);
         if (cur.VmRSSkiB == 0) {
             // Kernel threads have zero rss
             // skip "type 2", encoded as 2 spaces
@@ -256,7 +256,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
     }
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0 || enable_debug) {
-        warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lu MiB\n",
+        warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %llu MiB\n",
             sig_name, victim.pid, victim.uid, victim.name, victim.badness, victim.VmRSSkiB / 1024);
     }
 

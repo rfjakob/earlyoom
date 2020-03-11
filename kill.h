@@ -20,7 +20,7 @@ typedef struct {
     regex_t* prefer_regex;
     regex_t* avoid_regex;
     /* memory report interval, in milliseconds */
-    int report_interval_ms;
+    unsigned int report_interval_ms;
     /* Flag --dryrun was passed */
     bool dryrun;
 } poll_loop_args_t;
