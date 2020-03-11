@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
     }
 
     // Print memory limits
-    fprintf(stderr, "mem total: %4d MiB, swap total: %4d MiB\n",
+    fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
         m.MemTotalMiB, m.SwapTotalMiB);
     fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
         args.mem_term_percent, args.swap_term_percent);
