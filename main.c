@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
             if (report_interval_f < 0) {
                 fatal(14, "-r: invalid interval '%s'\n", optarg);
             }
-            args.report_interval_ms = report_interval_f * 1000;
+            args.report_interval_ms = (int)(report_interval_f * 1000);
             break;
         case 'p':
             set_my_priority = 1;
@@ -322,22 +322,22 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const int min_sleep = 100;
     const int max_sleep = 1000;
 
-    int mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
+    long long mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    int swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
+    long long swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
-    int ms = mem_headroom_kib / mem_fill_rate + swap_headroom_kib / swap_fill_rate;
+    long long ms = mem_headroom_kib / mem_fill_rate + swap_headroom_kib / swap_fill_rate;
     if (ms < min_sleep) {
         return min_sleep;
     }
     if (ms > max_sleep) {
         return max_sleep;
     }
-    return ms;
+    return (int)ms;
 }
 
 static void poll_loop(const poll_loop_args_t args)
@@ -368,7 +368,7 @@ static void poll_loop(const poll_loop_args_t args)
         }
         int sleep_ms = sleep_time_ms(&args, &m);
         debug("adaptive sleep time: %d ms\n", sleep_ms);
-        usleep(sleep_ms * 1000);
+        usleep((unsigned)sleep_ms * 1000);
         report_countdown_ms -= sleep_ms;
     }
 }

@@ -39,7 +39,7 @@ static long long get_entry_fatal(const char* name, const char* buf)
 {
     long long val = get_entry(name, buf);
     if (val < 0) {
-        fatal(104, "could not find entry '%s' in /proc/meminfo: %s\n", name, strerror(-val));
+        fatal(104, "could not find entry '%s' in /proc/meminfo: %s\n", name, strerror((int)-val));
     }
     return val;
 }
@@ -92,9 +92,9 @@ meminfo_t parse_meminfo()
     }
 
     // Calculate percentages
-    m.MemAvailablePercent = MemAvailable * 100 / m.MemTotalKiB;
+    m.MemAvailablePercent = (int)(MemAvailable * 100 / m.MemTotalKiB);
     if (m.SwapTotalKiB > 0) {
-        m.SwapFreePercent = SwapFree * 100 / m.SwapTotalKiB;
+        m.SwapFreePercent = (int)(SwapFree * 100 / m.SwapTotalKiB);
     } else {
         m.SwapFreePercent = 0;
     }
@@ -183,7 +183,7 @@ int get_oom_score_adj(const int pid, int* out)
 /* Read /proc/[pid]/comm (process name truncated to 16 bytes).
  * Returns 0 on success and -errno on error.
  */
-int get_comm(int pid, char* out, int outlen)
+int get_comm(int pid, char* out, size_t outlen)
 {
     char path[PATH_LEN] = { 0 };
     snprintf(path, sizeof(path), "/proc/%d/comm", pid);
@@ -191,7 +191,7 @@ int get_comm(int pid, char* out, int outlen)
     if (f == NULL) {
         return -errno;
     }
-    int n = fread(out, 1, outlen - 1, f);
+    size_t n = fread(out, 1, outlen - 1, f);
     fclose(f);
     // Process name may be empty, but we should get at least a newline
     // Example for empty process name: perl -MPOSIX -e '$0=""; pause'
@@ -215,7 +215,7 @@ int get_uid(int pid)
     if (res < 0) {
         return -errno;
     }
-    return st.st_uid;
+    return (int)st.st_uid;
 }
 
 // Read VmRSS from /proc/[pid]/statm and convert to kiB.
@@ -238,7 +238,7 @@ long long get_vm_rss_kib(int pid)
     }
 
     // Read and cache page size
-    static int page_size;
+    static long page_size;
     if (page_size == 0) {
         page_size = sysconf(_SC_PAGESIZE);
     }

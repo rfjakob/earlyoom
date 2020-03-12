@@ -149,7 +149,7 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
 // Tested in unit_test.go: Test_fix_truncated_utf8()
 void fix_truncated_utf8(char* str)
 {
-    int len = strlen(str);
+    size_t len = strlen(str);
     if (len < 3) {
         return;
     }
