@@ -70,7 +70,7 @@ int debug(const char* fmt, ...)
 }
 
 // Parse the "123[,456]" tuple in optarg.
-term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
+term_kill_tuple_t parse_term_kill_tuple(char* optarg, long long upper_limit)
 {
     term_kill_tuple_t tuple = { 0 };
     int n = 0;
@@ -100,7 +100,7 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
         return tuple;
     }
 
-    n = sscanf(optarg, "%ld,%ld", &tuple.term, &tuple.kill);
+    n = sscanf(optarg, "%lld,%lld", &tuple.term, &tuple.kill);
     if (n == 0) {
         snprintf(tuple.err, sizeof(tuple.err),
             "could not parse '%s'\n", optarg);
@@ -113,7 +113,7 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
     }
     // Would setting SIGTERM below SIGKILL ever make sense?
     if (tuple.term < tuple.kill) {
-        warn("warning: SIGTERM value %ld is below SIGKILL value %ld, setting SIGTERM = SIGKILL = %ld\n",
+        warn("warning: SIGTERM value %lld is below SIGKILL value %lld, setting SIGTERM = SIGKILL = %lld\n",
             tuple.term, tuple.kill, tuple.kill);
         tuple.term = tuple.kill;
     }
@@ -125,7 +125,7 @@ term_kill_tuple_t parse_term_kill_tuple(char* optarg, long upper_limit)
     }
     if (tuple.term > upper_limit) {
         snprintf(tuple.err, sizeof(tuple.err),
-            "SIGTERM value %ld exceeds limit %ld\n", tuple.term, upper_limit);
+            "SIGTERM value %lld exceeds limit %lld\n", tuple.term, upper_limit);
         return tuple;
     }
     if (tuple.kill < 0) {
