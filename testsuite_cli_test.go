@@ -3,6 +3,7 @@ package earlyoom_testsuite
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -67,6 +68,8 @@ func TestCli(t *testing.T) {
 	memTotal, swapTotal := parseMeminfo()
 	mem1percent := fmt.Sprintf("%d", memTotal*2/101)   // slightly below 2 percent
 	swap2percent := fmt.Sprintf("%d", swapTotal*3/101) // slightly below 3 percent
+	tooBigInt32 := fmt.Sprintf("%d", math.MaxInt32+1)
+	tooBigUint32 := fmt.Sprintf("%d", math.MaxUint32+1)
 	// earlyoom startup looks like this:
 	//   earlyoom v1.1-5-g74a364b-dirty
 	//   mem total: 7836 MiB, min: 783 MiB (10 %)
@@ -114,6 +117,19 @@ func TestCli(t *testing.T) {
 		// https://github.com/rfjakob/earlyoom/issues/97
 		{args: []string{"-m", "5,0"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-m", "5,9"}, code: -1, stdoutContains: memReport},
+		// check for integer overflows
+		{args: []string{"-M", "-1"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-M", tooBigInt32}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-M", tooBigUint32}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", "-1"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", tooBigInt32}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", tooBigUint32}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-S", "-1"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-S", tooBigInt32}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-S", tooBigUint32}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", "-1"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", tooBigInt32}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", tooBigUint32}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled

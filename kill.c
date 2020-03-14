@@ -62,7 +62,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         return 0;
     }
     meminfo_t m = { 0 };
-    const int poll_ms = 100;
+    const unsigned poll_ms = 100;
     int res = kill(pid, sig);
     if (res != 0) {
         return res;
@@ -71,8 +71,8 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
     if (sig == 0) {
         return 0;
     }
-    for (int i = 0; i < 100; i++) {
-        float secs = ((float)i) * poll_ms / 1000;
+    for (unsigned i = 0; i < 100; i++) {
+        float secs = (float)(i * poll_ms) / 1000;
         // We have sent SIGTERM but now have dropped below SIGKILL limits.
         // Escalate to SIGKILL.
         if (sig != SIGKILL) {
@@ -133,7 +133,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             continue;
 
         struct procinfo cur = {
-            .pid = strtoul(d->d_name, NULL, 10),
+            .pid = (int)strtol(d->d_name, NULL, 10),
             .uid = -1,
             .badness = -1,
             .VmRSSkiB = -1,
@@ -190,7 +190,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         {
             long long res = get_vm_rss_kib(cur.pid);
             if (res < 0) {
-                debug(" error reading rss: %s\n", strerror(-res));
+                debug(" error reading rss: %s\n", strerror((int)-res));
                 continue;
             }
             cur.VmRSSkiB = res;

@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-m: %s", tuple.err);
             }
-            args.mem_term_percent = tuple.term;
-            args.mem_kill_percent = tuple.kill;
+            args.mem_term_percent = (int)tuple.term;
+            args.mem_kill_percent = (int)tuple.kill;
             have_m = 1;
             break;
         case 's':
@@ -112,8 +112,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(16, "-s: %s", tuple.err);
             }
-            args.swap_term_percent = tuple.term;
-            args.swap_kill_percent = tuple.kill;
+            args.swap_term_percent = (int)tuple.term;
+            args.swap_kill_percent = (int)tuple.kill;
             have_s = 1;
             break;
         case 'M':
@@ -121,21 +121,21 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_percent = 100 * tuple.term / m.MemTotalKiB;
-            args.mem_kill_percent = 100 * tuple.kill / m.MemTotalKiB;
+            args.mem_term_percent = (int)(100 * tuple.term / m.MemTotalKiB);
+            args.mem_kill_percent = (int)(100 * tuple.kill / m.MemTotalKiB);
             have_M = 1;
             break;
         case 'S':
-            if (m.SwapTotalKiB == 0) {
-                warn("warning: -S: total swap is zero, using default percentages\n");
-                break;
-            }
             tuple = parse_term_kill_tuple(optarg, m.SwapTotalKiB * 100 / 99);
             if (strlen(tuple.err)) {
                 fatal(16, "-S: %s", tuple.err);
             }
-            args.swap_term_percent = 100 * tuple.term / m.SwapTotalKiB;
-            args.swap_kill_percent = 100 * tuple.kill / m.SwapTotalKiB;
+            if (m.SwapTotalKiB == 0) {
+                warn("warning: -S: total swap is zero, using default percentages\n");
+                break;
+            }
+            args.swap_term_percent = (int)(100 * tuple.term / m.SwapTotalKiB);
+            args.swap_kill_percent = (int)(100 * tuple.kill / m.SwapTotalKiB);
             have_S = 1;
             break;
         case 'k':
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
             if (report_interval_f < 0) {
                 fatal(14, "-r: invalid interval '%s'\n", optarg);
             }
-            args.report_interval_ms = report_interval_f * 1000;
+            args.report_interval_ms = (int)(report_interval_f * 1000);
             break;
         case 'p':
             set_my_priority = 1;
@@ -313,31 +313,31 @@ static int set_oom_score_adj(int oom_score_adj)
  * The idea is simple: if memory and swap can only fill up so fast, we know how long we can sleep
  * without risking to miss a low memory event.
  */
-static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
+static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
 {
     // Maximum expected memory/swap fill rate. In kiB per millisecond ==~ MiB per second.
-    const int mem_fill_rate = 6000; // 6000MiB/s seen with "stress -m 4 --vm-bytes 4G"
-    const int swap_fill_rate = 800; //  800MiB/s seen with membomb on ZRAM
+    const long long mem_fill_rate = 6000; // 6000MiB/s seen with "stress -m 4 --vm-bytes 4G"
+    const long long swap_fill_rate = 800; //  800MiB/s seen with membomb on ZRAM
     // Clamp calculated value to this range (milliseconds)
-    const int min_sleep = 100;
-    const int max_sleep = 1000;
+    const unsigned min_sleep = 100;
+    const unsigned max_sleep = 1000;
 
-    int mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
+    long long mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    int swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
+    long long swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
-    int ms = mem_headroom_kib / mem_fill_rate + swap_headroom_kib / swap_fill_rate;
+    long long ms = mem_headroom_kib / mem_fill_rate + swap_headroom_kib / swap_fill_rate;
     if (ms < min_sleep) {
         return min_sleep;
     }
     if (ms > max_sleep) {
         return max_sleep;
     }
-    return ms;
+    return (unsigned)ms;
 }
 
 static void poll_loop(const poll_loop_args_t args)
@@ -366,9 +366,9 @@ static void poll_loop(const poll_loop_args_t args)
             print_mem_stats(printf, m);
             report_countdown_ms = args.report_interval_ms;
         }
-        int sleep_ms = sleep_time_ms(&args, &m);
+        unsigned sleep_ms = sleep_time_ms(&args, &m);
         debug("adaptive sleep time: %d ms\n", sleep_ms);
         usleep(sleep_ms * 1000);
-        report_countdown_ms -= sleep_ms;
+        report_countdown_ms -= (int)sleep_ms;
     }
 }
