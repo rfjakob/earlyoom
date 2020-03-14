@@ -54,6 +54,21 @@ static void maybe_notify(char* notif_command, char* notif_args)
         warn("system('%s') failed: %s\n", notif, strerror(errno));
 }
 
+int is_system_memory_insufficient(const meminfo_t* m, const limit_tuple_t limits[])
+{
+    int reason = INSUFFICIENT_VALID;
+    for (int i = 0; i < MEM_TYPE_CNT; i++) {
+        if (limits[i].percent != 0 && m->info[i].AvailablePercent <= limits[i].percent) {
+            continue;
+        } else if (limits[i].size != 0 && m->info[i].Available <= limits[i].size) {
+            reason |= 1 << i;
+            continue;
+        }
+        return 0;
+    }
+    return reason;
+}
+
 /*
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
@@ -81,7 +96,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         if (sig != SIGKILL) {
             m = parse_meminfo();
             print_mem_stats(debug, m);
-            if (((args.limits[KILL][MEM].percent != 0 && m.info[MEM].AvailablePercent <= args.limits[KILL][MEM].percent) || (args.limits[KILL][MEM].size != 0 && m.info[MEM].Available <= args.limits[KILL][MEM].size)) && ((args.limits[KILL][SWAP].percent != 0 && m.info[SWAP].AvailablePercent <= args.limits[KILL][SWAP].percent) || (args.limits[KILL][SWAP].size != 0 && m.info[SWAP].Available <= args.limits[KILL][SWAP].size))) {
+            if (is_system_memory_insufficient(&m, args.limits[KILL])) {
                 sig = SIGKILL;
                 res = kill(pid, sig);
                 // kill first, print after

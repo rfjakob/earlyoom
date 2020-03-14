@@ -38,6 +38,14 @@ typedef struct {
     bool dryrun;
 } poll_loop_args_t;
 
+enum INSUFFICIENCY_REASON {
+    // unset -> PERCENT, set -> SIZE
+    INSUFFICIENT_MEM_SIZE = 1 << MEM,
+    INSUFFICIENT_SWAP_SIZE = 1 << SWAP,
+    INSUFFICIENT_VALID = 1 << MEM_TYPE_CNT,
+};
+
+int is_system_memory_insufficient(const meminfo_t* m, const limit_tuple_t limits[]);
 void kill_largest_process(poll_loop_args_t args, int sig);
 
 #endif

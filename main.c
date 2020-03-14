@@ -343,12 +343,12 @@ static void poll_loop(const poll_loop_args_t args)
     while (1) {
         int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (((args.limits[KILL][MEM].percent != 0 && m.info[MEM].AvailablePercent <= args.limits[KILL][MEM].percent) || (args.limits[KILL][MEM].size != 0 && m.info[MEM].Available * 1024 <= args.limits[KILL][MEM].size)) && ((args.limits[KILL][SWAP].percent != 0 && m.info[SWAP].AvailablePercent <= args.limits[KILL][SWAP].percent) || (args.limits[KILL][SWAP].size != 0 && m.info[SWAP].Available <= args.limits[KILL][SWAP].size))) {
+        if (is_system_memory_insufficient(&m, args.limits[KILL])) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
                 args.limits[KILL][MEM].percent, args.limits[KILL][SWAP].percent);
             sig = SIGKILL;
-        } else if (((args.limits[TERM][MEM].percent != 0 && m.info[MEM].AvailablePercent <= args.limits[TERM][MEM].percent) || (args.limits[TERM][MEM].size != 0 && m.info[MEM].Available * 1024 <= args.limits[TERM][MEM].size)) && ((args.limits[TERM][SWAP].percent != 0 && m.info[SWAP].AvailablePercent <= args.limits[TERM][SWAP].percent) || (args.limits[TERM][SWAP].size != 0 && m.info[SWAP].Available <= args.limits[TERM][SWAP].size))) {
+        } else if (is_system_memory_insufficient(&m, args.limits[TERM])) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
                 args.limits[TERM][MEM].percent, args.limits[TERM][SWAP].percent);
