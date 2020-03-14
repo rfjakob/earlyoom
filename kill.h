@@ -46,6 +46,6 @@ enum INSUFFICIENCY_REASON {
 };
 
 int is_system_memory_insufficient(const meminfo_t* m, const limit_tuple_t limits[]);
-void kill_largest_process(poll_loop_args_t args, int sig);
+void kill_largest_process(const poll_loop_args_t* args, int sig);
 
 #endif

@@ -249,13 +249,13 @@ long long get_vm_rss_kib(int pid)
  * as an informational message to stdout (default), or
  * as a warning to stderr.
  */
-void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t m)
+void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t* m)
 {
     out_func("mem avail: %5lld of %5lld MiB (%2d %%), swap free: %4lld of %4lld MiB (%2d %%)\n",
-        m.info[MEM].Available / 1024,
-        m.info[MEM].Total / 1024,
-        m.info[MEM].AvailablePercent,
-        m.info[SWAP].Available / 1024,
-        m.info[SWAP].Total / 1024,
-        m.info[SWAP].AvailablePercent);
+        m->info[MEM].Available / 1024,
+        m->info[MEM].Total / 1024,
+        m->info[MEM].AvailablePercent,
+        m->info[SWAP].Available / 1024,
+        m->info[SWAP].Total / 1024,
+        m->info[SWAP].AvailablePercent);
 }

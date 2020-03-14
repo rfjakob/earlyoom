@@ -41,7 +41,7 @@ enum {
 
 static int set_oom_score_adj(int);
 static void print_mem_limits(const poll_loop_args_t* const args, enum LIMIT_TYPE sig);
-static void poll_loop(const poll_loop_args_t args);
+static void poll_loop(const poll_loop_args_t* args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
 // Cgo generates it's own main function.
@@ -262,7 +262,7 @@ int main(int argc, char* argv[])
      * calling mlockall()
      */
     debug("dry-running kill_largest_process()...\n");
-    kill_largest_process(args, 0);
+    kill_largest_process(&args, 0);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
@@ -274,7 +274,7 @@ int main(int argc, char* argv[])
     }
 
     // Jump into main poll loop
-    poll_loop(args);
+    poll_loop(&args);
     return 0;
 }
 
@@ -373,7 +373,7 @@ static void report_memory_limits(const limit_tuple_t limits[], int reason)
     }
 }
 
-static void poll_loop(const poll_loop_args_t args)
+static void poll_loop(const poll_loop_args_t* args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.
@@ -383,22 +383,22 @@ static void poll_loop(const poll_loop_args_t args)
         int sig = 0;
         meminfo_t m = parse_meminfo();
         for (int i = 0; i < LIMIT_TYPE_CNT; i++) {
-            int reason = is_system_memory_insufficient(&m, args.limits[i]);
+            int reason = is_system_memory_insufficient(&m, args->limits[i]);
             if (reason) {
-                print_mem_stats(warn, m);
+                print_mem_stats(warn, &m);
                 warn("low memory! at or below %s limits: ", limit_type_name[i]);
-                report_memory_limits(args.limits[i], reason);
+                report_memory_limits(args->limits[i], reason);
                 sig = limit_type_signal[i];
                 break;
             }
         }
         if (sig) {
             kill_largest_process(args, sig);
-        } else if (args.report_interval_ms && report_countdown_ms <= 0) {
-            print_mem_stats(printf, m);
-            report_countdown_ms = args.report_interval_ms;
+        } else if (args->report_interval_ms && report_countdown_ms <= 0) {
+            print_mem_stats(printf, &m);
+            report_countdown_ms = args->report_interval_ms;
         }
-        int sleep_ms = sleep_time_ms(&args, &m);
+        int sleep_ms = sleep_time_ms(args, &m);
         debug("adaptive sleep time: %d ms\n", sleep_ms);
         usleep((unsigned)sleep_ms * 1000);
         report_countdown_ms -= sleep_ms;

@@ -35,7 +35,7 @@ struct procinfo {
 
 meminfo_t parse_meminfo();
 bool is_alive(int pid);
-void print_mem_stats(int (*out_func)(const char* fmt, ...), const meminfo_t m);
+void print_mem_stats(int (*out_func)(const char* fmt, ...), const meminfo_t* m);
 int get_oom_score(int pid);
 int get_oom_score_adj(const int pid, int* out);
 long long get_vm_rss_kib(int pid);
