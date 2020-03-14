@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <getopt.h>
+#include <limits.h>
 #include <regex.h>
 #include <signal.h>
 #include <stdio.h>
@@ -56,6 +57,12 @@ int main(int argc, char* argv[])
         .swap_term_percent = 10,
         .mem_kill_percent = 5,
         .swap_kill_percent = 5,
+
+        .mem_term_kib = LLONG_MAX,
+        .mem_kill_kib = LLONG_MAX,
+        .swap_term_kib = LLONG_MAX,
+        .swap_kill_kib = LLONG_MAX,
+
         .report_interval_ms = 1000,
         /* omitted fields are set to zero */
     };
@@ -121,8 +128,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_percent = (int)(100 * tuple.term / m.MemTotalKiB);
-            args.mem_kill_percent = (int)(100 * tuple.kill / m.MemTotalKiB);
+            args.mem_term_kib = tuple.term;
+            args.mem_kill_kib = tuple.kill;
             have_M = 1;
             break;
         case 'S':
@@ -130,12 +137,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(16, "-S: %s", tuple.err);
             }
-            if (m.SwapTotalKiB == 0) {
-                warn("warning: -S: total swap is zero, using default percentages\n");
-                break;
-            }
-            args.swap_term_percent = (int)(100 * tuple.term / m.SwapTotalKiB);
-            args.swap_kill_percent = (int)(100 * tuple.kill / m.SwapTotalKiB);
+            args.swap_term_kib = tuple.term;
+            args.swap_kill_kib = tuple.kill;
             have_S = 1;
             break;
         case 'k':
@@ -218,11 +221,15 @@ int main(int argc, char* argv[])
     if (optind < argc) {
         fatal(13, "extra argument not understood: '%s'\n", argv[optind]);
     }
-    if (have_m && have_M) {
-        fatal(2, "can't use both -m and -M\n");
+    // If only kilobyte limits have been passed, the default percentage limits
+    // are disabled by setting them to 100%.
+    if (have_M && !have_m) {
+        args.mem_term_percent = 100;
+        args.mem_kill_percent = 100;
     }
-    if (have_s && have_S) {
-        fatal(2, "can't use both -s and -S\n");
+    if (have_S && !have_s) {
+        args.swap_term_percent = 100;
+        args.swap_kill_percent = 100;
     }
     if (prefer_cmds) {
         args.prefer_regex = &_prefer_regex;
@@ -256,11 +263,21 @@ int main(int argc, char* argv[])
 
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
-        m.MemTotalMiB, m.SwapTotalMiB);
-    fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
-        args.mem_term_percent, args.swap_term_percent);
-    fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
-        args.mem_kill_percent, args.swap_kill_percent);
+        m.MemTotalKiB / 1024, m.SwapTotalKiB / 1024);
+    // Simple format: Percentages only
+    if (args.mem_term_kib == LLONG_MAX && args.swap_term_kib == LLONG_MAX
+        && args.mem_kill_kib == LLONG_MAX && args.swap_kill_kib == LLONG_MAX) {
+        fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
+            args.mem_term_percent, args.swap_term_percent);
+        fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
+            args.mem_kill_percent, args.swap_kill_percent);
+    } else {
+        // Percentages and absolute values
+        fprintf(stderr, "sending SIGTERM when mem <= min(%2d %%, %4lld MiB) and swap <= min(%2d %%, %lld MiB),\n",
+            args.mem_term_percent, args.mem_term_kib / 1024, args.swap_term_percent, args.swap_term_kib / 1024);
+        fprintf(stderr, "        SIGKILL when mem <= min(%2d %%, %4lld MiB) and swap <= min(%2d %%, %lld MiB)\n",
+            args.mem_kill_percent, args.mem_kill_kib / 1024, args.swap_kill_percent, args.swap_kill_kib / 1024);
+    }
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
@@ -322,11 +339,11 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const unsigned min_sleep = 100;
     const unsigned max_sleep = 1000;
 
-    long long mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
+    long long mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * m->MemTotalKiB / 100;
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    long long swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
+    long long swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * m->SwapTotalKiB / 100;
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
@@ -340,6 +357,29 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     return (unsigned)ms;
 }
 
+int is_low_memory(poll_loop_args_t args, meminfo_t m)
+{
+    /*
+        printf("MemAvailablePercent=%d\tmem_term_percent=%d\n", m.MemAvailablePercent, args.mem_term_percent);
+        printf("SwapFreePercent=%d\tswap_term_percent=%d\n", m.SwapFreePercent, args.swap_term_percent);
+        printf("MemAvailableKiB=%lld\tmem_term_kib=%lld\n", m.MemAvailableKiB, args.mem_term_kib);
+        printf("SwapFreeKiB=%lld\tswap_term_kib=%lld\n", m.SwapFreeKiB, args.swap_term_kib);
+    */
+    if (m.MemAvailablePercent <= args.mem_kill_percent
+        && m.SwapFreePercent <= args.swap_kill_percent
+        && m.MemAvailableKiB <= args.mem_kill_kib
+        && m.SwapFreeKiB <= args.swap_kill_kib) {
+        return SIGKILL;
+    }
+    if (m.MemAvailablePercent <= args.mem_term_percent
+        && m.SwapFreePercent <= args.swap_term_percent
+        && m.MemAvailableKiB <= args.mem_term_kib
+        && m.SwapFreeKiB <= args.swap_term_kib) {
+        return SIGTERM;
+    }
+    return 0;
+}
+
 static void poll_loop(const poll_loop_args_t args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
@@ -347,20 +387,11 @@ static void poll_loop(const poll_loop_args_t args)
     int report_countdown_ms = 0;
 
     while (1) {
-        int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
-            print_mem_stats(warn, m);
-            warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
-                args.mem_kill_percent, args.swap_kill_percent);
-            sig = SIGKILL;
-        } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
-            print_mem_stats(warn, m);
-            warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
-                args.mem_term_percent, args.swap_term_percent);
-            sig = SIGTERM;
-        }
+        int sig = is_low_memory(args, m);
         if (sig) {
+            print_mem_stats(warn, m);
+            warn("low memory!\n");
             kill_largest_process(args, sig);
         } else if (args.report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(printf, m);

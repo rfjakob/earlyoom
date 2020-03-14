@@ -7,13 +7,11 @@
 #include <stdbool.h>
 
 typedef struct {
-    // Values from /proc/meminfo, in KiB or converted to MiB.
+    // Values from /proc/meminfo, in KiB
     long long MemTotalKiB;
-    long long MemTotalMiB;
-    long long MemAvailableMiB; // -1 means no data available
-    long long SwapTotalMiB;
+    long long MemAvailableKiB;
     long long SwapTotalKiB;
-    long long SwapFreeMiB;
+    long long SwapFreeKiB;
     // Calculated percentages
     int MemAvailablePercent; // percent of total memory that is available
     int SwapFreePercent; // percent of total swap that is free

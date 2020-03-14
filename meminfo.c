@@ -56,6 +56,10 @@ static long long available_guesstimate(const char* buf)
     return MemFree + Cached + Buffers - Shmem;
 }
 
+/* Parse /proc/meminfo.
+ * This function either returns valid data or kills the process
+ * with a fatal error.
+ */
 meminfo_t parse_meminfo()
 {
     static FILE* fd;
@@ -79,11 +83,11 @@ meminfo_t parse_meminfo()
 
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
     m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
-    long long SwapFree = get_entry_fatal("SwapFree:", buf);
+    m.SwapFreeKiB = get_entry_fatal("SwapFree:", buf);
 
-    long long MemAvailable = get_entry("MemAvailable:", buf);
-    if (MemAvailable == -1) {
-        MemAvailable = available_guesstimate(buf);
+    m.MemAvailableKiB = get_entry("MemAvailable:", buf);
+    if (m.MemAvailableKiB == -1) {
+        m.MemAvailableKiB = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
             fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
                             "         Falling back to guesstimate\n");
@@ -92,18 +96,12 @@ meminfo_t parse_meminfo()
     }
 
     // Calculate percentages
-    m.MemAvailablePercent = (int)(MemAvailable * 100 / m.MemTotalKiB);
+    m.MemAvailablePercent = (int)(m.MemAvailableKiB * 100 / m.MemTotalKiB);
     if (m.SwapTotalKiB > 0) {
-        m.SwapFreePercent = (int)(SwapFree * 100 / m.SwapTotalKiB);
+        m.SwapFreePercent = (int)(m.SwapFreeKiB * 100 / m.SwapTotalKiB);
     } else {
         m.SwapFreePercent = 0;
     }
-
-    // Convert kiB to MiB
-    m.MemTotalMiB = m.MemTotalKiB / 1024;
-    m.MemAvailableMiB = MemAvailable / 1024;
-    m.SwapTotalMiB = m.SwapTotalKiB / 1024;
-    m.SwapFreeMiB = SwapFree / 1024;
 
     return m;
 }
@@ -256,10 +254,10 @@ long long get_vm_rss_kib(int pid)
 void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t m)
 {
     out_func("mem avail: %5lld of %5lld MiB (%2d %%), swap free: %4lld of %4lld MiB (%2d %%)\n",
-        m.MemAvailableMiB,
-        m.MemTotalMiB,
+        m.MemAvailableKiB / 1024,
+        m.MemTotalKiB / 1024,
         m.MemAvailablePercent,
-        m.SwapFreeMiB,
-        m.SwapTotalMiB,
+        m.SwapFreeKiB / 1024,
+        m.SwapTotalKiB / 1024,
         m.SwapFreePercent);
 }

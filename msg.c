@@ -70,6 +70,7 @@ int debug(const char* fmt, ...)
 }
 
 // Parse the "123[,456]" tuple in optarg.
+// The returned values are guaranteed to be >= 0 and <= upper_limit.
 term_kill_tuple_t parse_term_kill_tuple(char* optarg, long long upper_limit)
 {
     term_kill_tuple_t tuple = { 0 };
