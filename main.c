@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <getopt.h>
 #include <regex.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +40,7 @@ enum {
 };
 
 static int set_oom_score_adj(int);
+static void print_mem_limits(const poll_loop_args_t* const args, enum LIMIT_TYPE sig);
 static void poll_loop(const poll_loop_args_t args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
@@ -251,10 +251,12 @@ int main(int argc, char* argv[])
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
         m.info[MEM].Total / 1024, m.info[SWAP].Total / 1024);
-    fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
-        args.limits[TERM][MEM].percent, args.limits[TERM][SWAP].percent);
-    fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
-        args.limits[KILL][MEM].percent, args.limits[KILL][SWAP].percent);
+    fprintf(stderr, "sending SIGTERM when ");
+    print_mem_limits(&args, TERM);
+    fprintf(stderr, ",\n");
+    fprintf(stderr, "        SIGKILL when ");
+    print_mem_limits(&args, KILL);
+    fprintf(stderr, "\n");
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
@@ -302,6 +304,27 @@ static int set_oom_score_adj(int oom_score_adj)
     return 0;
 }
 
+static void print_mem_sig_limits(const poll_loop_args_t* const args, enum LIMIT_TYPE sig,
+                                 enum MEM_TYPE mem, const char mem_name[])
+{
+    if (args->limits[sig][mem].percent != 0) {
+        fprintf(stderr, "%s <= %2d %%", mem_name, args->limits[sig][mem].percent);
+    }
+    if (args->limits[sig][mem].size != 0) {
+        if (args->limits[sig][mem].percent != 0) {
+            fputs(" or ", stderr);
+        }
+        fprintf(stderr, "%s <= %4lld KiB", mem_name, args->limits[sig][mem].size);
+    }
+}
+
+static void print_mem_limits(const poll_loop_args_t* const args, enum LIMIT_TYPE sig)
+{
+    print_mem_sig_limits(args, sig, MEM, "mem");
+    fputs(" and ", stderr);
+    print_mem_sig_limits(args, sig, SWAP, "swap");
+}
+
 /* Calculate the time we should sleep based upon how far away from the memory and swap
  * limits we are (headroom). Returns a millisecond value between 100 and 1000 (inclusive).
  * The idea is simple: if memory and swap can only fill up so fast, we know how long we can sleep
@@ -334,6 +357,22 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     return (int)ms;
 }
 
+static void report_memory_limits(const limit_tuple_t limits[], int reason)
+{
+    for (int i = 0; i < MEM_TYPE_CNT; i++) {
+        if (reason & (1 << i)) {
+            warn("%s %4lld KiB", mem_type_name[i], limits[i].size);
+        } else {
+            warn("%s %d %%", mem_type_name[i], limits[i].percent);
+        }
+        if (i + 1 != MEM_TYPE_CNT) {
+            warn(", ");
+        } else {
+            warn("\n");
+        }
+    }
+}
+
 static void poll_loop(const poll_loop_args_t args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
@@ -343,16 +382,15 @@ static void poll_loop(const poll_loop_args_t args)
     while (1) {
         int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (is_system_memory_insufficient(&m, args.limits[KILL])) {
-            print_mem_stats(warn, m);
-            warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
-                args.limits[KILL][MEM].percent, args.limits[KILL][SWAP].percent);
-            sig = SIGKILL;
-        } else if (is_system_memory_insufficient(&m, args.limits[TERM])) {
-            print_mem_stats(warn, m);
-            warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
-                args.limits[TERM][MEM].percent, args.limits[TERM][SWAP].percent);
-            sig = SIGTERM;
+        for (int i = 0; i < LIMIT_TYPE_CNT; i++) {
+            int reason = is_system_memory_insufficient(&m, args.limits[i]);
+            if (reason) {
+                print_mem_stats(warn, m);
+                warn("low memory! at or below %s limits: ", limit_type_name[i]);
+                report_memory_limits(args.limits[i], reason);
+                sig = limit_type_signal[i];
+                break;
+            }
         }
         if (sig) {
             kill_largest_process(args, sig);
