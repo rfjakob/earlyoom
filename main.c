@@ -82,7 +82,6 @@ int main(int argc, char* argv[])
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
-    bool have_m = 0, have_M = 0, have_s = 0, have_S = 0;
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
         float report_interval_f = 0;
@@ -100,7 +99,6 @@ int main(int argc, char* argv[])
             }
             args.mem_term_percent = tuple.term;
             args.mem_kill_percent = tuple.kill;
-            have_m = 1;
             break;
         case 's':
             // Using "-s 100" is a valid way to ignore swap usage
@@ -110,7 +108,6 @@ int main(int argc, char* argv[])
             }
             args.swap_term_percent = tuple.term;
             args.swap_kill_percent = tuple.kill;
-            have_s = 1;
             break;
         case 'M':
             tuple = parse_term_kill_tuple(optarg, m.MemTotalKiB * 100 / 99);
@@ -119,7 +116,6 @@ int main(int argc, char* argv[])
             }
             args.mem_term_size = tuple.term;
             args.mem_kill_size = tuple.kill;
-            have_M = 1;
             break;
         case 'S':
             if (m.SwapTotalKiB == 0) {
@@ -132,7 +128,6 @@ int main(int argc, char* argv[])
             }
             args.swap_term_size = tuple.term;
             args.swap_kill_size = tuple.kill;
-            have_S = 1;
             break;
         case 'k':
             fprintf(stderr, "Option -k is ignored since earlyoom v1.2\n");
@@ -213,12 +208,6 @@ int main(int argc, char* argv[])
 
     if (optind < argc) {
         fatal(13, "extra argument not understood: '%s'\n", argv[optind]);
-    }
-    if (have_m && have_M) {
-        fatal(2, "can't use both -m and -M\n");
-    }
-    if (have_s && have_S) {
-        fatal(2, "can't use both -s and -S\n");
     }
     if (prefer_cmds) {
         args.prefer_regex = &_prefer_regex;
