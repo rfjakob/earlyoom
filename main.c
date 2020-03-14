@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
                 "                            -100\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
-                "  --dry-run                 dry run (do not kill any processes)\n"
+                "  --dryrun                  dry run (do not kill any processes)\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);

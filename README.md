@@ -244,7 +244,7 @@ Usage: ./earlyoom [OPTION]...
                             -100
   --prefer REGEX            prefer to kill processes matching REGEX
   --avoid REGEX             avoid killing processes matching REGEX
-  --dry-run                 dry run (do not kill any processes)
+  --dryrun                  dry run (do not kill any processes)
   -h, --help                this help text
 ```
 
