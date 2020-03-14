@@ -52,10 +52,6 @@ static void poll_loop(const poll_loop_args_t args);
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
-        .mem_term_percent = 10,
-        .swap_term_percent = 10,
-        .mem_kill_percent = 5,
-        .swap_kill_percent = 5,
         .report_interval_ms = 1000,
         /* omitted fields are set to zero */
     };
@@ -121,8 +117,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_percent = 100 * tuple.term / m.MemTotalKiB;
-            args.mem_kill_percent = 100 * tuple.kill / m.MemTotalKiB;
+            args.mem_term_size = tuple.term;
+            args.mem_kill_size = tuple.kill;
             have_M = 1;
             break;
         case 'S':
@@ -134,8 +130,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(16, "-S: %s", tuple.err);
             }
-            args.swap_term_percent = 100 * tuple.term / m.SwapTotalKiB;
-            args.swap_kill_percent = 100 * tuple.kill / m.SwapTotalKiB;
+            args.swap_term_size = tuple.term;
+            args.swap_kill_size = tuple.kill;
             have_S = 1;
             break;
         case 'k':
@@ -254,6 +250,15 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Set default limits
+    if (args.mem_term_size == 0 && args.mem_term_size == 0) {
+        args.mem_term_size = 10;
+        args.mem_kill_percent = args.mem_term_size / 2;
+    }
+    if (args.swap_term_size == 0 && args.swap_term_size == 0) {
+        args.swap_term_size = 10;
+        args.swap_kill_percent = args.swap_term_size / 2;
+    }
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
         m.MemTotalMiB, m.SwapTotalMiB);
@@ -349,12 +354,12 @@ static void poll_loop(const poll_loop_args_t args)
     while (1) {
         int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+        if (((args.mem_kill_percent != 0 && m.MemAvailablePercent <= args.mem_kill_percent) || (args.mem_kill_size != 0 && m.MemAvailableMiB * 1024 <= args.mem_kill_size)) && ((args.swap_kill_percent != 0 && m.SwapFreePercent <= args.swap_kill_percent) || (args.swap_kill_size != 0 && m.SwapFreeMiB * 1024 <= args.swap_kill_size))) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
                 args.mem_kill_percent, args.swap_kill_percent);
             sig = SIGKILL;
-        } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
+        } else if (((args.mem_term_percent != 0 && m.MemAvailablePercent <= args.mem_term_percent) || (args.mem_term_size != 0 && m.MemAvailableMiB * 1024 <= args.mem_term_size)) && ((args.swap_term_percent != 0 && m.SwapFreePercent <= args.swap_term_percent) || (args.swap_term_size != 0 && m.SwapFreeMiB * 1024 <= args.swap_term_size))) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
                 args.mem_term_percent, args.swap_term_percent);

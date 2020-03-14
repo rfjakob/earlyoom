@@ -78,7 +78,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         if (sig != SIGKILL) {
             m = parse_meminfo();
             print_mem_stats(debug, m);
-            if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+            if (((args.mem_kill_percent != 0 && m.MemAvailablePercent <= args.mem_kill_percent) || (args.mem_kill_size != 0 && m.MemAvailableMiB * 1024 <= args.mem_kill_size)) && ((args.swap_kill_percent != 0 && m.SwapFreePercent <= args.swap_kill_percent) || (args.swap_kill_size != 0 && m.SwapFreeMiB * 1024 <= args.swap_kill_size))) {
                 sig = SIGKILL;
                 res = kill(pid, sig);
                 // kill first, print after

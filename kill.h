@@ -12,6 +12,10 @@ typedef struct {
     int mem_kill_percent;
     int swap_term_percent;
     int swap_kill_percent;
+    long long mem_term_size;
+    long long mem_kill_size;
+    long long swap_term_size;
+    long long swap_kill_size;
     /* ignore /proc/PID/oom_score_adj? */
     bool ignore_oom_score_adj;
     /* notifcation command to launch when killing something. NULL = no-op. */
