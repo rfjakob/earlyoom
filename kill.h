@@ -5,17 +5,26 @@
 #include <regex.h>
 #include <stdbool.h>
 
+#include "meminfo.h"
+
+typedef struct {
+    int percent;
+    long long size;
+} limit_tuple_t;
+
+enum LIMIT_TYPE {
+    TERM = 0,
+    KILL,
+    LIMIT_TYPE_CNT
+};
+
+extern const char* const limit_type_name[LIMIT_TYPE_CNT];
+extern const int limit_type_signal[LIMIT_TYPE_CNT];
+
 typedef struct {
     /* if the available memory AND swap goes below these percentages,
      * we start killing processes */
-    int mem_term_percent;
-    int mem_kill_percent;
-    int swap_term_percent;
-    int swap_kill_percent;
-    long long mem_term_size;
-    long long mem_kill_size;
-    long long swap_term_size;
-    long long swap_kill_size;
+    limit_tuple_t limits[LIMIT_TYPE_CNT][MEM_TYPE_CNT];
     /* ignore /proc/PID/oom_score_adj? */
     bool ignore_oom_score_adj;
     /* notifcation command to launch when killing something. NULL = no-op. */

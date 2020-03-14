@@ -97,8 +97,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-m: %s", tuple.err);
             }
-            args.mem_term_percent = tuple.term;
-            args.mem_kill_percent = tuple.kill;
+            args.limits[TERM][MEM].percent = tuple.term;
+            args.limits[KILL][MEM].percent = tuple.kill;
             break;
         case 's':
             // Using "-s 100" is a valid way to ignore swap usage
@@ -106,28 +106,28 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(16, "-s: %s", tuple.err);
             }
-            args.swap_term_percent = tuple.term;
-            args.swap_kill_percent = tuple.kill;
+            args.limits[TERM][SWAP].percent = tuple.term;
+            args.limits[KILL][SWAP].percent = tuple.kill;
             break;
         case 'M':
-            tuple = parse_term_kill_tuple(optarg, m.MemTotalKiB * 100 / 99);
+            tuple = parse_term_kill_tuple(optarg, m.info[MEM].Total * 100 / 99);
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_size = tuple.term;
-            args.mem_kill_size = tuple.kill;
+            args.limits[TERM][MEM].size = tuple.term;
+            args.limits[KILL][MEM].size = tuple.kill;
             break;
         case 'S':
-            if (m.SwapTotalKiB == 0) {
+            if (m.info[SWAP].Total == 0) {
                 warn("warning: -S: total swap is zero, using default percentages\n");
                 break;
             }
-            tuple = parse_term_kill_tuple(optarg, m.SwapTotalKiB * 100 / 99);
+            tuple = parse_term_kill_tuple(optarg, m.info[SWAP].Total * 100 / 99);
             if (strlen(tuple.err)) {
                 fatal(16, "-S: %s", tuple.err);
             }
-            args.swap_term_size = tuple.term;
-            args.swap_kill_size = tuple.kill;
+            args.limits[TERM][SWAP].size = tuple.term;
+            args.limits[KILL][SWAP].size = tuple.kill;
             break;
         case 'k':
             fprintf(stderr, "Option -k is ignored since earlyoom v1.2\n");
@@ -240,21 +240,21 @@ int main(int argc, char* argv[])
     }
 
     // Set default limits
-    if (args.mem_term_size == 0 && args.mem_term_size == 0) {
-        args.mem_term_size = 10;
-        args.mem_kill_percent = args.mem_term_size / 2;
+    if (args.limits[TERM][MEM].size == 0 && args.limits[TERM][MEM].size == 0) {
+        args.limits[TERM][MEM].size = 10;
+        args.limits[KILL][MEM].percent = args.limits[TERM][MEM].size / 2;
     }
-    if (args.swap_term_size == 0 && args.swap_term_size == 0) {
-        args.swap_term_size = 10;
-        args.swap_kill_percent = args.swap_term_size / 2;
+    if (args.limits[TERM][SWAP].size == 0 && args.limits[TERM][SWAP].size == 0) {
+        args.limits[TERM][SWAP].size = 10;
+        args.limits[KILL][SWAP].percent = args.limits[TERM][SWAP].size / 2;
     }
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
-        m.MemTotalMiB, m.SwapTotalMiB);
+        m.info[MEM].Total / 1024, m.info[SWAP].Total / 1024);
     fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
-        args.mem_term_percent, args.swap_term_percent);
+        args.limits[TERM][MEM].percent, args.limits[TERM][SWAP].percent);
     fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
-        args.mem_kill_percent, args.swap_kill_percent);
+        args.limits[KILL][MEM].percent, args.limits[KILL][SWAP].percent);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
      * calling mlockall()
@@ -316,11 +316,11 @@ static int sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const int min_sleep = 100;
     const int max_sleep = 1000;
 
-    long long mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
+    long long mem_headroom_kib = (m->info[MEM].AvailablePercent - args->limits[TERM][MEM].percent) * 10 * m->info[MEM].Total / 1024;
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    long long swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
+    long long swap_headroom_kib = (m->info[SWAP].AvailablePercent - args->limits[TERM][SWAP].percent) * 10 * m->info[SWAP].Total / 1024;
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
@@ -343,15 +343,15 @@ static void poll_loop(const poll_loop_args_t args)
     while (1) {
         int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (((args.mem_kill_percent != 0 && m.MemAvailablePercent <= args.mem_kill_percent) || (args.mem_kill_size != 0 && m.MemAvailableMiB * 1024 <= args.mem_kill_size)) && ((args.swap_kill_percent != 0 && m.SwapFreePercent <= args.swap_kill_percent) || (args.swap_kill_size != 0 && m.SwapFreeMiB * 1024 <= args.swap_kill_size))) {
+        if (((args.limits[KILL][MEM].percent != 0 && m.info[MEM].AvailablePercent <= args.limits[KILL][MEM].percent) || (args.limits[KILL][MEM].size != 0 && m.info[MEM].Available * 1024 <= args.limits[KILL][MEM].size)) && ((args.limits[KILL][SWAP].percent != 0 && m.info[SWAP].AvailablePercent <= args.limits[KILL][SWAP].percent) || (args.limits[KILL][SWAP].size != 0 && m.info[SWAP].Available <= args.limits[KILL][SWAP].size))) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
-                args.mem_kill_percent, args.swap_kill_percent);
+                args.limits[KILL][MEM].percent, args.limits[KILL][SWAP].percent);
             sig = SIGKILL;
-        } else if (((args.mem_term_percent != 0 && m.MemAvailablePercent <= args.mem_term_percent) || (args.mem_term_size != 0 && m.MemAvailableMiB * 1024 <= args.mem_term_size)) && ((args.swap_term_percent != 0 && m.SwapFreePercent <= args.swap_term_percent) || (args.swap_term_size != 0 && m.SwapFreeMiB * 1024 <= args.swap_term_size))) {
+        } else if (((args.limits[TERM][MEM].percent != 0 && m.info[MEM].AvailablePercent <= args.limits[TERM][MEM].percent) || (args.limits[TERM][MEM].size != 0 && m.info[MEM].Available * 1024 <= args.limits[TERM][MEM].size)) && ((args.limits[TERM][SWAP].percent != 0 && m.info[SWAP].AvailablePercent <= args.limits[TERM][SWAP].percent) || (args.limits[TERM][SWAP].size != 0 && m.info[SWAP].Available <= args.limits[TERM][SWAP].size))) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
-                args.mem_term_percent, args.swap_term_percent);
+                args.limits[TERM][MEM].percent, args.limits[TERM][SWAP].percent);
             sig = SIGTERM;
         }
         if (sig) {

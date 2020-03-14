@@ -15,6 +15,8 @@
 #include "meminfo.h"
 #include "msg.h"
 
+const char* const mem_type_name[MEM_TYPE_CNT] = {"mem", "swap"};
+
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: MemTotal)
  * Returns -errno if the entry cannot be found. */
@@ -77,13 +79,13 @@ meminfo_t parse_meminfo()
         fatal(102, "could not read /proc/meminfo: 0 bytes returned\n");
     }
 
-    m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
-    m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
-    long long SwapFree = get_entry_fatal("SwapFree:", buf);
+    m.info[MEM].Total = get_entry_fatal("MemTotal:", buf);
+    m.info[SWAP].Total = get_entry_fatal("SwapTotal:", buf);
+    m.info[SWAP].Available = get_entry_fatal("SwapFree:", buf);
 
-    long long MemAvailable = get_entry("MemAvailable:", buf);
-    if (MemAvailable == -1) {
-        MemAvailable = available_guesstimate(buf);
+    m.info[MEM].Available = get_entry("MemAvailable:", buf);
+    if (m.info[MEM].Available == -1) {
+        m.info[MEM].Available = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
             fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
                             "         Falling back to guesstimate\n");
@@ -92,18 +94,12 @@ meminfo_t parse_meminfo()
     }
 
     // Calculate percentages
-    m.MemAvailablePercent = (int)(MemAvailable * 100 / m.MemTotalKiB);
-    if (m.SwapTotalKiB > 0) {
-        m.SwapFreePercent = (int)(SwapFree * 100 / m.SwapTotalKiB);
+    m.info[MEM].AvailablePercent = (int)(m.info[MEM].Available * 100 / m.info[MEM].Total);
+    if (m.info[SWAP].Total > 0) {
+        m.info[SWAP].AvailablePercent = (int)(m.info[SWAP].Available * 100 / m.info[SWAP].Total);
     } else {
-        m.SwapFreePercent = 0;
+        m.info[SWAP].AvailablePercent = 0;
     }
-
-    // Convert kiB to MiB
-    m.MemTotalMiB = m.MemTotalKiB / 1024;
-    m.MemAvailableMiB = MemAvailable / 1024;
-    m.SwapTotalMiB = m.SwapTotalKiB / 1024;
-    m.SwapFreeMiB = SwapFree / 1024;
 
     return m;
 }
@@ -256,10 +252,10 @@ long long get_vm_rss_kib(int pid)
 void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t m)
 {
     out_func("mem avail: %5lld of %5lld MiB (%2d %%), swap free: %4lld of %4lld MiB (%2d %%)\n",
-        m.MemAvailableMiB,
-        m.MemTotalMiB,
-        m.MemAvailablePercent,
-        m.SwapFreeMiB,
-        m.SwapTotalMiB,
-        m.SwapFreePercent);
+        m.info[MEM].Available / 1024,
+        m.info[MEM].Total / 1024,
+        m.info[MEM].AvailablePercent,
+        m.info[SWAP].Available / 1024,
+        m.info[SWAP].Total / 1024,
+        m.info[SWAP].AvailablePercent);
 }

@@ -21,6 +21,9 @@
 #define BADNESS_PREFER 300
 #define BADNESS_AVOID -300
 
+const char* const limit_type_name[LIMIT_TYPE_CNT] = {"SIGTERM", "SIGKILL"};
+const int limit_type_signal[LIMIT_TYPE_CNT] = {SIGTERM, SIGKILL};
+
 static int isnumeric(char* str)
 {
     int i = 0;
@@ -78,7 +81,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         if (sig != SIGKILL) {
             m = parse_meminfo();
             print_mem_stats(debug, m);
-            if (((args.mem_kill_percent != 0 && m.MemAvailablePercent <= args.mem_kill_percent) || (args.mem_kill_size != 0 && m.MemAvailableMiB * 1024 <= args.mem_kill_size)) && ((args.swap_kill_percent != 0 && m.SwapFreePercent <= args.swap_kill_percent) || (args.swap_kill_size != 0 && m.SwapFreeMiB * 1024 <= args.swap_kill_size))) {
+            if (((args.limits[KILL][MEM].percent != 0 && m.info[MEM].AvailablePercent <= args.limits[KILL][MEM].percent) || (args.limits[KILL][MEM].size != 0 && m.info[MEM].Available <= args.limits[KILL][MEM].size)) && ((args.limits[KILL][SWAP].percent != 0 && m.info[SWAP].AvailablePercent <= args.limits[KILL][SWAP].percent) || (args.limits[KILL][SWAP].size != 0 && m.info[SWAP].Available <= args.limits[KILL][SWAP].size))) {
                 sig = SIGKILL;
                 res = kill(pid, sig);
                 // kill first, print after

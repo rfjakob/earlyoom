@@ -7,16 +7,22 @@
 #include <stdbool.h>
 
 typedef struct {
+    long long Total; // KiB
+    long long Available; // -1 means no data available
+    int AvailablePercent; // percent of total memory that is available
+} mem_capacity_t;
+
+enum MEM_TYPE {
+    MEM = 0,
+    SWAP,
+    MEM_TYPE_CNT
+};
+
+extern const char* const mem_type_name[MEM_TYPE_CNT];
+
+typedef struct {
     // Values from /proc/meminfo, in KiB or converted to MiB.
-    long long MemTotalKiB;
-    long long MemTotalMiB;
-    long long MemAvailableMiB; // -1 means no data available
-    long long SwapTotalMiB;
-    long long SwapTotalKiB;
-    long long SwapFreeMiB;
-    // Calculated percentages
-    int MemAvailablePercent; // percent of total memory that is available
-    int SwapFreePercent; // percent of total swap that is free
+    mem_capacity_t info[MEM_TYPE_CNT]; // Swap.Available not Swap.Available
 } meminfo_t;
 
 struct procinfo {
