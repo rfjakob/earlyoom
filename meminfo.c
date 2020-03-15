@@ -56,6 +56,10 @@ static long long available_guesstimate(const char* buf)
     return MemFree + Cached + Buffers - Shmem;
 }
 
+/* Parse /proc/meminfo.
+ * This function either returns valid data or kills the process
+ * with a fatal error.
+ */
 meminfo_t parse_meminfo()
 {
     static FILE* fd;
