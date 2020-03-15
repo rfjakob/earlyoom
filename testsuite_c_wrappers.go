@@ -17,14 +17,14 @@ func sanitize(s string) string {
 	return C.GoString(cs)
 }
 
-func parse_term_kill_tuple(optarg string, upper_limit int) (error, int, int) {
+func parse_term_kill_tuple(optarg string, upper_limit int) (error, float64, float64) {
 	cs := C.CString(optarg)
 	tuple := C.parse_term_kill_tuple(cs, C.longlong(upper_limit))
 	errmsg := C.GoString(&(tuple.err[0]))
 	if len(errmsg) > 0 {
 		return fmt.Errorf(errmsg), 0, 0
 	}
-	return nil, int(tuple.term), int(tuple.kill)
+	return nil, float64(tuple.term), float64(tuple.kill)
 }
 
 func is_alive(pid int) bool {

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-#include <ctype.h> // need isdigit()
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // need strlen()
 #include <unistd.h>
+#include <errno.h>
 
 #include "globals.h"
 #include "msg.h"
@@ -69,74 +69,86 @@ int debug(const char* fmt, ...)
     return 0;
 }
 
-// Parse the "123[,456]" tuple in optarg.
-// The returned values are guaranteed to be >= 0 and <= upper_limit.
-term_kill_tuple_t parse_term_kill_tuple(char* optarg, long long upper_limit)
+// Parse a floating point value, check conversion errors and allowed range.
+// Guaranteed value range: 0 <= val <= upper_limit.
+// An error is indicated by storing an error message in tuple->err and returning 0.
+static double parse_part(term_kill_tuple_t *tuple, const char* part, long long upper_limit) {
+    errno = 0;
+    char *endptr = 0;
+    double val = strtod(part, &endptr);
+    if( *endptr != '\0') {
+        snprintf(tuple->err, sizeof(tuple->err),
+            "trailing garbage '%s'", endptr);
+        return 0;
+    }
+    if(errno) {
+        snprintf(tuple->err, sizeof(tuple->err),
+            "converson error: %s", strerror(errno));
+        return 0;
+    }
+    if (val > (double)upper_limit) {
+        snprintf(tuple->err, sizeof(tuple->err),
+            "value %lf exceeds limit %lld", val, upper_limit);
+        return 0;
+    }
+    if (val < 0) {
+        snprintf(tuple->err, sizeof(tuple->err),
+            "value %lf below zero", val);
+        return 0;
+    }
+    return val;
+}
+
+// Parse the "term[,kill]" tuple in optarg, examples: "123", "123,456".
+// Guaranteed value range: 0 <= term <= kill <= upper_limit.
+term_kill_tuple_t parse_term_kill_tuple(const char* optarg, long long upper_limit)
 {
     term_kill_tuple_t tuple = { 0 };
-    int n = 0;
+    // writable copy of optarg
+    char buf[MSG_LEN] = { 0 };
 
-    // Arbitrary limit of 100 bytes to prevent snprintf truncation
-    if (strlen(optarg) > 100) {
+    if (strlen(optarg) > (sizeof(buf)-1)) {
         snprintf(tuple.err, sizeof(tuple.err),
-            "argument too long (%d bytes)\n", (int)strlen(optarg));
+            "argument too long (%zu bytes)", strlen(optarg));
         return tuple;
     }
-
-    for (size_t i = 0; i < strlen(optarg); i++) {
-        if (isdigit(optarg[i])) {
-            continue;
-        }
-        if (optarg[i] == ',') {
-            n++;
-            if (n == 1) {
-                continue;
-            }
-            snprintf(tuple.err, sizeof(tuple.err),
-                "found multiple ','\n");
+    strncpy(buf, optarg, sizeof(buf)-1);
+    // Split string on "," into two parts
+    char *part1 = buf;
+    char *part2 = NULL;
+    char *comma = strchr(buf, ',');
+    if(comma) {
+        // Zero-out the comma, truncates part1
+        *comma = '\0';
+        // part2 gets zero or more bytes after the comma
+        part2 = comma + 1;
+    }
+    // Parse part1
+    tuple.term = parse_part(&tuple, part1, upper_limit);
+    if(strlen(tuple.err)) {
+        return tuple;
+    }
+    if(part2){
+        // Parse part2
+        tuple.kill = parse_part(&tuple, part2, upper_limit);
+        if(strlen(tuple.err)) {
             return tuple;
         }
-        snprintf(tuple.err, sizeof(tuple.err),
-            "found non-digit '%c'\n", optarg[i]);
-        return tuple;
-    }
-
-    n = sscanf(optarg, "%lld,%lld", &tuple.term, &tuple.kill);
-    if (n == 0) {
-        snprintf(tuple.err, sizeof(tuple.err),
-            "could not parse '%s'\n", optarg);
-        return tuple;
-    }
+    } else {
     // User passed only the SIGTERM value: the SIGKILL value is calculated as
     // SIGTERM/2.
-    if (n == 1) {
         tuple.kill = tuple.term / 2;
     }
-    // Would setting SIGTERM below SIGKILL ever make sense?
+    // Setting term < kill makes no sense
     if (tuple.term < tuple.kill) {
-        warn("warning: SIGTERM value %lld is below SIGKILL value %lld, setting SIGTERM = SIGKILL = %lld\n",
+        warn("warning: SIGTERM value %lf is below SIGKILL value %lf, setting SIGTERM = SIGKILL = %lf\n",
             tuple.term, tuple.kill, tuple.kill);
         tuple.term = tuple.kill;
     }
     // Sanity checks
-    if (tuple.term < 0) {
-        snprintf(tuple.err, sizeof(tuple.err),
-            "negative SIGTERM value in '%s'\n", optarg);
-        return tuple;
-    }
-    if (tuple.term > upper_limit) {
-        snprintf(tuple.err, sizeof(tuple.err),
-            "SIGTERM value %lld exceeds limit %lld\n", tuple.term, upper_limit);
-        return tuple;
-    }
-    if (tuple.kill < 0) {
-        snprintf(tuple.err, sizeof(tuple.err),
-            "negative SIGKILL value in '%s'\n", optarg);
-        return tuple;
-    }
     if (tuple.kill == 0 && tuple.term == 0) {
         snprintf(tuple.err, sizeof(tuple.err),
-            "both SIGTERM and SIGKILL values are zero\n");
+            "both SIGTERM and SIGKILL values are zero");
         return tuple;
     }
     return tuple;

@@ -18,11 +18,11 @@ typedef struct {
     // If the conversion failed, err contains the error message.
     char err[255];
     // Parsed values.
-    long long term;
-    long long kill;
+    double term;
+    double kill;
 } term_kill_tuple_t;
 
-term_kill_tuple_t parse_term_kill_tuple(char* optarg, long long upper_limit);
+term_kill_tuple_t parse_term_kill_tuple(const char* optarg, long long upper_limit);
 void fix_truncated_utf8(char* str);
 void sanitize(char* s);
 

@@ -2,6 +2,7 @@ package earlyoom_testsuite
 
 import (
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 	"unicode/utf8"
@@ -41,8 +42,8 @@ func TestParseTuple(t *testing.T) {
 		arg        string
 		limit      int
 		shouldFail bool
-		term       int
-		kill       int
+		term       float64
+		kill       float64
 	}{
 		{arg: "2,1", limit: 100, term: 2, kill: 1},
 		{arg: "20,10", limit: 100, term: 20, kill: 10},
@@ -55,10 +56,23 @@ func TestParseTuple(t *testing.T) {
 		{arg: "5,0", limit: 100, term: 5, kill: 0},
 		{arg: "5,9", limit: 100, term: 9, kill: 9},
 		{arg: "0,5", limit: 100, term: 5, kill: 5},
-		// SIGTERM value is set to zero when it is below SIGKILL
+		// TERM value is set to KILL value when it is below TERM
 		{arg: "4,5", limit: 100, term: 5, kill: 5},
 		{arg: "0", limit: 100, shouldFail: true},
 		{arg: "0,0", limit: 100, shouldFail: true},
+		// Floating point values
+		{arg: "4.0,2.0", limit: 100, term: 4, kill: 2},
+		{arg: "4,0,2,0", limit: 100, shouldFail: true},
+		{arg: "3.1415,2.7182", limit: 100, term: 3.1415, kill: 2.7182},
+		{arg: "3.1415", limit: 100, term: 3.1415, kill: 3.1415 / 2},
+		{arg: "1." + strings.Repeat("123", 100), limit: 100, shouldFail: true},
+		// Leading garbage
+		{arg: "x1,x2", limit: 100, shouldFail: true},
+		{arg: "1,x2", limit: 100, shouldFail: true},
+		// Trailing garbage
+		{arg: "1x,2x", limit: 100, shouldFail: true},
+		{arg: "1.1.", limit: 100, shouldFail: true},
+		{arg: "1,2..", limit: 100, shouldFail: true},
 	}
 	for _, tc := range tcs {
 		err, term, kill := parse_term_kill_tuple(tc.arg, tc.limit)
@@ -68,10 +82,10 @@ func TestParseTuple(t *testing.T) {
 			continue
 		}
 		if term != tc.term {
-			t.Errorf("case %v: term=%d", tc, term)
+			t.Errorf("case %v: term=%v", tc, term)
 		}
 		if kill != tc.kill {
-			t.Errorf("case %v: kill=%d", tc, kill)
+			t.Errorf("case %v: kill=%v", tc, kill)
 		}
 	}
 }

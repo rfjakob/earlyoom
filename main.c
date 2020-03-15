@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_percent = (int)(100 * tuple.term / m.MemTotalKiB);
-            args.mem_kill_percent = (int)(100 * tuple.kill / m.MemTotalKiB);
+            args.mem_term_percent = (int)(100 * tuple.term / (double)m.MemTotalKiB);
+            args.mem_kill_percent = (int)(100 * tuple.kill / (double)m.MemTotalKiB);
             have_M = 1;
             break;
         case 'S':
@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
                 warn("warning: -S: total swap is zero, using default percentages\n");
                 break;
             }
-            args.swap_term_percent = (int)(100 * tuple.term / m.SwapTotalKiB);
-            args.swap_kill_percent = (int)(100 * tuple.kill / m.SwapTotalKiB);
+            args.swap_term_percent = (int)(100 * tuple.term / (double)m.SwapTotalKiB);
+            args.swap_kill_percent = (int)(100 * tuple.kill / (double)m.SwapTotalKiB);
             have_S = 1;
             break;
         case 'k':
