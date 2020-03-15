@@ -66,8 +66,8 @@ const rssMax = 1024
 
 func TestCli(t *testing.T) {
 	memTotal, swapTotal := parseMeminfo()
-	mem1percent := fmt.Sprintf("%d", memTotal*2/101)   // slightly below 2 percent
-	swap2percent := fmt.Sprintf("%d", swapTotal*3/101) // slightly below 3 percent
+	mem1percent := fmt.Sprintf("%d", memTotal*1/100)
+	swap2percent := fmt.Sprintf("%d", swapTotal*2/100)
 	tooBigInt32 := fmt.Sprintf("%d", math.MaxInt32+1)
 	tooBigUint32 := fmt.Sprintf("%d", math.MaxUint32+1)
 	// earlyoom startup looks like this:
@@ -84,18 +84,18 @@ func TestCli(t *testing.T) {
 		{args: []string{"-p"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-v"}, code: 0, stderrContains: "earlyoom v", stdoutEmpty: true},
 		{args: []string{"-d"}, code: -1, stdoutContains: "new victim"},
-		{args: []string{"-m", "1"}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
+		{args: []string{"-m", "1"}, code: -1, stderrContains: " 1.00%", stdoutContains: memReport},
 		{args: []string{"-m", "0"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "-10"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		// Using "-m 100" makes no sense
 		{args: []string{"-m", "100"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-s", "2"}, code: -1, stderrContains: " 2 %", stdoutContains: memReport},
+		{args: []string{"-s", "2"}, code: -1, stderrContains: " 2.00%", stdoutContains: memReport},
 		// Using "-s 100" is a valid way to ignore swap usage
-		{args: []string{"-s", "100"}, code: -1, stderrContains: " 100 %", stdoutContains: memReport},
+		{args: []string{"-s", "100"}, code: -1, stderrContains: " 100.00%", stdoutContains: memReport},
 		{args: []string{"-s", "101"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-s", "0"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-s", "-10"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-M", mem1percent}, code: -1, stderrContains: " 1 %", stdoutContains: memReport},
+		{args: []string{"-M", mem1percent}, code: -1, stderrContains: " 1.00%", stdoutContains: memReport},
 		{args: []string{"-M", "9999999999999999"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		// We use {"-r=0"} instead of {"-r", "0"} so runEarlyoom() can detect that there will be no output
 		{args: []string{"-r=0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
@@ -108,11 +108,11 @@ func TestCli(t *testing.T) {
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		// Tuples
-		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "sending SIGTERM when mem <=  2 % and swap <= 10 %", stdoutContains: memReport},
+		{args: []string{"-m", "2,1"}, code: -1, stderrContains: "sending SIGTERM when mem <=  2.00% and swap <= 10.00%", stdoutContains: memReport},
 		{args: []string{"-m", "1,2"}, code: -1, stdoutContains: memReport},
 		{args: []string{"-m", "1,-1"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-m", "1000,-1000"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending SIGTERM when mem <= 10 % and swap <=  2 %", stdoutContains: memReport},
+		{args: []string{"-s", "2,1"}, code: -1, stderrContains: "sending SIGTERM when mem <= 10.00% and swap <=  2.00%", stdoutContains: memReport},
 		{args: []string{"-s", "1,2"}, code: -1, stdoutContains: memReport},
 		// https://github.com/rfjakob/earlyoom/issues/97
 		{args: []string{"-m", "5,0"}, code: -1, stdoutContains: memReport},
@@ -130,6 +130,10 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "-1"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-s", tooBigInt32}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-s", tooBigUint32}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		// Floating point values
+		{args: []string{"-m", "3.14"}, code: -1, stderrContains: "SIGTERM when mem <=  3.14%", stdoutContains: memReport},
+		{args: []string{"-m", "7,3.14"}, code: -1, stderrContains: "SIGKILL when mem <=  3.14%", stdoutContains: memReport},
+		{args: []string{"-s", "12.34"}, code: -1, stderrContains: "swap <= 12.34%", stdoutContains: memReport},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled

@@ -6,6 +6,9 @@
 
 #define MSG_LEN 256
 
+// printf format for percentages
+#define PRIPCT "%5.2lf%%"
+
 /* From https://gcc.gnu.org/onlinedocs/gcc-9.2.0/gcc/Common-Function-Attributes.html :
  * The format attribute specifies that a function takes printf
  * style arguments that should be type-checked against a format string.

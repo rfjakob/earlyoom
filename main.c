@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-m: %s", tuple.err);
             }
-            args.mem_term_percent = (int)tuple.term;
-            args.mem_kill_percent = (int)tuple.kill;
+            args.mem_term_percent = tuple.term;
+            args.mem_kill_percent = tuple.kill;
             have_m = 1;
             break;
         case 's':
@@ -112,8 +112,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(16, "-s: %s", tuple.err);
             }
-            args.swap_term_percent = (int)tuple.term;
-            args.swap_kill_percent = (int)tuple.kill;
+            args.swap_term_percent = tuple.term;
+            args.swap_kill_percent = tuple.kill;
             have_s = 1;
             break;
         case 'M':
@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_percent = (int)(100 * tuple.term / (double)m.MemTotalKiB);
-            args.mem_kill_percent = (int)(100 * tuple.kill / (double)m.MemTotalKiB);
+            args.mem_term_percent = 100 * tuple.term / (double)m.MemTotalKiB;
+            args.mem_kill_percent = 100 * tuple.kill / (double)m.MemTotalKiB;
             have_M = 1;
             break;
         case 'S':
@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
                 warn("warning: -S: total swap is zero, using default percentages\n");
                 break;
             }
-            args.swap_term_percent = (int)(100 * tuple.term / (double)m.SwapTotalKiB);
-            args.swap_kill_percent = (int)(100 * tuple.kill / (double)m.SwapTotalKiB);
+            args.swap_term_percent = 100 * tuple.term / (double)m.SwapTotalKiB;
+            args.swap_kill_percent = 100 * tuple.kill / (double)m.SwapTotalKiB;
             have_S = 1;
             break;
         case 'k':
@@ -257,9 +257,9 @@ int main(int argc, char* argv[])
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
         m.MemTotalMiB, m.SwapTotalMiB);
-    fprintf(stderr, "sending SIGTERM when mem <= %2d %% and swap <= %2d %%,\n",
+    fprintf(stderr, "sending SIGTERM when mem <= " PRIPCT " and swap <= " PRIPCT ",\n",
         args.mem_term_percent, args.swap_term_percent);
-    fprintf(stderr, "        SIGKILL when mem <= %2d %% and swap <= %2d %%\n",
+    fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
         args.mem_kill_percent, args.swap_kill_percent);
 
     /* Dry-run oom kill to make sure stack grows to maximum size before
@@ -322,11 +322,11 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const unsigned min_sleep = 100;
     const unsigned max_sleep = 1000;
 
-    long long mem_headroom_kib = (m->MemAvailablePercent - args->mem_term_percent) * 10 * m->MemTotalMiB;
+    long long mem_headroom_kib = (long long)((m->MemAvailablePercent - args->mem_term_percent) * 10 * (double)m->MemTotalMiB);
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    long long swap_headroom_kib = (m->SwapFreePercent - args->swap_term_percent) * 10 * m->SwapTotalMiB;
+    long long swap_headroom_kib = (long long)((m->SwapFreePercent - args->swap_term_percent) * 10 * (double)m->SwapTotalMiB);
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
@@ -351,12 +351,12 @@ static void poll_loop(const poll_loop_args_t args)
         meminfo_t m = parse_meminfo();
         if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
             print_mem_stats(warn, m);
-            warn("low memory! at or below SIGKILL limits: mem %d %%, swap %d %%\n",
+            warn("low memory! at or below SIGKILL limits: mem " PRIPCT ", swap " PRIPCT "\n",
                 args.mem_kill_percent, args.swap_kill_percent);
             sig = SIGKILL;
         } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
             print_mem_stats(warn, m);
-            warn("low memory! at or below SIGTERM limits: mem %d %%, swap %d %%\n",
+            warn("low memory! at or below SIGTERM limits: mem " PRIPCT ", swap " PRIPCT "\n",
                 args.mem_term_percent, args.swap_term_percent);
             sig = SIGTERM;
         }

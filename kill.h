@@ -8,10 +8,10 @@
 typedef struct {
     /* if the available memory AND swap goes below these percentages,
      * we start killing processes */
-    int mem_term_percent;
-    int mem_kill_percent;
-    int swap_term_percent;
-    int swap_kill_percent;
+    double mem_term_percent;
+    double mem_kill_percent;
+    double swap_term_percent;
+    double swap_kill_percent;
     /* ignore /proc/PID/oom_score_adj? */
     bool ignore_oom_score_adj;
     /* notifcation command to launch when killing something. NULL = no-op. */

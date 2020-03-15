@@ -96,9 +96,9 @@ meminfo_t parse_meminfo()
     }
 
     // Calculate percentages
-    m.MemAvailablePercent = (int)(MemAvailable * 100 / m.MemTotalKiB);
+    m.MemAvailablePercent = (double)MemAvailable * 100 / (double)m.MemTotalKiB;
     if (m.SwapTotalKiB > 0) {
-        m.SwapFreePercent = (int)(SwapFree * 100 / m.SwapTotalKiB);
+        m.SwapFreePercent = (double)SwapFree * 100 / (double)m.SwapTotalKiB;
     } else {
         m.SwapFreePercent = 0;
     }
@@ -259,7 +259,7 @@ long long get_vm_rss_kib(int pid)
  */
 void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t m)
 {
-    out_func("mem avail: %5lld of %5lld MiB (%2d %%), swap free: %4lld of %4lld MiB (%2d %%)\n",
+    out_func("mem avail: %5lld of %5lld MiB (" PRIPCT "), swap free: %4lld of %4lld MiB (" PRIPCT ")\n",
         m.MemAvailableMiB,
         m.MemTotalMiB,
         m.MemAvailablePercent,
