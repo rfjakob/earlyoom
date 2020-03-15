@@ -3,10 +3,8 @@
 /* Check available memory and swap in a loop and start killing
  * processes if they get too low */
 
-#include <dirent.h>
 #include <errno.h>
 #include <getopt.h>
-#include <regex.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +47,13 @@ static void poll_loop(const poll_loop_args_t args);
 #define main main2
 #endif
 
+double min(double x, double y)
+{
+    if (x < y)
+        return x;
+    return y;
+}
+
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
@@ -87,6 +92,7 @@ int main(int argc, char* argv[])
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
     bool have_m = 0, have_M = 0, have_s = 0, have_S = 0;
+    double mem_term_kib = 0, mem_kill_kib = 0, swap_term_kib = 0, swap_kill_kib = 0;
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
         float report_interval_f = 0;
@@ -121,8 +127,8 @@ int main(int argc, char* argv[])
             if (strlen(tuple.err)) {
                 fatal(15, "-M: %s", tuple.err);
             }
-            args.mem_term_percent = 100 * tuple.term / (double)m.MemTotalKiB;
-            args.mem_kill_percent = 100 * tuple.kill / (double)m.MemTotalKiB;
+            mem_term_kib = tuple.term;
+            mem_kill_kib = tuple.kill;
             have_M = 1;
             break;
         case 'S':
@@ -134,8 +140,8 @@ int main(int argc, char* argv[])
                 warn("warning: -S: total swap is zero, using default percentages\n");
                 break;
             }
-            args.swap_term_percent = 100 * tuple.term / (double)m.SwapTotalKiB;
-            args.swap_kill_percent = 100 * tuple.kill / (double)m.SwapTotalKiB;
+            swap_term_kib = tuple.term;
+            swap_kill_kib = tuple.kill;
             have_S = 1;
             break;
         case 'k':
@@ -218,11 +224,33 @@ int main(int argc, char* argv[])
     if (optind < argc) {
         fatal(13, "extra argument not understood: '%s'\n", argv[optind]);
     }
-    if (have_m && have_M) {
-        fatal(2, "can't use both -m and -M\n");
+    // Merge "-M" with "-m" values
+    if (have_M) {
+        double M_term_percent = 100 * mem_term_kib / (double)m.MemTotalKiB;
+        double M_kill_percent = 100 * mem_kill_kib / (double)m.MemTotalKiB;
+        if (have_m) {
+            // Both -m and -M were passed. Use the lower of both values.
+            args.mem_term_percent = min(args.mem_term_percent, M_term_percent);
+            args.mem_kill_percent = min(args.mem_kill_percent, M_kill_percent);
+        } else {
+            // Only -M was passed.
+            args.mem_term_percent = M_term_percent;
+            args.mem_kill_percent = M_kill_percent;
+        }
     }
-    if (have_s && have_S) {
-        fatal(2, "can't use both -s and -S\n");
+    // Merge "-S" with "-s" values
+    if (have_S) {
+        double S_term_percent = 100 * swap_term_kib / (double)m.SwapTotalKiB;
+        double S_kill_percent = 100 * swap_kill_kib / (double)m.SwapTotalKiB;
+        if (have_s) {
+            // Both -s and -S were passed. Use the lower of both values.
+            args.swap_term_percent = min(args.swap_term_percent, S_term_percent);
+            args.swap_kill_percent = min(args.swap_kill_percent, S_kill_percent);
+        } else {
+            // Only -S was passed.
+            args.swap_term_percent = S_term_percent;
+            args.swap_kill_percent = S_kill_percent;
+        }
     }
     if (prefer_cmds) {
         args.prefer_regex = &_prefer_regex;
