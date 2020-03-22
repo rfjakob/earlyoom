@@ -2,7 +2,7 @@
 # /etc/init.d/earlyoom or by systemd from earlyoom.service.
 
 # Options to pass to earlyoom
-EARLYOOM_ARGS="-r 60"
+EARLYOOM_ARGS="-r 3600"
 
 # Examples:
 
