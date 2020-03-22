@@ -262,6 +262,10 @@ Changelog
 * vNEXT, in progress
   * `-p`: set oom_score_adj to `-100` instead of `-1000`
     ([#170](https://github.com/rfjakob/earlyoom/issues/170))
+  * Allow using **both** `-M` and `-m`, and `-S` and `-s`. The
+    lower value (converted to percentages) will be used.
+  * Set memory report interval in `earlyoom.default` to 1 hour
+    instead of 1 minute ([#177](https://github.com/rfjakob/earlyoom/issues/177))
 
 * v1.4, 2020-03-01
   * Make victim selection logic 50% faster by lazy-loading process attributes
