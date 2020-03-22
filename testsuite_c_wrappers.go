@@ -44,7 +44,7 @@ func parse_meminfo() C.meminfo_t {
 
 func kill_largest_process() {
 	var args C.poll_loop_args_t
-	C.kill_largest_process(args, 0)
+	C.kill_largest_process(&args, 0)
 }
 
 func get_oom_score(pid int) int {

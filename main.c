@@ -39,7 +39,7 @@ enum {
 };
 
 static int set_oom_score_adj(int);
-static void poll_loop(const poll_loop_args_t args);
+static void poll_loop(const poll_loop_args_t *args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
 // Cgo generates it's own main function.
@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
      * calling mlockall()
      */
     debug("dry-running kill_largest_process()...\n");
-    kill_largest_process(args, 0);
+    kill_largest_process(&args, 0);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
     }
 
     // Jump into main poll loop
-    poll_loop(args);
+    poll_loop(&args);
     return 0;
 }
 
@@ -368,7 +368,7 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     return (unsigned)ms;
 }
 
-static void poll_loop(const poll_loop_args_t args)
+static void poll_loop(const poll_loop_args_t *args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.
@@ -377,24 +377,24 @@ static void poll_loop(const poll_loop_args_t args)
     while (1) {
         int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+        if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem " PRIPCT ", swap " PRIPCT "\n",
-                args.mem_kill_percent, args.swap_kill_percent);
+                args->mem_kill_percent, args->swap_kill_percent);
             sig = SIGKILL;
-        } else if (m.MemAvailablePercent <= args.mem_term_percent && m.SwapFreePercent <= args.swap_term_percent) {
+        } else if (m.MemAvailablePercent <= args->mem_term_percent && m.SwapFreePercent <= args->swap_term_percent) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem " PRIPCT ", swap " PRIPCT "\n",
-                args.mem_term_percent, args.swap_term_percent);
+                args->mem_term_percent, args->swap_term_percent);
             sig = SIGTERM;
         }
         if (sig) {
             kill_largest_process(args, sig);
-        } else if (args.report_interval_ms && report_countdown_ms <= 0) {
+        } else if (args->report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(printf, m);
-            report_countdown_ms = args.report_interval_ms;
+            report_countdown_ms = args->report_interval_ms;
         }
-        unsigned sleep_ms = sleep_time_ms(&args, &m);
+        unsigned sleep_ms = sleep_time_ms(args, &m);
         debug("adaptive sleep time: %d ms\n", sleep_ms);
         usleep(sleep_ms * 1000);
         report_countdown_ms -= (int)sleep_ms;

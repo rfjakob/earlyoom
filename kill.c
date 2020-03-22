@@ -55,9 +55,9 @@ static void maybe_notify(char* notif_command, char* notif_args)
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
  */
-int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
+int kill_wait(const poll_loop_args_t *args, pid_t pid, int sig)
 {
-    if (args.dryrun && sig != 0) {
+    if (args->dryrun && sig != 0) {
         warn("dryrun, not actually sending any signal\n");
         return 0;
     }
@@ -78,7 +78,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
         if (sig != SIGKILL) {
             m = parse_meminfo();
             print_mem_stats(debug, m);
-            if (m.MemAvailablePercent <= args.mem_kill_percent && m.SwapFreePercent <= args.swap_kill_percent) {
+            if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
                 res = kill(pid, sig);
                 // kill first, print after
@@ -104,7 +104,7 @@ int kill_wait(const poll_loop_args_t args, pid_t pid, int sig)
 /*
  * Find the process with the largest oom_score and kill it.
  */
-void kill_largest_process(const poll_loop_args_t args, int sig)
+void kill_largest_process(const poll_loop_args_t *args, int sig)
 {
     struct procinfo victim = { 0 };
     struct timespec t0 = { 0 }, t1 = { 0 };
@@ -153,7 +153,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             }
             cur.badness = res;
         }
-        if (args.ignore_oom_score_adj) {
+        if (args->ignore_oom_score_adj) {
             int oom_score_adj = 0;
             int res = get_oom_score_adj(cur.pid, &oom_score_adj);
             if (res < 0) {
@@ -165,16 +165,16 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
             }
         }
 
-        if ((args.prefer_regex || args.avoid_regex)) {
+        if ((args->prefer_regex || args->avoid_regex)) {
             int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
             if (res < 0) {
                 debug(" error reading process name: %s\n", strerror(-res));
                 continue;
             }
-            if (args.prefer_regex && regexec(args.prefer_regex, cur.name, (size_t)0, NULL, 0) == 0) {
+            if (args->prefer_regex && regexec(args->prefer_regex, cur.name, (size_t)0, NULL, 0) == 0) {
                 cur.badness += BADNESS_PREFER;
             }
-            if (args.avoid_regex && regexec(args.avoid_regex, cur.name, (size_t)0, NULL, 0) == 0) {
+            if (args->avoid_regex && regexec(args->avoid_regex, cur.name, (size_t)0, NULL, 0) == 0) {
                 cur.badness += BADNESS_AVOID;
             }
         }
@@ -234,7 +234,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
     if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
-        maybe_notify(args.notif_command,
+        maybe_notify(args->notif_command,
             "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
         sleep(1);
         return;
@@ -271,7 +271,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
         sanitize(victim.name);
         snprintf(notif_args, sizeof(notif_args),
             "-i dialog-warning 'earlyoom' 'Low memory! Killing process %d %s'", victim.pid, victim.name);
-        maybe_notify(args.notif_command, notif_args);
+        maybe_notify(args->notif_command, notif_args);
     }
 
     if (sig == 0) {
@@ -280,7 +280,7 @@ void kill_largest_process(const poll_loop_args_t args, int sig)
 
     if (res != 0) {
         warn("kill failed: %s\n", strerror(saved_errno));
-        maybe_notify(args.notif_command,
+        maybe_notify(args->notif_command,
             "-i dialog-error 'earlyoom' 'Error: Failed to kill process'");
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
