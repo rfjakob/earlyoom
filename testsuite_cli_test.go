@@ -140,7 +140,7 @@ func TestCli(t *testing.T) {
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled
 		tc := []cliTestCase{
-			{args: []string{"-S", swap2percent}, code: -1, stderrContains: " 2 %", stdoutContains: memReport},
+			{args: []string{"-S", swap2percent}, code: -1, stderrContains: " 2.00%", stdoutContains: memReport},
 			// Use both -s/-S
 			{args: []string{"-s", "10", "-S", swap2percent}, code: -1, stderrContains: "swap <=  1.00%", stdoutContains: memReport},
 		}
