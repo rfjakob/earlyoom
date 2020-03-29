@@ -68,8 +68,8 @@ func TestCli(t *testing.T) {
 	memTotal, swapTotal := parseMeminfo()
 	mem1percent := fmt.Sprintf("%d", memTotal*1/100)
 	swap2percent := fmt.Sprintf("%d", swapTotal*2/100)
-	tooBigInt32 := fmt.Sprintf("%d", math.MaxInt32+1)
-	tooBigUint32 := fmt.Sprintf("%d", math.MaxUint32+1)
+	tooBigInt32 := fmt.Sprintf("%d", uint64(math.MaxInt32+1))
+	tooBigUint32 := fmt.Sprintf("%d", uint64(math.MaxUint32+1))
 	// earlyoom startup looks like this:
 	//   earlyoom v1.1-5-g74a364b-dirty
 	//   mem total: 7836 MiB, min: 783 MiB (10 %)
