@@ -11,12 +11,6 @@ import (
 // #include "msg.h"
 import "C"
 
-func sanitize(s string) string {
-	cs := C.CString(s)
-	C.sanitize(cs)
-	return C.GoString(cs)
-}
-
 func parse_term_kill_tuple(optarg string, upper_limit int) (error, float64, float64) {
 	cs := C.CString(optarg)
 	tuple := C.parse_term_kill_tuple(cs, C.longlong(upper_limit))

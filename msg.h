@@ -27,6 +27,5 @@ typedef struct {
 
 term_kill_tuple_t parse_term_kill_tuple(const char* optarg, long long upper_limit);
 void fix_truncated_utf8(char* str);
-void sanitize(char* s);
 
 #endif
