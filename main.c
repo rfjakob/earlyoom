@@ -152,12 +152,12 @@ int main(int argc, char* argv[])
             fprintf(stderr, "Ignoring positive oom_score_adj values (-i)\n");
             break;
         case 'n':
-            args.notif_command = "notify-send";
-            fprintf(stderr, "Notifying using '%s'\n", args.notif_command);
+            args.notify = true;
+            fprintf(stderr, "Notifying through D-Bus\n");
             break;
         case 'N':
-            args.notif_command = optarg;
-            fprintf(stderr, "Notifying using '%s'\n", args.notif_command);
+            args.notify = true;
+            fprintf(stderr, "Notifying through D-Bus, argument '%s' ignored for compatability\n", optarg);
             break;
         case 'd':
             enable_debug = 1;

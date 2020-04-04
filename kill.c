@@ -40,15 +40,25 @@ static int isnumeric(char* str)
     }
 }
 
-static void maybe_notify(char* notif_command, char* notif_args)
+static void notify(const char* summary, const char* body)
 {
-    if (!notif_command)
+    int pid = fork();
+    if(pid > 0) {
+        // parent
         return;
-
-    char notif[PATH_MAX + 2000];
-    snprintf(notif, sizeof(notif), "%s %s", notif_command, notif_args);
-    if (system(notif) != 0)
-        warn("system('%s') failed: %s\n", notif, strerror(errno));
+    }
+    char summary2[1024] = {0};
+    snprintf(summary2, sizeof(summary2), "string:%s", summary);
+    char body2[1024] = "string:";
+    if(body != NULL) {
+        snprintf(body2, sizeof(body2), "string:%s", body);
+    }
+    // Complete command line looks like this:
+    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
+    execl("/usr/bin/dbus-send", "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
+        summary2, body2, NULL);
+    warn("notify: exec failed: %s\n", strerror(errno));
+    exit(1);
 }
 
 /*
@@ -234,8 +244,9 @@ void kill_largest_process(const poll_loop_args_t *args, int sig)
 
     if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
-        maybe_notify(args->notif_command,
-            "-i dialog-error 'earlyoom' 'Error: Could not find a process to kill. Sleeping 1 second.'");
+        if(args->notify) {
+            notify("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
+        }
         sleep(1);
         return;
     }
@@ -267,11 +278,11 @@ void kill_largest_process(const poll_loop_args_t *args, int sig)
     // that there is enough memory to spawn the notification helper.
     if (sig != 0) {
         char notif_args[PATH_MAX + 1000];
-        // maybe_notify() calls system(). We must sanitize the strings we pass.
-        sanitize(victim.name);
         snprintf(notif_args, sizeof(notif_args),
-            "-i dialog-warning 'earlyoom' 'Low memory! Killing process %d %s'", victim.pid, victim.name);
-        maybe_notify(args->notif_command, notif_args);
+            "Low memory! Killing process %d %s", victim.pid, victim.name);
+        if(args->notify) {
+            notify("earlyoom", notif_args);
+        }
     }
 
     if (sig == 0) {
@@ -280,8 +291,9 @@ void kill_largest_process(const poll_loop_args_t *args, int sig)
 
     if (res != 0) {
         warn("kill failed: %s\n", strerror(saved_errno));
-        maybe_notify(args->notif_command,
-            "-i dialog-error 'earlyoom' 'Error: Failed to kill process'");
+        if(args->notify) {
+            notify("earlyoom", "Error: Failed to kill process");
+        }
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
         // Throttle ourselves to not spam the log.

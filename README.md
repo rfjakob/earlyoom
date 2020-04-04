@@ -259,6 +259,10 @@ accept
 
 Changelog
 ---------
+* vNEXT
+  * Replace notification logic with [systembus-notify](https://github.com/rfjakob/systembus-notify)
+    ([#183](https://github.com/rfjakob/earlyoom/issues/183))
+
 * v1.5, 2020-03-22
   * `-p`: set oom_score_adj to `-100` instead of `-1000`
     ([#170](https://github.com/rfjakob/earlyoom/issues/170))

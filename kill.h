@@ -14,8 +14,8 @@ typedef struct {
     double swap_kill_percent;
     /* ignore /proc/PID/oom_score_adj? */
     bool ignore_oom_score_adj;
-    /* notifcation command to launch when killing something. NULL = no-op. */
-    char* notif_command;
+    /* send d-bus notifications? */
+    bool notify;
     /* prefer/avoid killing these processes. NULL = no-op. */
     regex_t* prefer_regex;
     regex_t* avoid_regex;
