@@ -39,7 +39,7 @@ enum {
 };
 
 static int set_oom_score_adj(int);
-static void poll_loop(const poll_loop_args_t *args);
+static void poll_loop(const poll_loop_args_t* args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
 // Cgo generates it's own main function.
@@ -367,7 +367,7 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     return (unsigned)ms;
 }
 
-static void poll_loop(const poll_loop_args_t *args)
+static void poll_loop(const poll_loop_args_t* args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.

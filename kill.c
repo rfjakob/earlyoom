@@ -43,14 +43,14 @@ static int isnumeric(char* str)
 static void notify(const char* summary, const char* body)
 {
     int pid = fork();
-    if(pid > 0) {
+    if (pid > 0) {
         // parent
         return;
     }
-    char summary2[1024] = {0};
+    char summary2[1024] = { 0 };
     snprintf(summary2, sizeof(summary2), "string:%s", summary);
     char body2[1024] = "string:";
-    if(body != NULL) {
+    if (body != NULL) {
         snprintf(body2, sizeof(body2), "string:%s", body);
     }
     // Complete command line looks like this:
@@ -65,7 +65,7 @@ static void notify(const char* summary, const char* body)
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
  */
-int kill_wait(const poll_loop_args_t *args, pid_t pid, int sig)
+int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 {
     if (args->dryrun && sig != 0) {
         warn("dryrun, not actually sending any signal\n");
@@ -114,7 +114,7 @@ int kill_wait(const poll_loop_args_t *args, pid_t pid, int sig)
 /*
  * Find the process with the largest oom_score and kill it.
  */
-void kill_largest_process(const poll_loop_args_t *args, int sig)
+void kill_largest_process(const poll_loop_args_t* args, int sig)
 {
     struct procinfo victim = { 0 };
     struct timespec t0 = { 0 }, t1 = { 0 };
@@ -244,7 +244,7 @@ void kill_largest_process(const poll_loop_args_t *args, int sig)
 
     if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
-        if(args->notify) {
+        if (args->notify) {
             notify("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
         }
         sleep(1);
@@ -280,7 +280,7 @@ void kill_largest_process(const poll_loop_args_t *args, int sig)
         char notif_args[PATH_MAX + 1000];
         snprintf(notif_args, sizeof(notif_args),
             "Low memory! Killing process %d %s", victim.pid, victim.name);
-        if(args->notify) {
+        if (args->notify) {
             notify("earlyoom", notif_args);
         }
     }
@@ -291,7 +291,7 @@ void kill_largest_process(const poll_loop_args_t *args, int sig)
 
     if (res != 0) {
         warn("kill failed: %s\n", strerror(saved_errno));
-        if(args->notify) {
+        if (args->notify) {
             notify("earlyoom", "Error: Failed to kill process");
         }
         // Killing the process may have failed because we are not running as root.

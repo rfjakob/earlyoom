@@ -25,6 +25,6 @@ typedef struct {
     bool dryrun;
 } poll_loop_args_t;
 
-void kill_largest_process(const poll_loop_args_t *args, int sig);
+void kill_largest_process(const poll_loop_args_t* args, int sig);
 
 #endif
