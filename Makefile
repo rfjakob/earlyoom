@@ -78,7 +78,7 @@ uninstall-bin:
 
 # Depends on earlyoom compilation to make sure the syntax is ok.
 format: earlyoom
-	clang-format -i *.h *.c
+	clang-format --style=WebKit -i *.h *.c
 	go fmt .
 
 test: earlyoom
