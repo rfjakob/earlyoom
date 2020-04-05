@@ -95,6 +95,9 @@ the actual interval may be up to 1 second longer than the setting.
 #### -p
 Increase earlyoom's priority: set niceness of earlyoom to -20 and oom_score_adj to -100
 
+#### -n
+Enable notifications via d-bus.
+
 #### \-\-prefer REGEX
 prefer killing processes matching REGEX (adds 300 to oom_score)
 

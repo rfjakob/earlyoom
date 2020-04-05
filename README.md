@@ -162,28 +162,12 @@ systemctl status earlyoom
 
 ### Notifications
 
-The command-line flag `-n` enables notifications via `notify-send`. However, if earlyoom is being
-run by a user other than the one running your desktop environment (e.g. if it's run as a service
-or cron job) then `notify-send` will not work on its own, as DBUS, X, and/or display information
-may required.
+Since version 1.6, earlyoom can send notifications about killed processes
+via the system d-bus. Pass `-n` to enable them.
 
-In this case, you can use `-N` to supply environment variables or another command. The exact value
-will vary depending on your desktop environment, but the following command may work. `YOUR_USER`
-should be replaced with output of `whoami` and `YOUR_USER_ID` with output of `echo $UID`. Your
-`DISPLAY` value may also be different (check `echo $DISPLAY`).
-
-```bash
-earlyoom -N 'sudo -u YOUR_USER DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/YOUR_USER_ID/bus notify-send'
-```
-
-Other options are discussed in [this thread](https://unix.stackexchange.com/questions/111188/using-notify-send-with-cron).
-
-Note that if you choose to use a command other than `notify-send`, it must support the same
-arguments. Example invocation earlyoom uses:
-
-```bash
-NOTIFY_COMMAND -i dialog-warning 'notif title' 'notif text'
-```
+To actually see the notifications in your GUI session, you need to have
+[systembus-notify](https://github.com/rfjakob/systembus-notify)
+running as your user.
 
 ### Preferred Processes
 
@@ -219,7 +203,7 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v1.4-6-ga4021ae
+earlyoom v1.6-preview
 Usage: ./earlyoom [OPTION]...
 
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
@@ -234,8 +218,7 @@ Usage: ./earlyoom [OPTION]...
   -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB
   -i                        user-space oom killer should ignore positive
                             oom_score_adj values
-  -n                        enable notifications using "notify-send"
-  -N COMMAND                enable notifications using COMMAND
+  -n                        enable d-bus notifications
   -d                        enable debugging messages
   -v                        print version information and exit
   -r INTERVAL               memory report interval in seconds (default 1), set
@@ -246,6 +229,7 @@ Usage: ./earlyoom [OPTION]...
   --avoid REGEX             avoid killing processes matching REGEX
   --dryrun                  dry run (do not kill any processes)
   -h, --help                this help text
+
 ```
 
 See the [man page](MANPAGE.md) for details.
