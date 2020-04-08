@@ -17,7 +17,7 @@ endif
 all: earlyoom earlyoom.1 earlyoom.service
 
 earlyoom: $(wildcard *.c *.h) Makefile
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
 earlyoom.1: MANPAGE.md
 ifdef PANDOC
