@@ -250,6 +250,9 @@ Changelog
     * `-n`/`-N` now enables the new logic
     * You need to have [systembus-notify](https://github.com/rfjakob/systembus-notify) running
       in your GUI session for notifications for work
+  * Handle `/proc` mounted with
+    [hidepid](https://github.com/rfjakob/earlyoom/wiki/proc-hidepid)
+    gracefully ([issue #184](https://github.com/rfjakob/earlyoom/issues/184))
 
 * v1.5, 2020-03-22
   * `-p`: set oom_score_adj to `-100` instead of `-1000`
