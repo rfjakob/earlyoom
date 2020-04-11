@@ -128,6 +128,7 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
         fatal(5, "Could not open /proc: %s", strerror(errno));
     }
 
+    int candidates = 0;
     while (1) {
         errno = 0;
         struct dirent* d = readdir(procdir);
@@ -190,6 +191,7 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
         }
 
         debug(" badness %3d", cur.badness);
+        candidates++;
 
         if (cur.badness < victim.badness) {
             // skip "type 1", encoded as 1 space
@@ -241,6 +243,12 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
 
     } // end of while(1) loop
     closedir(procdir);
+
+    if (candidates <= 1 && victim.pid == getpid()) {
+        warn("Only found myself (pid %d) in /proc. Do you use hidpid? See https://github.com/rfjakob/earlyoom/wiki/proc-hidepid\n",
+            victim.pid);
+        victim.pid = 0;
+    }
 
     if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
