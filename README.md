@@ -243,9 +243,13 @@ accept
 
 Changelog
 ---------
-* vNEXT
-  * Replace notification logic with [systembus-notify](https://github.com/rfjakob/systembus-notify)
+* 1.6, 2020-04-11
+  * Replace old `notify-send` GUI notification logic with
+    `dbus-send` / [systembus-notify](https://github.com/rfjakob/systembus-notify)
     ([#183](https://github.com/rfjakob/earlyoom/issues/183))
+    * `-n`/`-N` now enables the new logic
+    * You need to have [systembus-notify](https://github.com/rfjakob/systembus-notify) running
+      in your GUI session for notifications for work
 
 * v1.5, 2020-03-22
   * `-p`: set oom_score_adj to `-100` instead of `-1000`
