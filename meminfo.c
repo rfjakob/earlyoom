@@ -209,15 +209,28 @@ int get_comm(int pid, char* out, size_t outlen)
     if (f == NULL) {
         return -errno;
     }
-    size_t n = fread(out, 1, outlen - 1, f);
+    size_t total_bytes_read = 0;
+    while (1) {
+        size_t n = fread(out + total_bytes_read, 1, outlen - 1 - total_bytes_read, f);
+        if (ferror(f)) {
+            int fread_errno = errno;
+            perror("get_comm: fread() failed");
+            fclose(f);
+            return -fread_errno;
+        }
+        total_bytes_read += n;
+        if (feof(f)) {
+            break;
+        }
+    }
     fclose(f);
     // Process name may be empty, but we should get at least a newline
     // Example for empty process name: perl -MPOSIX -e '$0=""; pause'
-    if (n < 1) {
+    if (total_bytes_read < 1) {
         return -ENODATA;
     }
     // Strip trailing newline
-    out[n - 1] = 0;
+    out[total_bytes_read - 1] = 0;
     fix_truncated_utf8(out);
     return 0;
 }
