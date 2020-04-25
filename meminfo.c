@@ -247,6 +247,9 @@ long long get_vm_rss_kib(int pid)
     static long page_size;
     if (page_size == 0) {
         page_size = sysconf(_SC_PAGESIZE);
+        if (page_size <= 0) {
+            fatal(1, "could not read page size\n");
+        }
     }
 
     // Convert to kiB
