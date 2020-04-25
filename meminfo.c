@@ -81,7 +81,7 @@ meminfo_t parse_meminfo()
 
     size_t len = fread(buf, 1, sizeof(buf) - 1, fd);
     if (len == 0) {
-        fatal(102, "could not read /proc/meminfo: 0 bytes returned\n");
+        fatal(103, "could not read /proc/meminfo: 0 bytes returned\n");
     }
 
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
