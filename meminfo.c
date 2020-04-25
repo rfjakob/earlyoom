@@ -77,9 +77,21 @@ meminfo_t parse_meminfo()
     }
     rewind(fd);
 
-    size_t len = fread(buf, 1, sizeof(buf) - 1, fd);
-    if (len == 0) {
-        fatal(102, "could not read /proc/meminfo: 0 bytes returned\n");
+    // Loop to handle short reads.
+    size_t buf_offset = 0;
+    while (1) {
+        size_t len = fread(buf + buf_offset, 1, sizeof(buf) - 1 - buf_offset, fd);
+        if (ferror(fd)) {
+            perror("parse_meminfo: fread() on /proc/meminfo failed");
+            fatal(102, "could not read /proc/meminfo\n");
+        }
+        buf_offset += len;
+        if (feof(fd)) {
+            break;
+        }
+        if (len == 0) {
+            fatal(102, "could not read /proc/meminfo: 0 bytes returned\n");
+        }
     }
 
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
