@@ -271,7 +271,18 @@ long long get_vm_rss_kib(int pid)
     // Read and cache page size
     static long page_size;
     if (page_size == 0) {
+        // `sysconf()` uses -1 with errno unchanged for "indeterminate".
+        errno = 0;
         page_size = sysconf(_SC_PAGESIZE);
+        if (page_size == -1 && errno != 0) {
+            int sysconf_errno = errno;
+            perror("get_vm_rss_kib: sysconf(_SC_PAGESIZE) failed");
+            return -sysconf_errno;
+        } else if (page_size == -1) {
+            // Indeterminate. Unclear if this can happen for `_SC_PAGESIZE`;
+            // we treat it as an error.
+            fatal(1, "sysconf(_SC_PAGESIZE) returned indeterminate\n");
+        }
     }
 
     // Convert to kiB
