@@ -57,7 +57,98 @@ static long long available_guesstimate(const char* buf)
     return MemFree + Cached + Buffers - Shmem;
 }
 
-/* Parse /proc/meminfo.
+/* Parse the contents of /proc/spl/kstat/zfs/arcstats (in buf),
+ * return value of "search_term" (example: "\nsize ").
+ * Returns -1 on unexpected file contents or if the entry cannot be found. */
+static long long get_arcstats_entry(const char* search_term, const char* buf)
+{
+    // The format of the `arcstats` file is like this:
+    //
+    //     name                            type data
+    //     hits                            4    373259415
+    //     ...
+    //     size                            4    1721339808
+    //
+    // As of writing there is no spec for it available to us, so we do not
+    // know whether the columns have guaranteed fixed width.
+    //
+    // So we scan for the field name (e.g. "size") line and parse the second
+    // number.
+
+    long long result;
+
+    char* hit = strstr(buf, search_term);
+    if (hit == NULL) {
+        warn("parse_meminfo: arcstats does not contain size field\n");
+        return -1;
+    }
+
+    // ` ` skips spaces, `%*u` ignores the `type` field.
+    int matches = sscanf(hit + strlen(search_term), " %*u %lld", &result);
+    if (matches < 1) {
+        warn("parse_meminfo: unexpected /proc/spl/kstat/zfs/arcstats contents in size line\n");
+        return -1;
+    }
+
+    return result;
+}
+
+/* If ZFS is in use, compute the part of its cache that is memory-reclaimable.
+ * It currently does not count to `MemAvailable`, like the Linux buffer cache
+ * of other file systems does, see:
+ *   * https://github.com/openzfs/zfs/issues/10255
+ * Returns the number of Bytes reclaimable, or 0 if ZFS is not in use.
+ * This function either returns valid data or kills the process
+ * with a fatal error. */
+long long parse_zfs_arcstats_bytes()
+{
+    long long zfs_available_bytes = 0;
+
+    // In contrast to `fd` for `/proc/meminfo` (a file that should always exist)
+    // this `fd` is not `static` because zfs is a kernel module that can be
+    // loaded/unloaded at runtime, so `arcstats` may not always exist.
+    FILE* fd = NULL;
+    fd = fopen("/proc/spl/kstat/zfs/arcstats", "r");
+    if (fd == NULL && errno != ENOENT) {
+        fatal(106, "could not open /proc/spl/kstat/zfs/arcstats: %s\n", strerror(errno));
+    }
+    if (fd != NULL) {
+        // On Linux 4.19 with ZoL 0.8.3, "wc -c /proc/spl/kstat/zfs/arcstats"
+        // counts 4354 bytes.
+        // 8192 should be enough for the foreseeable future.
+        char arcstats_buf[8192] = { 0 };
+
+        size_t len = fread(arcstats_buf, 1, sizeof(arcstats_buf) - 1, fd);
+        if (ferror(fd)) {
+            fatal(107, "could not read /proc/spl/kstat/zfs/arcstats: %s\n", strerror(errno));
+        }
+        if (len == 0) {
+            fatal(108, "could not read /proc/spl/kstat/zfs/arcstats: 0 bytes returned\n");
+        }
+        fclose(fd);
+
+        long long arcstats_size_bytes = get_arcstats_entry("\nsize ", arcstats_buf);
+        if (arcstats_size_bytes > 0) {
+            zfs_available_bytes += arcstats_size_bytes;
+            // The amount of data specified by the following fields is not
+            // reclaimable, so we deduct them:
+            // * `c_min`: https://github.com/openzfs/zfs/wiki/ZFS-on-Linux-Module-Parameters#zfs_arc_min
+            // * `arc_meta_min`: https://github.com/openzfs/zfs/wiki/ZFS-on-Linux-Module-Parameters#zfs_arc_meta_min
+            long long arcstats_c_min_bytes = get_arcstats_entry("\nc_min ", arcstats_buf);
+            if (arcstats_c_min_bytes > 0) {
+                zfs_available_bytes -= arcstats_c_min_bytes;
+            }
+            long long arcstats_arc_meta_min_bytes = get_arcstats_entry("\narc_meta_min ", arcstats_buf);
+            if (arcstats_arc_meta_min_bytes > 0) {
+                zfs_available_bytes -= arcstats_arc_meta_min_bytes;
+            }
+        }
+    }
+    return zfs_available_bytes;
+}
+
+/* Parse /proc/meminfo and other related files:
+ *   * ZFS's /proc/spl/kstat/zfs/arcstats, if it exists
  * This function either returns valid data or kills the process
  * with a fatal error.
  */
@@ -100,6 +191,9 @@ meminfo_t parse_meminfo()
             guesstimate_warned = 1;
         }
     }
+
+    long long zfs_available_bytes = parse_zfs_arcstats_bytes();
+    MemAvailable += zfs_available_bytes / 1024; // MemAvailable is in kB
 
     // Calculate percentages
     m.MemAvailablePercent = (double)MemAvailable * 100 / (double)m.MemTotalKiB;

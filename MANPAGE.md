@@ -140,6 +140,12 @@ this help text
 
 105: Could not convert number when parse the contents of /proc/meminfo
 
+106: Could not open /proc/spl/kstat/zfs/arcstats despite it existing
+
+107: Could read /proc/spl/kstat/zfs/arcstats
+
+108: Could not parse /proc/spl/kstat/zfs/arcstats contents
+
 # Why not trigger the kernel oom killer?
 
 Earlyoom does not use `echo f > /proc/sysrq-trigger` because the Chrome people
