@@ -127,9 +127,10 @@ bool is_alive(int pid)
     // 10751 (cat) R 2663 10751 2663[...]
     char state;
     int res = fscanf(f, "%*d %*s %c", &state);
+    int fscanf_errno = errno;
     fclose(f);
     if (res < 1) {
-        warn("is_alive: fscanf() failed: %s\n", strerror(errno));
+        warn("is_alive: fscanf() failed: %s\n", strerror(fscanf_errno));
         return false;
     }
     debug("process state: %c\n", state);
