@@ -63,6 +63,8 @@ static long long available_guesstimate(const char* buf)
  */
 meminfo_t parse_meminfo()
 {
+    // Note that we do not need to close static FDs that we ensure to
+    // `fopen()` maximally once.
     static FILE* fd;
     static int guesstimate_warned = 0;
     // On Linux 5.3, "wc -c /proc/meminfo" counts 1391 bytes.
