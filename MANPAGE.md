@@ -114,7 +114,7 @@ this help text
 
 0: Successful program execution.
 
-1: Usage printed (using -h).
+1: Other error - inspect message for details
 
 2: Switch conflict.
 
