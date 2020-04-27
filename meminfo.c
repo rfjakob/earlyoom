@@ -89,7 +89,7 @@ meminfo_t parse_meminfo()
     long long SwapFree = get_entry_fatal("SwapFree:", buf);
 
     long long MemAvailable = get_entry("MemAvailable:", buf);
-    if (MemAvailable == -1) {
+    if (MemAvailable < 0) {
         MemAvailable = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
             fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
