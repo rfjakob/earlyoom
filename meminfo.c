@@ -80,6 +80,9 @@ meminfo_t parse_meminfo()
     rewind(fd);
 
     size_t len = fread(buf, 1, sizeof(buf) - 1, fd);
+    if (ferror(fd)) {
+        fatal(103, "could not read /proc/meminfo: %s\n", strerror(errno));
+    }
     if (len == 0) {
         fatal(103, "could not read /proc/meminfo: 0 bytes returned\n");
     }
@@ -200,6 +203,12 @@ int get_comm(int pid, char* out, size_t outlen)
         return -errno;
     }
     size_t n = fread(out, 1, outlen - 1, f);
+    if (ferror(f)) {
+        int fread_errno = errno;
+        perror("get_comm: fread() failed");
+        fclose(f);
+        return -fread_errno;
+    }
     fclose(f);
     // Process name may be empty, but we should get at least a newline
     // Example for empty process name: perl -MPOSIX -e '$0=""; pause'
