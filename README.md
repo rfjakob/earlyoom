@@ -314,8 +314,12 @@ Changelog
   * Send the GUI notification *after* killing, not before
     ([issue #73](https://github.com/rfjakob/earlyoom/issues/73))
   * Accept `--help` in addition to `-h`
-  * Fix wrong process name displayed in kill notification
-    ([commit](https://github.com/rfjakob/earlyoom/commit/1466e9c8f7997108758d9585442a96c6806c040e))
+  * Fix wrong process name in log and in kill notification
+    ([commit 1](https://github.com/rfjakob/earlyoom/commit/7634c5b66dd7e9b88c6ebf0496c8777f3c4b3cc1),
+    [commit 2](https://github.com/rfjakob/earlyoom/commit/15679a3b768ea2df9b13a7d9b0c1e30bd1a450e6),
+    [issue #52](https://github.com/rfjakob/earlyoom/issues/52),
+    [issue #65](https://github.com/rfjakob/earlyoom/issues/65),
+    [issue #194](https://github.com/rfjakob/earlyoom/issues/194))
   * Fix possible division by zero with `-S`
     ([commit](https://github.com/rfjakob/earlyoom/commit/a0c4b26dfef8b38ef81c7b0b907442f344a3e115))
 * v1.0, 2018-01-28
