@@ -5,17 +5,45 @@ Documentation=man:earlyoom(1) https://github.com/rfjakob/earlyoom
 [Service]
 EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
 ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
+# earlyoom never exits on it's own, so have systemd
+# restart it should it get killed for some reason.
+Restart=always
 # Run as an unprivileged user with random user id
 DynamicUser=true
 # Allow killing processes and calling mlockall()
 AmbientCapabilities=CAP_KILL CAP_IPC_LOCK
-# We don't need write access anywhere
+CapabilityBoundingSet=CAP_KILL CAP_IPC_LOCK
+# We don't need write access anywhere nor do we call any third party binaries
+# therefore hide all potentially exploitable files
 ProtectSystem=strict
-# We don't need /home at all, make it inaccessible
 ProtectHome=true
-# earlyoom never exits on it's own, so have systemd
-# restart it should it get killed for some reason.
-Restart=always
+PrivateDevices=true
+PrivateTmp=true
+InaccessiblePaths=-/var
+InaccessiblePaths=-/mnt
+InaccessiblePaths=-/media
+InaccessiblePaths=-/run
+InaccessiblePaths=-/usr/local/
+TemporaryFileSystem=/bin
+TemporaryFileSystem=/usr/bin
+BindReadOnlyPaths=:TARGET:/earlyoom
+TemporaryFileSystem=/etc
+BindReadOnlyPaths=-/etc/ld.so.preload
+BindReadOnlyPaths=-/etc/ld.so.cache
+# We don't need networking, disable it
+PrivateNetwork=true
+IPAddressDeny=any
+RestrictAddressFamilies=AF_UNIX
+# Restrict the service to only what earlyoom needs
+MemoryDenyWriteExecute=true
+ProtectHostname=true
+ProtectKernelModules=true
+ProtectClock=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
 
 [Install]
 WantedBy=multi-user.target
