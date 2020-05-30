@@ -59,7 +59,7 @@ endif
 
 earlyoom.1.gz: earlyoom.1
 ifdef PANDOC
-	gzip -f -k $<
+	gzip -f -k -n $<
 endif
 
 uninstall: uninstall-bin uninstall-man
