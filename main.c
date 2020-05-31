@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "globals.h"
@@ -54,6 +55,12 @@ double min(double x, double y)
     return y;
 }
 
+void handle_sigchld(int sig)
+{
+    (void)sig; // unused
+    waitpid(-1, NULL, WNOHANG);
+}
+
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
@@ -73,6 +80,9 @@ int main(int argc, char* argv[])
     /* request line buffering for stdout - otherwise the output
      * may lag behind stderr */
     setlinebuf(stdout);
+
+    /* clean up dbus-send zombies */
+    signal(SIGCHLD, handle_sigchld);
 
     fprintf(stderr, "earlyoom " VERSION "\n");
 
