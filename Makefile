@@ -1,5 +1,5 @@
 VERSION ?= $(shell git describe --tags --dirty 2> /dev/null)
-CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" -g -fstack-protector-all -std=gnu99
+CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" -g -fstack-protector-all
 
 DESTDIR ?=
 PREFIX ?= /usr/local

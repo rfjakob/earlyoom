@@ -81,7 +81,8 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
     if (sig == 0) {
         return 0;
     }
-    for (unsigned i = 0; i < 100; i++) {
+    unsigned i;
+    for (i = 0; i < 100; i++) {
         float secs = (float)(i * poll_ms) / 1000;
         // We have sent SIGTERM but now have dropped below SIGKILL limits.
         // Escalate to SIGKILL.
