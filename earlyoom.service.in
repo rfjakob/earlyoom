@@ -19,7 +19,7 @@ Restart=always
 # set memory limits and max tasks number
 TasksMax=10
 MemoryMax=50M
-MemorySwapMax=0
+MemorySwapMax=1K
 
 [Install]
 WantedBy=multi-user.target
