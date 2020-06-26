@@ -126,6 +126,8 @@ sudo pacman -S earlyoom
 sudo systemctl enable --now earlyoom
 ```
 
+Availability in other distributions: see [repology page](https://repology.org/project/earlyoom/versions).
+
 Use
 ---
 Just start the executable you have just compiled:
