@@ -220,6 +220,22 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
             continue;
         }
 
+        // Skip processes with oom_score_adj = -1000, like the
+        // kernel oom killer would.
+        int oom_score_adj = 0;
+        {
+            int res = get_oom_score_adj(cur.pid, &oom_score_adj);
+            if (res < 0) {
+                debug(" error reading oom_score_adj: %s\n", strerror(-res));
+                continue;
+            }
+            if (oom_score_adj == -1000) {
+                // skip "type 4", encoded as 3 spaces
+                debug("    \n");
+                continue;
+            }
+        }
+
         // Fill out remaining fields
         if (strlen(cur.name) == 0) {
             int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
@@ -239,7 +255,7 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
 
         // Save new victim
         victim = cur;
-        debug(" uid %4d \"%s\" <--- new victim\n", victim.uid, victim.name);
+        debug(" uid %4d oom_score_adj %4d \"%s\" <--- new victim\n", victim.uid, oom_score_adj, victim.name);
 
     } // end of while(1) loop
     closedir(procdir);
