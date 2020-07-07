@@ -243,6 +243,10 @@ accept
 
 Changelog
 ---------
+* 1.6.1, 2020-07-07
+  * Clean up dbus-send zombie processes ([#200](https://github.com/rfjakob/earlyoom/issues/200))
+  * Skip processes with oom_score_adj=-1000 ([210](https://github.com/rfjakob/earlyoom/issues/210))
+
 * 1.6, 2020-04-11
   * Replace old `notify-send` GUI notification logic with
     `dbus-send` / [systembus-notify](https://github.com/rfjakob/systembus-notify)
