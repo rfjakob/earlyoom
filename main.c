@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "globals.h"
@@ -405,7 +406,8 @@ static void poll_loop(const poll_loop_args_t* args)
         }
         unsigned sleep_ms = sleep_time_ms(args, &m);
         debug("adaptive sleep time: %d ms\n", sleep_ms);
-        usleep(sleep_ms * 1000);
+        struct timespec req = { .tv_sec = (time_t)(sleep_ms / 1000), .tv_nsec = (sleep_ms % 1000) * 1000000 };
+        nanosleep(&req, NULL);
         report_countdown_ms -= (int)sleep_ms;
     }
 }
