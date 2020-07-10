@@ -105,7 +105,8 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             warn("process exited after %.1f seconds\n", secs);
             return 0;
         }
-        usleep(poll_ms * 1000);
+        struct timespec req = { .tv_sec = (time_t)(poll_ms / 1000), .tv_nsec = (poll_ms % 1000) * 1000000 };
+        nanosleep(&req, NULL);
     }
     errno = ETIME;
     return -1;
