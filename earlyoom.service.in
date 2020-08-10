@@ -7,7 +7,7 @@ EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
 ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
 # Run as an unprivileged user with random user id
 DynamicUser=true
-# Allow killing processes and calling mlockall()
+# Allow killing processes, calling mlockall(), setting priority and oom_score_adj.
 AmbientCapabilities=CAP_KILL CAP_IPC_LOCK CAP_SYS_NICE CAP_SYS_RESOURCE
 # We don't need write access anywhere
 ProtectSystem=strict
