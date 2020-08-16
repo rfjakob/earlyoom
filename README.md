@@ -47,7 +47,7 @@ is unused or can be freed immediately.
 Note that you need a recent version of
 `free` and Linux kernel 3.14+ to see the "available" column. If you have
 a recent kernel, but an old version of `free`, you can get the value
-from `cat /proc/meminfo | grep MemAvailable`.
+from `grep MemAvailable /proc/meminfo`.
 
 When both your available memory and free swap drop below 10% of the total,
 it will send the `SIGTERM` signal to the process that uses the most memory in the opinion of
