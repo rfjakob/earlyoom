@@ -16,7 +16,7 @@
 #include "msg.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
- * (example: MemTotal)
+ * (example: "MemTotal:")
  * Returns -errno if the entry cannot be found. */
 static long long get_entry(const char* name, const char* buf)
 {
@@ -29,7 +29,7 @@ static long long get_entry(const char* name, const char* buf)
     long long val = strtoll(hit + strlen(name), NULL, 10);
     if (errno != 0) {
         int strtoll_errno = errno;
-        perror("get_entry: strtol() failed");
+        warn("%s: strtol() failed: %s", __func__, strerror(errno));
         return -strtoll_errno;
     }
     return val;
@@ -40,6 +40,7 @@ static long long get_entry_fatal(const char* name, const char* buf)
 {
     long long val = get_entry(name, buf);
     if (val < 0) {
+        warn("%s: fatal error, dumping buffer for later diagnosis:\n%s", __func__, buf);
         fatal(104, "could not find entry '%s' in /proc/meminfo: %s\n", name, strerror((int)-val));
     }
     return val;
