@@ -113,29 +113,27 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 }
 
 /*
- * Find the process with the largest oom_score and kill it.
+ * Find the process with the largest oom_score.
  */
-void kill_largest_process(const poll_loop_args_t* args, int sig)
+procinfo_t find_largest_process(const poll_loop_args_t* args)
 {
-    struct procinfo victim = { 0 };
-    struct timespec t0 = { 0 }, t1 = { 0 };
+    DIR* procdir = opendir("/proc");
+    if (procdir == NULL) {
+        fatal(5, "%s: could not open /proc: %s", __func__, strerror(errno));
+    }
 
+    struct timespec t0 = { 0 }, t1 = { 0 };
     if (enable_debug) {
         clock_gettime(CLOCK_MONOTONIC, &t0);
     }
 
-    DIR* procdir = opendir("/proc");
-    if (procdir == NULL) {
-        fatal(5, "Could not open /proc: %s", strerror(errno));
-    }
-
-    int candidates = 0;
+    procinfo_t victim = { 0 };
     while (1) {
         errno = 0;
         struct dirent* d = readdir(procdir);
         if (d == NULL) {
             if (errno != 0)
-                warn("userspace_kill: readdir error: %s", strerror(errno));
+                warn("%s: readdir error: %s", __func__, strerror(errno));
             break;
         }
 
@@ -144,7 +142,7 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
         if (!isnumeric(d->d_name))
             continue;
 
-        struct procinfo cur = {
+        procinfo_t cur = {
             .pid = (int)strtol(d->d_name, NULL, 10),
             .uid = -1,
             .badness = -1,
@@ -192,7 +190,6 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
         }
 
         debug(" badness %3d", cur.badness);
-        candidates++;
 
         if (cur.badness < victim.badness) {
             // skip "type 1", encoded as 1 space
@@ -261,12 +258,28 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
     } // end of while(1) loop
     closedir(procdir);
 
-    if (candidates <= 1 && victim.pid == getpid()) {
-        warn("Only found myself (pid %d) in /proc. Do you use hidpid? See https://github.com/rfjakob/earlyoom/wiki/proc-hidepid\n",
-            victim.pid);
-        victim.pid = 0;
+    if (enable_debug) {
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        long delta = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
+        debug("selecting victim took %ld.%03ld ms\n", delta / 1000, delta % 1000);
     }
 
+    if (victim.pid == getpid()) {
+        warn("%s: selected myself (pid %d). Do you use hidpid? See https://github.com/rfjakob/earlyoom/wiki/proc-hidepid\n",
+            __func__, victim.pid);
+        // zeroize victim struct
+        victim = (const procinfo_t) { 0 };
+    }
+
+    return victim;
+}
+
+/*
+ * Kill the victim process, wait for it to exit, send a gui notification
+ * (if enabled).
+ */
+void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim)
+{
     if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         if (args->notify) {
@@ -274,12 +287,6 @@ void kill_largest_process(const poll_loop_args_t* args, int sig)
         }
         sleep(1);
         return;
-    }
-
-    if (enable_debug) {
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-        long delta = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
-        debug("selecting victim took %ld.%03ld ms\n", delta / 1000, delta % 1000);
     }
 
     char* sig_name = "?";

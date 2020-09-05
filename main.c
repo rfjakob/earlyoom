@@ -304,7 +304,10 @@ int main(int argc, char* argv[])
      * calling mlockall()
      */
     debug("dry-running kill_largest_process()...\n");
-    kill_largest_process(&args, 0);
+    {
+        procinfo_t victim = find_largest_process(&args);
+        kill_process(&args, 0, victim);
+    }
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
@@ -399,7 +402,8 @@ static void poll_loop(const poll_loop_args_t* args)
             sig = SIGTERM;
         }
         if (sig) {
-            kill_largest_process(args, sig);
+            procinfo_t victim = find_largest_process(args);
+            kill_process(args, sig, victim);
         } else if (args->report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(printf, m);
             report_countdown_ms = args->report_interval_ms;

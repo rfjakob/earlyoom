@@ -152,9 +152,15 @@ func Benchmark_parse_meminfo(b *testing.B) {
 	}
 }
 
-func Benchmark_kill_largest_process(b *testing.B) {
+func Benchmark_kill_process(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		kill_largest_process()
+		kill_process()
+	}
+}
+
+func Benchmark_find_largest_process(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		find_largest_process()
 	}
 }
 

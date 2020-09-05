@@ -5,6 +5,8 @@
 #include <regex.h>
 #include <stdbool.h>
 
+#include "meminfo.h"
+
 typedef struct {
     /* if the available memory AND swap goes below these percentages,
      * we start killing processes */
@@ -25,6 +27,7 @@ typedef struct {
     bool dryrun;
 } poll_loop_args_t;
 
-void kill_largest_process(const poll_loop_args_t* args, int sig);
+void kill_process(const poll_loop_args_t* args, int sig, procinfo_t victim);
+procinfo_t find_largest_process(const poll_loop_args_t* args);
 
 #endif

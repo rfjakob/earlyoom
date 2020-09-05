@@ -36,9 +36,16 @@ func parse_meminfo() C.meminfo_t {
 	return C.parse_meminfo()
 }
 
-func kill_largest_process() {
+func find_largest_process() {
 	var args C.poll_loop_args_t
-	C.kill_largest_process(&args, 0)
+	C.find_largest_process(&args)
+}
+
+func kill_process() {
+	var args C.poll_loop_args_t
+	var victim C.procinfo_t
+	victim.pid = 1
+	C.kill_process(&args, 0, victim)
 }
 
 func get_oom_score(pid int) int {

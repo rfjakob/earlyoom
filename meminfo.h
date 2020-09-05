@@ -19,13 +19,13 @@ typedef struct {
     double SwapFreePercent; // percent of total swap that is free
 } meminfo_t;
 
-struct procinfo {
+typedef struct procinfo {
     int pid;
     int uid;
     int badness;
     long long VmRSSkiB;
     char name[PATH_LEN];
-};
+} procinfo_t;
 
 meminfo_t parse_meminfo();
 bool is_alive(int pid);
