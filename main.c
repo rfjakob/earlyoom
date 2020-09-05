@@ -381,6 +381,20 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     return (unsigned)ms;
 }
 
+/* lowmem_sig compares the limits with the current memory situation
+ * and returns which signal (SIGKILL, SIGTERM, 0) should be sent in
+ * response. 0 means that there is enough memory and we should
+ * not kill anything.
+ */
+static int lowmem_sig(const poll_loop_args_t* args, const meminfo_t* m) {
+    if (m->MemAvailablePercent <= args->mem_kill_percent && m->SwapFreePercent <= args->swap_kill_percent)
+        return SIGKILL;
+    else if (m->MemAvailablePercent <= args->mem_term_percent && m->SwapFreePercent <= args->swap_term_percent)
+        return SIGTERM;
+    return 0;
+}
+
+// poll_loop is the main event loop. Never returns.
 static void poll_loop(const poll_loop_args_t* args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
@@ -388,22 +402,32 @@ static void poll_loop(const poll_loop_args_t* args)
     int report_countdown_ms = 0;
 
     while (1) {
-        int sig = 0;
         meminfo_t m = parse_meminfo();
-        if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
+        int sig = lowmem_sig(args, &m);
+        if (sig == SIGKILL) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem " PRIPCT ", swap " PRIPCT "\n",
                 args->mem_kill_percent, args->swap_kill_percent);
-            sig = SIGKILL;
-        } else if (m.MemAvailablePercent <= args->mem_term_percent && m.SwapFreePercent <= args->swap_term_percent) {
+        } else if (sig == SIGTERM) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem " PRIPCT ", swap " PRIPCT "\n",
                 args->mem_term_percent, args->swap_term_percent);
-            sig = SIGTERM;
         }
         if (sig) {
             procinfo_t victim = find_largest_process(args);
-            kill_process(args, sig, victim);
+            /* The run time of find_largest_process is proportional to the number
+             * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").
+             * This is long enough that the situation may have changed in the meantime,
+             * so we double-check if we still need to kill anything.
+             * The run time of parse_meminfo is only 6us on my box and independent of the number
+             * of processes (try "make bench").
+             */
+            m = parse_meminfo();
+            if(lowmem_sig(args, &m) == 0) {
+                warn("memory situation has recovered while selecting victim\n");
+            } else {
+                kill_process(args, sig, victim);
+            }
         } else if (args->report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(printf, m);
             report_countdown_ms = args->report_interval_ms;
