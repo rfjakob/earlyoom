@@ -93,7 +93,13 @@ Due to the adaptive poll rate, when there is a lot of free memory,
 the actual interval may be up to 1 second longer than the setting.
 
 #### -p
-Increase earlyoom's priority: set niceness of earlyoom to -20 and oom_score_adj to -100
+Increase earlyoom's priority: set niceness of earlyoom to -20 and oom_score_adj to -100.
+
+When earlyoom is run through its default systemd service, the `-p` switch doesn't work. To achieve the same effect, enter the following three lines into `sudo systemctl edit earlyoom`:
+
+    [Service]
+    OOMScoreAdjust=-100
+    Nice=-20
 
 #### -n
 Enable notifications via d-bus.
