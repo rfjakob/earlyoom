@@ -243,9 +243,10 @@ accept
 
 Changelog
 ---------
-* vNEXT, in progress
+* v1.6.2, 2020-10-14
   * Double-check memory situation before killing victim ([commit](https://github.com/rfjakob/earlyoom/commit/e34e0fcec5d9f60eb19a48a3ec2bab175818fdd8))
   * Never terminate ourselves ([#205](https://github.com/rfjakob/earlyoom/issues/205))
+  * Dump buffer on /proc/meminfo conversion error ([#214](https://github.com/rfjakob/earlyoom/issues/214))
 
 * 1.6.1, 2020-07-07
   * Clean up dbus-send zombie processes ([#200](https://github.com/rfjakob/earlyoom/issues/200))
