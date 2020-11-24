@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -90,6 +91,12 @@ int main(int argc, char* argv[])
     if (chdir("/proc") != 0) {
         fatal(4, "Could not cd to /proc: %s", strerror(errno));
     }
+
+    // When systemd starts a daemon with capabilities, it uses ambient
+    // capabilities to do so. If not dropped, the capabilities can spread
+    // to any child process. This is usually not necessary and its a good
+    // idea to drop them if not needed.
+    prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_CLEAR_ALL, 0, 0, 0);
 
     meminfo_t m = parse_meminfo();
 
