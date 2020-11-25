@@ -12,7 +12,9 @@ part of the reason Linux invokes it only when it has absolutely no other choice.
 It will swap out the desktop environment, drop the whole page cache and empty
 every buffer before it will ultimately kill a process. At least that's what I
 think that it will do. I have yet to be patient enough to wait for it, sitting
-in front of an unresponsive system.
+in front of an unresponsive system.  And you know it only becomes unresponsive
+when you're in the middle of 5 different things and you've not only lost what
+you were doing, but also you can't remember what you were doing.
 
 This made me and other people wonder if the oom-killer could be configured to
 step in earlier: [reddit r/linux][5], [superuser.com][2], [unix.stackexchange.com][3].
