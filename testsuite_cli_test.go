@@ -61,8 +61,10 @@ func parseMeminfo() (memTotal int64, swapTotal int64) {
 	return
 }
 
-// earlyoom RSS should never be above 1 MiB
-const rssMax = 1024
+// earlyoom RSS should never be above 1 MiB,
+// but on some systems, it is (due to glibc?).
+// https://github.com/rfjakob/earlyoom/issues/221
+const rssMaxKiB = 2048
 
 func TestCli(t *testing.T) {
 	memTotal, swapTotal := parseMeminfo()
@@ -172,8 +174,8 @@ func TestCli(t *testing.T) {
 				t.Errorf("stderr should contain %q, but does not", tc.stderrContains)
 				pass = false
 			}
-			if res.rss > rssMax {
-				t.Errorf("Memory usage too high! actual rss: %d, rssMax: %d", res.rss, rssMax)
+			if res.rss > rssMaxKiB {
+				t.Errorf("Memory usage too high! actual rss: %d, rssMax: %d", res.rss, rssMaxKiB)
 				pass = false
 			}
 			/*
@@ -209,8 +211,8 @@ func TestRss(t *testing.T) {
 	if res.rss == 0 {
 		t.Error("rss is zero!?")
 	}
-	if res.rss > rssMax {
-		t.Error("rss above 1 MiB")
+	if res.rss > rssMaxKiB {
+		t.Errorf("rss above %d kiB", rssMaxKiB)
 	}
 	t.Logf("earlyoom RSS: %d kiB", res.rss)
 }
