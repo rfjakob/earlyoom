@@ -15,6 +15,7 @@
  */
 int fatal(int code, char* fmt, ...) __attribute__((noreturn, format(printf, 2, 3)));
 int warn(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+int info(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 int debug(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 typedef struct {

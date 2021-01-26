@@ -55,6 +55,17 @@ int warn(const char* fmt, ...)
     return 0;
 }
 
+// Print a white informational message to stdout. No prefix is added.
+int info(const char* fmt, ...)
+{
+    const char* white = "\033[37m";
+    va_list vl;
+    va_start(vl, fmt);
+    color_log(stdout, white, fmt, vl);
+    va_end(vl);
+    return 0;
+}
+
 // Print a gray debug message to stdout. No prefix is added.
 int debug(const char* fmt, ...)
 {
