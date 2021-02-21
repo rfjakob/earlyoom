@@ -173,14 +173,18 @@ tail /dev/zero
 If you need any further actions after a process is killed by `earlyoom` (such as sending emails), you can parse the logs by:
 
 ```
-sudo journalctl -u earlyoom | grep -i kill
+sudo journalctl -u earlyoom | grep sending
 ```
-
 Example output for above test command (`tail /dev/zero`) will look like: 
 
 ```
-Feb 19 18:21:39 hostnamehere earlyoom[15368]: Killing process 'tail' with signal 15, pid: 24833, badness: 972, VmRSS: 3963 MiB
+Feb 20 10:59:34 debian earlyoom[10231]: sending SIGTERM to process 7378 uid 1000 "tail": badness 156, VmRSS 4962 MiB
 ```
+
+> For older versions of `earlyoom`, use: 
+> 
+>     sudo journalctl -u earlyoom | grep -iE "(sending|killing)"
+> 
 
 ### Notifications
 
