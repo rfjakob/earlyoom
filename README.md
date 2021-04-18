@@ -160,6 +160,32 @@ using
 systemctl status earlyoom
 ```
 
+### Testing
+
+In order to see `earlyoom` in action, create/simulate a memory leak and let `earlyoom` do what it does: 
+
+```
+tail /dev/zero
+```
+
+### Checking Logs 
+
+If you need any further actions after a process is killed by `earlyoom` (such as sending emails), you can parse the logs by:
+
+```
+sudo journalctl -u earlyoom | grep sending
+```
+Example output for above test command (`tail /dev/zero`) will look like: 
+
+```
+Feb 20 10:59:34 debian earlyoom[10231]: sending SIGTERM to process 7378 uid 1000 "tail": badness 156, VmRSS 4962 MiB
+```
+
+> For older versions of `earlyoom`, use: 
+> 
+>     sudo journalctl -u earlyoom | grep -iE "(sending|killing)"
+> 
+
 ### Notifications
 
 Since version 1.6, earlyoom can send notifications about killed processes
