@@ -112,7 +112,7 @@ For Debian 10+ and Ubuntu 18.04+, there's a [Debian package](https://packages.de
 sudo apt install earlyoom
 ```
 
-For Fedora and RHEL 8 with EPEL, there's a [Fedora package](https://apps.fedoraproject.org/packages/earlyoom):
+For Fedora and RHEL 8 with EPEL, there's a [Fedora package](https://src.fedoraproject.org/rpms/earlyoom/):
 ```bash
 sudo dnf install earlyoom
 sudo systemctl enable --now earlyoom
