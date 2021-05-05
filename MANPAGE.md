@@ -104,6 +104,9 @@ When earlyoom is run through its default systemd service, the `-p` switch doesn'
 #### -n
 Enable notifications via d-bus.
 
+#### -g
+Kill all processes that are in the same process group as the one with excessive memory usage.
+
 #### \-\-prefer REGEX
 prefer killing processes matching REGEX (adds 300 to oom_score)
 
