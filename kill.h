@@ -18,6 +18,8 @@ typedef struct {
     bool ignore_oom_score_adj;
     /* send d-bus notifications? */
     bool notify;
+    /* kill all processes within a process group */
+    bool kill_process_group;
     /* prefer/avoid killing these processes. NULL = no-op. */
     regex_t* prefer_regex;
     regex_t* avoid_regex;
