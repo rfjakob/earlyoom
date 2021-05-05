@@ -245,6 +245,7 @@ Usage: ./earlyoom [OPTION]...
   -i                        user-space oom killer should ignore positive
                             oom_score_adj values
   -n                        enable d-bus notifications
+  -g                        kill all processes within a process group
   -d                        enable debugging messages
   -v                        print version information and exit
   -r INTERVAL               memory report interval in seconds (default 1), set
