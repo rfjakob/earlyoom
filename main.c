@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
     meminfo_t m = parse_meminfo();
 
     int c;
-    const char* short_opt = "m:s:M:S:kinN:dvr:ph";
+    const char* short_opt = "m:s:M:S:kingN:dvr:ph";
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
@@ -173,6 +173,9 @@ int main(int argc, char* argv[])
             args.notify = true;
             fprintf(stderr, "Notifying through D-Bus\n");
             break;
+        case 'g':
+            args.kill_process_group = true;
+            break;
         case 'N':
             args.notify = true;
             fprintf(stderr, "Notifying through D-Bus, argument '%s' ignored for compatability\n", optarg);
@@ -220,6 +223,7 @@ int main(int argc, char* argv[])
                 "  -i                        user-space oom killer should ignore positive\n"
                 "                            oom_score_adj values\n"
                 "  -n                        enable d-bus notifications\n"
+                "  -g                        kill all processes within a process group\n"
                 "  -d                        enable debugging messages\n"
                 "  -v                        print version information and exit\n"
                 "  -r INTERVAL               memory report interval in seconds (default 1), set\n"

@@ -73,6 +73,14 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
     }
     meminfo_t m = { 0 };
     const unsigned poll_ms = 100;
+    if (args->kill_process_group) {
+        int res = getpgid(pid);
+        if (res < 0) {
+            return res;
+        }
+        pid = -res;
+        warn("killing whole process group %d (-g flag is active)\n", pid);
+    }
     int res = kill(pid, sig);
     if (res != 0) {
         return res;

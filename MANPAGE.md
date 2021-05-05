@@ -104,6 +104,27 @@ When earlyoom is run through its default systemd service, the `-p` switch doesn'
 #### -n
 Enable notifications via d-bus.
 
+#### -g
+Kill all processes that have same process group id (PGID) as the process
+with excessive memory usage.
+
+For example, with this flag turned on, the whole application will be killed when
+one of its subprocess consumes too much memory (as long as they all have the
+same PGID, of course).
+
+Enable this flag when completely cleaning up the "entire application" is more desirable,
+and you are sure that the application puts all its processes in the same PGID.
+
+Note that some desktop environments (GNOME, for example) put all desktop
+application in the same process group as `gnome-shell`. earlyoom might kill
+all such processes including `gnome-shell` when this flag is turned on.
+
+Be sure to check how your environment behaves beforehand. Use
+
+	pstree -gT
+
+to show all processes with the PGID in brackets.
+
 #### \-\-prefer REGEX
 prefer killing processes matching REGEX (adds 300 to oom_score)
 
