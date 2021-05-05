@@ -105,7 +105,14 @@ When earlyoom is run through its default systemd service, the `-p` switch doesn'
 Enable notifications via d-bus.
 
 #### -g
-Kill all processes that are in the same process group as the one with excessive memory usage.
+Kill all processes that are in the same process group as the one with excessive
+memory usage.
+
+For example, with this flag turned on, the whole application will be killed when
+one of its subprocess consumes too much memory (as long as they all have the
+same PGID, of course).
+
+Enable this flag when completely cleaning up the "entire process" is more desirable.
 
 #### \-\-prefer REGEX
 prefer killing processes matching REGEX (adds 300 to oom_score)
