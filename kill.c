@@ -75,7 +75,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
     const unsigned poll_ms = 100;
     if (args->kill_process_group) {
         if ((pid = getpgid(pid)) < 0) {
-            fatal(7, "%s: could not get PGID: %s", __func__, strerror(errno));
+            return pid;
         }
         pid = -pid;
     }
