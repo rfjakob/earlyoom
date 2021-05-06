@@ -114,6 +114,11 @@ same PGID, of course).
 
 Enable this flag when completely cleaning up the "entire process" is more desirable.
 
+Notice that some desktop environments (GNOME, for example) put every desktop
+application in the same process group as `gnome-shell` does. EarlyOOM might kill
+all such processes when this flag is turned on. Be sure to check how your environment
+behaves beforehand.
+
 #### \-\-prefer REGEX
 prefer killing processes matching REGEX (adds 300 to oom_score)
 
