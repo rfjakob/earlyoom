@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
-	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -105,7 +103,7 @@ func TestCli(t *testing.T) {
 		// Test --avoid and --prefer
 		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Will avoid killing", stdoutContains: memReport},
 		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Preferring to kill", stdoutContains: memReport},
-		{args: []string{"-i"}, code: -1, stderrContains: "Ignoring positive oom_score_adj values"},
+		{args: []string{"-i"}, code: -1, stderrContains: "Option -i is ignored"},
 		// Extra arguments should error out
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
 		{args: []string{"-i", "1"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},
@@ -215,48 +213,4 @@ func TestRss(t *testing.T) {
 		t.Errorf("rss above %d kiB", rssMaxKiB)
 	}
 	t.Logf("earlyoom RSS: %d kiB", res.rss)
-}
-
-// TestI tests that `earlyoom -i` works as expected
-func TestI(t *testing.T) {
-	cmd := exec.Command("sleep", "60")
-	err := cmd.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer cmd.Process.Kill()
-	path := fmt.Sprintf("/proc/%d/oom_score_adj", cmd.Process.Pid)
-	err = ioutil.WriteFile(path, []byte("1000"), 0600)
-	if err != nil {
-		t.Fatal(err)
-	}
-	res := runEarlyoom(t, "-d")
-	// We should see a line like this:
-	//   pid 2308155: badness 1000 vm_rss     708 uid 1026 "sleep" <--- new victim
-	// Or, for some reason, this:
-	//   pid  6950: badness 999 vm_rss     772 uid 1026 "sleep" <--- new victim
-	matched := false
-	for _, b := range []int{1000, 999} {
-		pattern := fmt.Sprintf(`pid\s+%d: badness %d`, cmd.Process.Pid, b)
-		matched, err = regexp.MatchString(pattern, res.stdout)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if matched {
-			break
-		}
-	}
-	if !matched {
-		t.Error("did not see badness 1000 or 999 in output")
-		t.Log(res.stdout)
-	}
-	res = runEarlyoom(t, "-d", "-i")
-	pattern := fmt.Sprintf(`pid\s+%d: badness %d`, cmd.Process.Pid, 1000)
-	matched, err = regexp.MatchString(pattern, res.stdout)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if matched {
-		t.Error("saw badness 1000, but should not have")
-	}
 }

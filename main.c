@@ -166,8 +166,7 @@ int main(int argc, char* argv[])
             fprintf(stderr, "Option -k is ignored since earlyoom v1.2\n");
             break;
         case 'i':
-            args.ignore_oom_score_adj = 1;
-            fprintf(stderr, "Ignoring positive oom_score_adj values (-i)\n");
+            fprintf(stderr, "Option -i is ignored since earlyoom v1.7\n");
             break;
         case 'n':
             args.notify = true;

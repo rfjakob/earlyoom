@@ -71,7 +71,7 @@ Send SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
 removed in earlyoom v1.2, ignored for compatibility
 
 #### -i
-user-space oom killer should ignore positive oom_score_adj values
+removed in earlyoom v1.7, ignored for compatibility
 
 #### -d
 enable debugging messages

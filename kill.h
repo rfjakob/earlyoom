@@ -14,8 +14,6 @@ typedef struct {
     double mem_kill_percent;
     double swap_term_percent;
     double swap_kill_percent;
-    /* ignore /proc/PID/oom_score_adj? */
-    bool ignore_oom_score_adj;
     /* send d-bus notifications? */
     bool notify;
     /* kill all processes within a process group */

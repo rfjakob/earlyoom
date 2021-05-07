@@ -171,17 +171,6 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
             }
             cur.badness = res;
         }
-        if (args->ignore_oom_score_adj) {
-            int oom_score_adj = 0;
-            int res = get_oom_score_adj(cur.pid, &oom_score_adj);
-            if (res < 0) {
-                debug(" error reading oom_score_adj: %s\n", strerror(-res));
-                continue;
-            }
-            if (oom_score_adj > 0) {
-                cur.badness -= oom_score_adj;
-            }
-        }
 
         if ((args->prefer_regex || args->avoid_regex)) {
             int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
