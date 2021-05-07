@@ -270,6 +270,9 @@ accept
 
 Changelog
 ---------
+* vNEXT
+  * Add `-g` flag to kill whole process group ([#247](https://github.com/rfjakob/earlyoom/pull/247))
+
 * v1.6.2, 2020-10-14
   * Double-check memory situation before killing victim ([commit](https://github.com/rfjakob/earlyoom/commit/e34e0fcec5d9f60eb19a48a3ec2bab175818fdd8))
   * Never terminate ourselves ([#205](https://github.com/rfjakob/earlyoom/issues/205))
