@@ -219,8 +219,6 @@ int main(int argc, char* argv[])
                 "                            earlyoom to act.\n"
                 "  -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB\n"
                 "  -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB\n"
-                "  -i                        user-space oom killer should ignore positive\n"
-                "                            oom_score_adj values\n"
                 "  -n                        enable d-bus notifications\n"
                 "  -g                        kill all processes within a process group\n"
                 "  -d                        enable debugging messages\n"

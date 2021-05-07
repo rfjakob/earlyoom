@@ -229,7 +229,7 @@ Command line options
 --------------------
 ```
 ./earlyoom -h
-earlyoom v1.6-preview
+earlyoom v1.7-preview
 Usage: ./earlyoom [OPTION]...
 
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
@@ -242,8 +242,6 @@ Usage: ./earlyoom [OPTION]...
                             earlyoom to act.
   -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB
   -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB
-  -i                        user-space oom killer should ignore positive
-                            oom_score_adj values
   -n                        enable d-bus notifications
   -g                        kill all processes within a process group
   -d                        enable debugging messages
