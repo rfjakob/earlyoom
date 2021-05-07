@@ -394,7 +394,8 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
  * response. 0 means that there is enough memory and we should
  * not kill anything.
  */
-static int lowmem_sig(const poll_loop_args_t* args, const meminfo_t* m) {
+static int lowmem_sig(const poll_loop_args_t* args, const meminfo_t* m)
+{
     if (m->MemAvailablePercent <= args->mem_kill_percent && m->SwapFreePercent <= args->swap_kill_percent)
         return SIGKILL;
     else if (m->MemAvailablePercent <= args->mem_term_percent && m->SwapFreePercent <= args->swap_term_percent)
@@ -431,7 +432,7 @@ static void poll_loop(const poll_loop_args_t* args)
              * of processes (try "make bench").
              */
             m = parse_meminfo();
-            if(lowmem_sig(args, &m) == 0) {
+            if (lowmem_sig(args, &m) == 0) {
                 warn("memory situation has recovered while selecting victim\n");
             } else {
                 kill_process(args, sig, victim);
