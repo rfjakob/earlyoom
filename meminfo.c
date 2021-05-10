@@ -4,6 +4,7 @@
  * Returned values are in kiB */
 
 #include <errno.h>
+#include <signal.h>
 #include <stddef.h> // for size_t
 #include <stdio.h>
 #include <stdlib.h>
@@ -121,6 +122,17 @@ meminfo_t parse_meminfo()
 
 bool is_alive(int pid)
 {
+    // whole process group (-g flag)?
+    if (pid < 0) {
+        // signal 0 does nothing, but we do get an error when the process
+        // group does not exist.
+        int res = kill(pid, 0);
+        if (res == 0) {
+            return true;
+        }
+        return false;
+    }
+
     char buf[256];
     // Read /proc/[pid]/stat
     snprintf(buf, sizeof(buf), "/proc/%d/stat", pid);
