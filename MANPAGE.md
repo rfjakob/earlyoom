@@ -104,6 +104,10 @@ When earlyoom is run through its default systemd service, the `-p` switch doesn'
 #### -n
 Enable notifications via d-bus.
 
+To actually see the notifications in your GUI session, you need to have
+[systembus-notify](https://github.com/rfjakob/systembus-notify)
+running as your user.
+
 #### -g
 Kill all processes that have same process group id (PGID) as the process
 with excessive memory usage.
