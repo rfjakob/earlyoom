@@ -79,7 +79,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             return res;
         }
         pid = -res;
-        warn("killing whole process group %d (-g flag is active)\n", pid);
+        warn("killing whole process group %d (-g flag is active)\n", res);
     }
     int res = kill(pid, sig);
     if (res != 0) {
