@@ -487,7 +487,7 @@ static void poll_loop(const poll_loop_args_t* args)
         nanosleep(&req, NULL);
         report_countdown_ms -= (int)sleep_ms;
         // if counting down
-        if (args->sigterm_delay_ms && sigterm_countdown_ms < args->sigterm_delay_ms) {
+        if (sigterm_countdown_ms < args->sigterm_delay_ms) {
             if (sig == SIGTERM) {
                 sigterm_countdown_ms -= (int)sleep_ms;
             }
