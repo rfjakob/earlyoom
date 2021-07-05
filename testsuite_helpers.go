@@ -93,6 +93,18 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 	}
 }
 
+/*
+	$ ls -l /proc/$(pgrep earlyoom)/fd
+	total 0
+	lrwx------. 1 jakob jakob 64 Feb 22 14:36 0 -> /dev/pts/2
+	lrwx------. 1 jakob jakob 64 Feb 22 14:36 1 -> /dev/pts/2
+	lrwx------. 1 jakob jakob 64 Feb 22 14:36 2 -> /dev/pts/2
+	lr-x------. 1 jakob jakob 64 Feb 22 14:36 3 -> /proc/meminfo
+
+	Plus one for /proc/[pid]/stat which may possibly be open as well
+*/
+const openFdsMax = 5
+
 func countFds(pid int) int {
 	dir := fmt.Sprintf("/proc/%d/fd", pid)
 	f, err := os.Open(dir)
@@ -104,6 +116,14 @@ func countFds(pid int) int {
 	names, err := f.Readdirnames(0)
 	if err != nil {
 		return -1
+	}
+	if len(names) > openFdsMax {
+		fmt.Printf("countFds: earlyoom has too many open fds:\n")
+		for _, n := range names {
+			linkName := fmt.Sprintf("%s/%s", dir, n)
+			linkTarget, err := os.Readlink(linkName)
+			fmt.Printf("%s -> %s, err=%v\n", linkName, linkTarget, err)
+		}
 	}
 	return len(names)
 }
