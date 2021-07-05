@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 12 * * *' # Every day noon UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    # Looks like Github Actions leaks fds to child processes
+    # https://github.com/actions/runner/issues/1188
+    - run: ls -l /proc/self/fd
+
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Make "git describe" work
+
+    - run: sudo apt-get install -qq pandoc cppcheck
+
+    - run: make
+
+    - run: make test
