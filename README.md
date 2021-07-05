@@ -1,7 +1,7 @@
 earlyoom - The Early OOM Daemon
 ===============================
 
-[![Build Status](https://api.travis-ci.org/rfjakob/earlyoom.svg)](https://travis-ci.org/rfjakob/earlyoom)
+[![CI](https://github.com/rfjakob/earlyoom/actions/workflows/ci.yml/badge.svg)](https://github.com/rfjakob/earlyoom/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/release/rfjakob/earlyoom.svg)](https://github.com/rfjakob/earlyoom/releases)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/rfjakob/earlyoom.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/rfjakob/earlyoom/alerts/)
