@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
     meminfo_t m = parse_meminfo();
 
     int c;
-    const char* short_opt = "m:s:M:S:kingN:dvr:ph";
+    const char* short_opt = "m:s:M:S:kina:gN:dvr:ph";
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
     double mem_term_kib = 0, mem_kill_kib = 0, swap_term_kib = 0, swap_kill_kib = 0;
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
-        float report_interval_f = 0;
+        float interval_f = 0;
         term_kill_tuple_t tuple;
 
         switch (c) {
@@ -172,6 +172,13 @@ int main(int argc, char* argv[])
             args.notify = true;
             fprintf(stderr, "Notifying through D-Bus\n");
             break;
+        case 'a':
+            interval_f = strtof(optarg, NULL);
+            if (interval_f < 0) {
+                fatal(14, "-a: invalid interval '%s'\n", optarg);
+            }
+            args.sigterm_delay_ms = (int)(interval_f * 1000);
+            break;
         case 'g':
             args.kill_process_group = true;
             break;
@@ -186,11 +193,11 @@ int main(int argc, char* argv[])
             // The version has already been printed above
             exit(0);
         case 'r':
-            report_interval_f = strtof(optarg, NULL);
-            if (report_interval_f < 0) {
+            interval_f = strtof(optarg, NULL);
+            if (interval_f < 0) {
                 fatal(14, "-r: invalid interval '%s'\n", optarg);
             }
-            args.report_interval_ms = (int)(report_interval_f * 1000);
+            args.report_interval_ms = (int)(interval_f * 1000);
             break;
         case 'p':
             set_my_priority = 1;
@@ -220,6 +227,9 @@ int main(int argc, char* argv[])
                 "  -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB\n"
                 "  -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB\n"
                 "  -n                        enable d-bus notifications\n"
+                "  -a DELAY_TIME             send notification and wait at least DELAY_TIME seconds\n"
+                "                            before issuing SIGTERM unless situation improves;\n"
+                "                            -n has to be explicitly enabled\n"
                 "  -g                        kill all processes within a process group\n"
                 "  -d                        enable debugging messages\n"
                 "  -v                        print version information and exit\n"
@@ -239,6 +249,9 @@ int main(int argc, char* argv[])
         }
     } /* while getopt */
 
+    if (args.sigterm_delay_ms && !args.notify) {
+        fatal(1, "-a requires -n to be explicitly enabled\n");
+    }
     if (optind < argc) {
         fatal(13, "extra argument not understood: '%s'\n", argv[optind]);
     }
@@ -409,6 +422,11 @@ static void poll_loop(const poll_loop_args_t* args)
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.
     int report_countdown_ms = 0;
+    // SIGTERM countdown is happening when
+    // sigterm_countdown_ms < args->sigterm_delay_ms
+    int sigterm_countdown_ms = args->sigterm_delay_ms,
+        no_sigterm_streak_ms = 0, last_sig = 0;
+    procinfo_t victim;
 
     while (1) {
         meminfo_t m = parse_meminfo();
@@ -417,25 +435,47 @@ static void poll_loop(const poll_loop_args_t* args)
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGKILL limits: mem " PRIPCT ", swap " PRIPCT "\n",
                 args->mem_kill_percent, args->swap_kill_percent);
-        } else if (sig == SIGTERM) {
+        } else if (sig == SIGTERM && sigterm_countdown_ms == args->sigterm_delay_ms) {
             print_mem_stats(warn, m);
             warn("low memory! at or below SIGTERM limits: mem " PRIPCT ", swap " PRIPCT "\n",
                 args->mem_term_percent, args->swap_term_percent);
+
+            if(args->sigterm_delay_ms) {
+                // kickstart the countdown
+                victim = find_largest_process(args);
+                notify("earlyoom",
+                       "Low memory! Will send SIGTERM, likely to %s (%d), "
+                       "in %g or more seconds unless situation improves",
+                       victim.name, victim.pid,
+                       (double)args->sigterm_delay_ms / 1000);
+                sigterm_countdown_ms -= 1;
+            }
         }
-        if (sig) {
-            procinfo_t victim = find_largest_process(args);
-            /* The run time of find_largest_process is proportional to the number
-             * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").
-             * This is long enough that the situation may have changed in the meantime,
-             * so we double-check if we still need to kill anything.
-             * The run time of parse_meminfo is only 6us on my box and independent of the number
-             * of processes (try "make bench").
-             */
-            m = parse_meminfo();
-            if (lowmem_sig(args, &m) == 0) {
-                warn("memory situation has recovered while selecting victim\n");
+
+        if (sig && (sig != SIGTERM || sigterm_countdown_ms <= 0)) {
+            victim = find_largest_process(args);
+
+            if (!args->sigterm_delay_ms) {
+                /* The run time of find_largest_process is proportional to the number
+                 * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").
+                 * This is long enough that the situation may have changed in the meantime,
+                 * so we double-check if we still need to kill anything.
+                 * The run time of parse_meminfo is only 6us on my box and independent of the number
+                 * of processes (try "make bench").
+                 */
+                m = parse_meminfo();
+                if (lowmem_sig(args, &m) == 0) {
+                    warn("memory situation has recovered while selecting victim\n");
+                } else {
+                    kill_process(args, sig, victim);
+                }
             } else {
-                kill_process(args, sig, victim);
+                // given that SIGTERM window can be passed rather quickly,
+                // make one small attempt to terminate process gracefully;
+                // kill_wait() will quickly escalate to SIGKILL anyway
+                kill_process(args, SIGTERM, victim);
+                sigterm_countdown_ms = args->sigterm_delay_ms;
+                no_sigterm_streak_ms = 0;
             }
         } else if (args->report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(printf, m);
@@ -446,5 +486,26 @@ static void poll_loop(const poll_loop_args_t* args)
         struct timespec req = { .tv_sec = (time_t)(sleep_ms / 1000), .tv_nsec = (sleep_ms % 1000) * 1000000 };
         nanosleep(&req, NULL);
         report_countdown_ms -= (int)sleep_ms;
+        // if counting down
+        if (sigterm_countdown_ms < args->sigterm_delay_ms) {
+            if (sig == SIGTERM) {
+                sigterm_countdown_ms -= (int)sleep_ms;
+            }
+            if (sig == 0 && last_sig == 0) {
+                no_sigterm_streak_ms += (int)sleep_ms;
+
+                if (no_sigterm_streak_ms >= args->sigterm_delay_ms) {
+                    notify("earlyoom",
+                           "The memory situation has improved, SIGTERM "
+                           "cancelled. (mem " PRIPCT ", swap " PRIPCT ")",
+                           m.MemAvailablePercent, m.SwapFreePercent);
+                    sigterm_countdown_ms = args->sigterm_delay_ms;
+                    no_sigterm_streak_ms = 0;
+                }
+            } else {
+                no_sigterm_streak_ms = 0;
+            }
+            last_sig = sig;
+        }
     }
 }

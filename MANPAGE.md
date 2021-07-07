@@ -108,6 +108,18 @@ To actually see the notifications in your GUI session, you need to have
 [systembus-notify](https://github.com/rfjakob/systembus-notify)
 running as your user.
 
+#### -a DELAY_TIME
+When SIGTERM conditions are met, send a notification to the user and
+wait at least DELAY_TIME seconds before issuing SIGTERM, unless situation
+improves. SIGTERM is cancelled and a separate notification is sent
+when SIGTERM conditions have not been met, continuously, for at least
+DELAY_TIME seconds. Countdown updates only when SIGTERM conditions
+are satisfied. This provides a chance for a user to gracefully close
+an important application and/or consciously select and close
+the least needed application.
+
+`-n` must be explicitly enabled.
+
 #### -g
 Kill all processes that have same process group id (PGID) as the process
 with excessive memory usage.

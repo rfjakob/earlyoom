@@ -40,27 +40,6 @@ static int isnumeric(char* str)
     }
 }
 
-static void notify(const char* summary, const char* body)
-{
-    int pid = fork();
-    if (pid > 0) {
-        // parent
-        return;
-    }
-    char summary2[1024] = { 0 };
-    snprintf(summary2, sizeof(summary2), "string:%s", summary);
-    char body2[1024] = "string:";
-    if (body != NULL) {
-        snprintf(body2, sizeof(body2), "string:%s", body);
-    }
-    // Complete command line looks like this:
-    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
-    execl("/usr/bin/dbus-send", "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
-        summary2, body2, NULL);
-    warn("notify: exec failed: %s\n", strerror(errno));
-    exit(1);
-}
-
 /*
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
@@ -310,7 +289,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
         snprintf(notif_args, sizeof(notif_args),
             "Low memory! Killing process %d %s", victim.pid, victim.name);
         if (args->notify) {
-            notify("earlyoom", notif_args);
+            notify("earlyoom", "%s", notif_args);
         }
     }
 

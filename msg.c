@@ -69,6 +69,32 @@ int debug(const char* fmt, ...)
     return 0;
 }
 
+void notify(const char* summary_text, const char* fmt, ...)
+{
+    int pid = fork();
+    if (pid > 0) {
+        // parent
+        return;
+    }
+
+    const size_t stringc_len = strlen("string:");
+
+    char summary[1024] = { 0 };
+    snprintf(summary, sizeof(summary), "string:%s", summary_text);
+    char body[1024] = "string:";
+    va_list vl;
+    va_start(vl, fmt);
+    vsnprintf(body + stringc_len, sizeof(body) - stringc_len, fmt, vl);
+    va_end(vl);
+
+    // Complete command line looks like this:
+    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
+    execl("/usr/bin/dbus-send", "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
+        summary, body, NULL);
+    warn("notify: exec failed: %s\n", strerror(errno));
+    exit(1);
+}
+
 // Parse a floating point value, check conversion errors and allowed range.
 // Guaranteed value range: 0 <= val <= upper_limit.
 // An error is indicated by storing an error message in tuple->err and returning 0.
