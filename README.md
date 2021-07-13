@@ -195,6 +195,13 @@ To actually see the notifications in your GUI session, you need to have
 [systembus-notify](https://github.com/rfjakob/systembus-notify)
 running as your user.
 
+Additionally, earlyoom can execute a script for each process killed, providing
+information about the process via the `EARLYOOM_PID`, `EARLYOOM_UID` and
+`EARLYOOM_NAME` environment variables. Pass `-N /path/to/script` to enable.
+
+Warning: In case of dryrun mode, the script will be executed in rapid
+succession, ensure you have some sort of rate-limit implemented.
+
 ### Preferred Processes
 
 The command-line flag `--prefer` specifies processes to prefer killing;
