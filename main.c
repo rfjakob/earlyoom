@@ -176,8 +176,7 @@ int main(int argc, char* argv[])
             args.kill_process_group = true;
             break;
         case 'N':
-            args.notify = true;
-            fprintf(stderr, "Notifying through D-Bus, argument '%s' ignored for compatability\n", optarg);
+            args.notify_ext = optarg;
             break;
         case 'd':
             enable_debug = 1;
@@ -220,6 +219,7 @@ int main(int argc, char* argv[])
                 "  -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB\n"
                 "  -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB\n"
                 "  -n                        enable d-bus notifications\n"
+                "  -N                        enable programmatic notifications\n"
                 "  -g                        kill all processes within a process group\n"
                 "  -d                        enable debugging messages\n"
                 "  -v                        print version information and exit\n"

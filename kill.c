@@ -21,6 +21,9 @@
 #define BADNESS_PREFER 300
 #define BADNESS_AVOID -300
 
+// Buffer size for UID/GID/PID string conversion
+#define UID_BUFSIZ 128
+
 static int isnumeric(char* str)
 {
     int i = 0;
@@ -58,6 +61,32 @@ static void notify(const char* summary, const char* body)
     execl("/usr/bin/dbus-send", "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
         summary2, body2, NULL);
     warn("notify: exec failed: %s\n", strerror(errno));
+    exit(1);
+}
+
+static void notify_ext(const char* script, const procinfo_t victim)
+{
+    pid_t pid1 = fork();
+
+    if (pid1 == -1) {
+        warn("fork() returned -1: %s\n", strerror(errno));
+        return;
+    } else if (pid1 != 0) {
+        return;
+    }
+
+    char pid_str[UID_BUFSIZ];
+    char uid_str[UID_BUFSIZ];
+
+    snprintf(pid_str, UID_BUFSIZ, "%d", victim.pid);
+    snprintf(uid_str, UID_BUFSIZ, "%d", victim.uid);
+
+    setenv("EARLYOOM_PID", pid_str, 1);
+    setenv("EARLYOOM_UID", uid_str, 1);
+    setenv("EARLYOOM_NAME", victim.name, 1);
+
+    execlp(script, script, NULL);
+    warn("notify_ext: exec failed: %s\n", strerror(errno));
     exit(1);
 }
 
@@ -311,6 +340,9 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
             "Low memory! Killing process %d %s", victim.pid, victim.name);
         if (args->notify) {
             notify("earlyoom", notif_args);
+        }
+        if (args->notify_ext) {
+            notify_ext(args->notify_ext, victim);
         }
     }
 

@@ -108,6 +108,19 @@ To actually see the notifications in your GUI session, you need to have
 [systembus-notify](https://github.com/rfjakob/systembus-notify)
 running as your user.
 
+#### -N SCRIPT
+Run the given script for each process killed.
+
+Within the script, information about the killed process can be obtained via the
+following environment variables:
+
+    EARLYOOM_PID     Process PID
+    EARLYOOM_NAME    Process name/path
+    EARLYOOM_UID     UID of the user running the process
+
+Warning: In case of dryrun mode, the script will be executed in rapid
+succession, ensure you have some sort of rate-limit implemented.
+
 #### -g
 Kill all processes that have same process group id (PGID) as the process
 with excessive memory usage.
