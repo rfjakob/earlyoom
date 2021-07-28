@@ -69,14 +69,14 @@ static void notify_ext(const char* script, const procinfo_t victim)
     pid_t pid1 = fork();
 
     if (pid1 == -1) {
-        warn("fork() returned -1: %s\n", strerror(errno));
+        warn("notify_ext: fork() returned -1: %s\n", strerror(errno));
         return;
     } else if (pid1 != 0) {
         return;
     }
 
-    char pid_str[UID_BUFSIZ];
-    char uid_str[UID_BUFSIZ];
+    char pid_str[UID_BUFSIZ] = {0};
+    char uid_str[UID_BUFSIZ] = {0};
 
     snprintf(pid_str, UID_BUFSIZ, "%d", victim.pid);
     snprintf(uid_str, UID_BUFSIZ, "%d", victim.uid);
