@@ -23,6 +23,7 @@
 
 // Buffer size for UID/GID/PID string conversion
 #define UID_BUFSIZ 128
+#define NOTIFY_RATELIMIT 1
 
 static int isnumeric(char* str)
 {
@@ -64,8 +65,27 @@ static void notify(const char* summary, const char* body)
     exit(1);
 }
 
-static void notify_ext(const char* script, const procinfo_t victim)
+static void notify_ext(const char* script, const procinfo_t victim, const bool ratelimit)
 {
+    // Dry run can cause the notify function to be called on each poll as
+    // nothing is immediately done to change the situation we don't know how
+    // heavy the notify script is so avoid spamming it
+    static struct timespec prev_notify = {0};
+    if (ratelimit) {
+        struct timespec cur_time;
+        int ret = clock_gettime(CLOCK_MONOTONIC, &cur_time);
+        if (ret == -1) {
+            warn("notify_ext: clock_gettime returned -1\n");
+            return;
+        }
+
+        if (cur_time.tv_sec - prev_notify.tv_sec < NOTIFY_RATELIMIT && prev_notify.tv_sec != 0) {
+            // Too soon
+            return;
+        }
+        prev_notify = cur_time;
+    }
+
     pid_t pid1 = fork();
 
     if (pid1 == -1) {
@@ -342,7 +362,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
             notify("earlyoom", notif_args);
         }
         if (args->notify_ext) {
-            notify_ext(args->notify_ext, victim);
+            notify_ext(args->notify_ext, victim, args->dryrun);
         }
     }
 
