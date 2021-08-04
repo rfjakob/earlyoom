@@ -23,6 +23,7 @@
 
 // Buffer size for UID/GID/PID string conversion
 #define UID_BUFSIZ 128
+// At most 1 notification per second when --dryrun is active
 #define NOTIFY_RATELIMIT 1
 
 static int isnumeric(char* str)
@@ -65,27 +66,8 @@ static void notify_dbus(const char* summary, const char* body)
     exit(1);
 }
 
-static void notify_ext(const char* script, const procinfo_t victim, const bool ratelimit)
+static void notify_ext(const char* script, const procinfo_t victim)
 {
-    // Dry run can cause the notify function to be called on each poll as
-    // nothing is immediately done to change the situation we don't know how
-    // heavy the notify script is so avoid spamming it
-    static struct timespec prev_notify = {0};
-    if (ratelimit) {
-        struct timespec cur_time;
-        int ret = clock_gettime(CLOCK_MONOTONIC, &cur_time);
-        if (ret == -1) {
-            warn("notify_ext: clock_gettime returned -1\n");
-            return;
-        }
-
-        if (cur_time.tv_sec - prev_notify.tv_sec < NOTIFY_RATELIMIT && prev_notify.tv_sec != 0) {
-            // Too soon
-            return;
-        }
-        prev_notify = cur_time;
-    }
-
     pid_t pid1 = fork();
 
     if (pid1 == -1) {
@@ -112,6 +94,27 @@ static void notify_ext(const char* script, const procinfo_t victim, const bool r
 
 static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t victim)
 {
+    // Dry run can cause the notify function to be called on each poll as
+    // nothing is immediately done to change the situation we don't know how
+    // heavy the notify script is so avoid spamming it
+    if (args->dryrun) {
+        static struct timespec prev_notify = { 0 };
+        struct timespec cur_time = { 0 };
+
+        int ret = clock_gettime(CLOCK_MONOTONIC, &cur_time);
+        if (ret == -1) {
+            warn("%s: clock_gettime failed: %s\n", __func__, strerror(errno));
+            return;
+        }
+        // Ignores nanoseconds, but good enough here
+        if (cur_time.tv_sec - prev_notify.tv_sec < NOTIFY_RATELIMIT) {
+            // Too soon
+            debug("%s: rate limit hit, skipping notifications this time\n", __func__);
+            return;
+        }
+        prev_notify = cur_time;
+    }
+
     if (args->notify) {
         char notif_args[PATH_MAX + 1000];
         snprintf(notif_args, sizeof(notif_args),
@@ -119,7 +122,7 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
         notify_dbus("earlyoom", notif_args);
     }
     if (args->notify_ext) {
-        notify_ext(args->notify_ext, victim, args->dryrun);
+        notify_ext(args->notify_ext, victim);
     }
 }
 
