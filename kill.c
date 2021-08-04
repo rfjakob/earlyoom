@@ -44,7 +44,7 @@ static int isnumeric(char* str)
     }
 }
 
-static void notify(const char* summary, const char* body)
+static void notify_dbus(const char* summary, const char* body)
 {
     int pid = fork();
     if (pid > 0) {
@@ -108,6 +108,19 @@ static void notify_ext(const char* script, const procinfo_t victim, const bool r
     execlp(script, script, NULL);
     warn("notify_ext: exec failed: %s\n", strerror(errno));
     exit(1);
+}
+
+static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t victim)
+{
+    if (args->notify) {
+        char notif_args[PATH_MAX + 1000];
+        snprintf(notif_args, sizeof(notif_args),
+            "Low memory! Killing process %d %s", victim.pid, victim.name);
+        notify_dbus("earlyoom", notif_args);
+    }
+    if (args->notify_ext) {
+        notify_ext(args->notify_ext, victim, args->dryrun);
+    }
 }
 
 /*
@@ -329,7 +342,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
     if (victim.pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         if (args->notify) {
-            notify("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
+            notify_dbus("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
         }
         sleep(1);
         return;
@@ -355,15 +368,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
     // Send the GUI notification AFTER killing a process. This makes it more likely
     // that there is enough memory to spawn the notification helper.
     if (sig != 0) {
-        char notif_args[PATH_MAX + 1000];
-        snprintf(notif_args, sizeof(notif_args),
-            "Low memory! Killing process %d %s", victim.pid, victim.name);
-        if (args->notify) {
-            notify("earlyoom", notif_args);
-        }
-        if (args->notify_ext) {
-            notify_ext(args->notify_ext, victim, args->dryrun);
-        }
+        notify_process_killed(args, victim);
     }
 
     if (sig == 0) {
@@ -373,7 +378,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
     if (res != 0) {
         warn("kill failed: %s\n", strerror(saved_errno));
         if (args->notify) {
-            notify("earlyoom", "Error: Failed to kill process");
+            notify_dbus("earlyoom", "Error: Failed to kill process");
         }
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
