@@ -77,8 +77,8 @@ static void notify_ext(const char* script, const procinfo_t victim)
         return;
     }
 
-    char pid_str[UID_BUFSIZ] = {0};
-    char uid_str[UID_BUFSIZ] = {0};
+    char pid_str[UID_BUFSIZ] = { 0 };
+    char uid_str[UID_BUFSIZ] = { 0 };
 
     snprintf(pid_str, UID_BUFSIZ, "%d", victim.pid);
     snprintf(uid_str, UID_BUFSIZ, "%d", victim.uid);
