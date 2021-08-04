@@ -444,7 +444,7 @@ static void poll_loop(const poll_loop_args_t* args)
         unsigned sleep_ms = sleep_time_ms(args, &m);
         debug("adaptive sleep time: %d ms\n", sleep_ms);
         struct timespec req = { .tv_sec = (time_t)(sleep_ms / 1000), .tv_nsec = (sleep_ms % 1000) * 1000000 };
-        nanosleep(&req, NULL);
+        while(nanosleep(&req, &req) == -1 && errno == EINTR);
         report_countdown_ms -= (int)sleep_ms;
     }
 }
