@@ -185,6 +185,103 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
     return -1;
 }
 
+// is_larger finds out if the process with pid `cur->pid` uses more memory
+// than our current `victim`.
+// In the process, it fills the `cur` structure. It does so lazily, meaning
+// it only fills the fields it needs to make a decision.
+bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur)
+{
+    if (cur->pid <= 1) {
+        // Let's not kill init.
+        return false;
+    }
+
+    {
+        int res = get_oom_score(cur->pid);
+        if (res < 0) {
+            debug("pid %d: error reading oom_score: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+        cur->badness = res;
+    }
+
+    if ((args->prefer_regex || args->avoid_regex)) {
+        int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
+        if (res < 0) {
+            debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+        if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+            cur->badness += BADNESS_PREFER;
+        }
+        if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+            cur->badness += BADNESS_AVOID;
+        }
+    }
+
+    if (cur->badness < victim->badness) {
+        return false;
+    }
+
+    {
+        long long res = get_vm_rss_kib(cur->pid);
+        if (res < 0) {
+            debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
+            return false;
+        }
+        cur->VmRSSkiB = res;
+    }
+
+    if (cur->VmRSSkiB == 0) {
+        // Kernel threads have zero rss
+        return false;
+    }
+    if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
+        return false;
+    }
+
+    // Skip processes with oom_score_adj = -1000, like the
+    // kernel oom killer would.
+    {
+        int res = get_oom_score_adj(cur->pid, &cur->oom_score_adj);
+        if (res < 0) {
+            debug("pid %d: error reading oom_score_adj: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+        if (cur->oom_score_adj == -1000) {
+            return false;
+        }
+    }
+
+    // Looks like we have a new victim. Fill out remaining fields
+    if (strlen(cur->name) == 0) {
+        int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
+        if (res < 0) {
+            debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+    }
+    {
+        int res = get_uid(cur->pid);
+        if (res < 0) {
+            debug("pid %d: error reading uid: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+        cur->uid = res;
+    }
+    return true;
+}
+
+// debug_print_procinfo pretty-prints the process information in `cur`.
+void debug_print_procinfo(const procinfo_t* cur)
+{
+    if (!enable_debug) {
+        return;
+    }
+    debug("pid %5d: badness %3d vm_rss %7lld uid %4d oom_score_adj %4d \"%s\"",
+        cur->pid, cur->badness, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
+}
+
 /*
  * Find the process with the largest oom_score.
  */
@@ -220,104 +317,21 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
             .uid = -1,
             .badness = -1,
             .VmRSSkiB = -1,
+            .oom_score_adj = -1,
+            /* omitted fields are set to zero */
         };
 
-        if (cur.pid <= 1)
-            // Let's not kill init.
-            continue;
+        bool larger = is_larger(args, &victim, &cur);
 
-        debug("pid %5d:", cur.pid);
+        debug_print_procinfo(&cur);
 
-        {
-            int res = get_oom_score(cur.pid);
-            if (res < 0) {
-                debug(" error reading oom_score: %s\n", strerror(-res));
-                continue;
-            }
-            cur.badness = res;
+        if (larger) {
+            debug(" <--- new victim\n");
+            victim = cur;
+        } else {
+            debug("\n");
         }
-
-        if ((args->prefer_regex || args->avoid_regex)) {
-            int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
-            if (res < 0) {
-                debug(" error reading process name: %s\n", strerror(-res));
-                continue;
-            }
-            if (args->prefer_regex && regexec(args->prefer_regex, cur.name, (size_t)0, NULL, 0) == 0) {
-                cur.badness += BADNESS_PREFER;
-            }
-            if (args->avoid_regex && regexec(args->avoid_regex, cur.name, (size_t)0, NULL, 0) == 0) {
-                cur.badness += BADNESS_AVOID;
-            }
-        }
-
-        debug(" badness %3d", cur.badness);
-
-        if (cur.badness < victim.badness) {
-            // skip "type 1", encoded as 1 space
-            debug(" \n");
-            continue;
-        }
-
-        {
-            long long res = get_vm_rss_kib(cur.pid);
-            if (res < 0) {
-                debug(" error reading rss: %s\n", strerror((int)-res));
-                continue;
-            }
-            cur.VmRSSkiB = res;
-        }
-        debug(" vm_rss %7llu", cur.VmRSSkiB);
-        if (cur.VmRSSkiB == 0) {
-            // Kernel threads have zero rss
-            // skip "type 2", encoded as 2 spaces
-            debug("  \n");
-            continue;
-        }
-        if (cur.badness == victim.badness && cur.VmRSSkiB <= victim.VmRSSkiB) {
-            // skip "type 3", encoded as 3 spaces
-            debug("   \n");
-            continue;
-        }
-
-        // Skip processes with oom_score_adj = -1000, like the
-        // kernel oom killer would.
-        int oom_score_adj = 0;
-        {
-            int res = get_oom_score_adj(cur.pid, &oom_score_adj);
-            if (res < 0) {
-                debug(" error reading oom_score_adj: %s\n", strerror(-res));
-                continue;
-            }
-            if (oom_score_adj == -1000) {
-                // skip "type 4", encoded as 3 spaces
-                debug("    \n");
-                continue;
-            }
-        }
-
-        // Fill out remaining fields
-        if (strlen(cur.name) == 0) {
-            int res = get_comm(cur.pid, cur.name, sizeof(cur.name));
-            if (res < 0) {
-                debug(" error reading process name: %s\n", strerror(-res));
-                continue;
-            }
-        }
-        {
-            int res = get_uid(cur.pid);
-            if (res < 0) {
-                debug(" error reading uid: %s\n", strerror(-res));
-                continue;
-            }
-            cur.uid = res;
-        }
-
-        // Save new victim
-        victim = cur;
-        debug(" uid %4d oom_score_adj %4d \"%s\" <--- new victim\n", victim.uid, oom_score_adj, victim.name);
-
-    } // end of while(1) loop
+    }
     closedir(procdir);
 
     if (enable_debug) {
