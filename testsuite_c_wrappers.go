@@ -9,6 +9,7 @@ import (
 // #include "meminfo.h"
 // #include "kill.h"
 // #include "msg.h"
+// #include "globals.h"
 import "C"
 
 func parse_term_kill_tuple(optarg string, upper_limit int) (error, float64, float64) {
@@ -67,4 +68,9 @@ func get_comm(pid int) (int, string) {
 	cstr := C.CString(strings.Repeat("\000", 256))
 	res := C.get_comm(C.int(pid), cstr, 256)
 	return int(res), C.GoString(cstr)
+}
+
+func procdir_path(str string) {
+	cstr := C.CString(str)
+	C.procdir_path = cstr
 }
