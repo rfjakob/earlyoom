@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 
     fprintf(stderr, "earlyoom " VERSION "\n");
 
-    if (chdir("/proc") != 0) {
+    if (chdir(procdir_path) != 0) {
         fatal(4, "Could not cd to /proc: %s", strerror(errno));
     }
 
@@ -337,7 +337,7 @@ static int set_oom_score_adj(int oom_score_adj)
     char buf[256];
     pid_t pid = getpid();
 
-    snprintf(buf, sizeof(buf), "/proc/%d/oom_score_adj", pid);
+    snprintf(buf, sizeof(buf), "%s/%d/oom_score_adj", procdir_path, pid);
     FILE* f = fopen(buf, "w");
     if (f == NULL) {
         return -1;

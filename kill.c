@@ -287,7 +287,7 @@ void debug_print_procinfo(const procinfo_t* cur)
  */
 procinfo_t find_largest_process(const poll_loop_args_t* args)
 {
-    DIR* procdir = opendir("/proc");
+    DIR* procdir = opendir(procdir_path);
     if (procdir == NULL) {
         fatal(5, "%s: could not open /proc: %s", __func__, strerror(errno));
     }

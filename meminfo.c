@@ -74,8 +74,11 @@ meminfo_t parse_meminfo()
     char buf[8192] = { 0 };
     meminfo_t m = { 0 };
 
-    if (fd == NULL)
-        fd = fopen("/proc/meminfo", "r");
+    if (fd == NULL) {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "%s/%s", procdir_path, "meminfo");
+        fd = fopen(buf, "r");
+    }
     if (fd == NULL) {
         fatal(102, "could not open /proc/meminfo: %s\n", strerror(errno));
     }
@@ -135,7 +138,7 @@ bool is_alive(int pid)
 
     char buf[256];
     // Read /proc/[pid]/stat
-    snprintf(buf, sizeof(buf), "/proc/%d/stat", pid);
+    snprintf(buf, sizeof(buf), "%s/%d/stat", procdir_path, pid);
     FILE* f = fopen(buf, "r");
     if (f == NULL) {
         // Process is gone - good.
@@ -167,7 +170,7 @@ bool is_alive(int pid)
 static int read_proc_file_integer(const int pid, const char* name, int* out)
 {
     char path[PATH_LEN] = { 0 };
-    snprintf(path, sizeof(path), "/proc/%d/%s", pid, name);
+    snprintf(path, sizeof(path), "%s/%d/%s", procdir_path, pid, name);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
         return -errno;
@@ -210,7 +213,7 @@ int get_oom_score_adj(const int pid, int* out)
 int get_comm(int pid, char* out, size_t outlen)
 {
     char path[PATH_LEN] = { 0 };
-    snprintf(path, sizeof(path), "/proc/%d/comm", pid);
+    snprintf(path, sizeof(path), "%s/%d/comm", procdir_path, pid);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
         return -errno;
@@ -256,7 +259,7 @@ long long get_vm_rss_kib(int pid)
     char path[PATH_LEN] = { 0 };
 
     // Read VmRSS from /proc/[pid]/statm (in pages)
-    snprintf(path, sizeof(path), "/proc/%d/statm", pid);
+    snprintf(path, sizeof(path), "%s/%d/statm", procdir_path, pid);
     FILE* f = fopen(path, "r");
     if (f == NULL) {
         return -errno;
