@@ -214,7 +214,7 @@ earlyoom --avoid '^(foo|bar)$'
 ```
 
 The regex is matched against the basename of the process as shown
-in `/proc/PID/stat`.
+in `/proc/PID/comm`.
 
 Configuration file
 ------------------
