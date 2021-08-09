@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
     debug("dry-running kill_largest_process()...\n");
     {
         procinfo_t victim = find_largest_process(&args);
-        kill_process(&args, 0, victim);
+        kill_process(&args, 0, &victim);
     }
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
@@ -435,7 +435,7 @@ static void poll_loop(const poll_loop_args_t* args)
             if (lowmem_sig(args, &m) == 0) {
                 warn("memory situation has recovered while selecting victim\n");
             } else {
-                kill_process(args, sig, victim);
+                kill_process(args, sig, &victim);
             }
         } else if (args->report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(printf, m);

@@ -65,7 +65,7 @@ static void notify_dbus(const char* summary, const char* body)
     exit(1);
 }
 
-static void notify_ext(const char* script, const procinfo_t victim)
+static void notify_ext(const char* script, const procinfo_t* victim)
 {
     pid_t pid1 = fork();
 
@@ -79,19 +79,19 @@ static void notify_ext(const char* script, const procinfo_t victim)
     char pid_str[UID_BUFSIZ] = { 0 };
     char uid_str[UID_BUFSIZ] = { 0 };
 
-    snprintf(pid_str, UID_BUFSIZ, "%d", victim.pid);
-    snprintf(uid_str, UID_BUFSIZ, "%d", victim.uid);
+    snprintf(pid_str, UID_BUFSIZ, "%d", victim->pid);
+    snprintf(uid_str, UID_BUFSIZ, "%d", victim->uid);
 
     setenv("EARLYOOM_PID", pid_str, 1);
     setenv("EARLYOOM_UID", uid_str, 1);
-    setenv("EARLYOOM_NAME", victim.name, 1);
+    setenv("EARLYOOM_NAME", victim->name, 1);
 
     execlp(script, script, NULL);
     warn("notify_ext: exec failed: %s\n", strerror(errno));
     exit(1);
 }
 
-static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t victim)
+static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t *victim)
 {
     // Dry run can cause the notify function to be called on each poll as
     // nothing is immediately done to change the situation we don't know how
@@ -117,7 +117,7 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     if (args->notify) {
         char notif_args[PATH_MAX + 1000];
         snprintf(notif_args, sizeof(notif_args),
-            "Low memory! Killing process %d %s", victim.pid, victim.name);
+            "Low memory! Killing process %d %s", victim->pid, victim->name);
         notify_dbus("earlyoom", notif_args);
     }
     if (args->notify_ext) {
@@ -352,9 +352,9 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
  * Kill the victim process, wait for it to exit, send a gui notification
  * (if enabled).
  */
-void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim)
+void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim)
 {
-    if (victim.pid <= 0) {
+    if (victim->pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         if (args->notify) {
             notify_dbus("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
@@ -374,10 +374,10 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t victim
     // sig == 0 is used as a self-test during startup. Don't notifiy the user.
     if (sig != 0 || enable_debug) {
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB\n",
-            sig_name, victim.pid, victim.uid, victim.name, victim.badness, victim.VmRSSkiB / 1024);
+            sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
     }
 
-    int res = kill_wait(args, victim.pid, sig);
+    int res = kill_wait(args, victim->pid, sig);
     int saved_errno = errno;
 
     // Send the GUI notification AFTER killing a process. This makes it more likely

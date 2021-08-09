@@ -46,7 +46,7 @@ func kill_process() {
 	var args C.poll_loop_args_t
 	var victim C.procinfo_t
 	victim.pid = 1
-	C.kill_process(&args, 0, victim)
+	C.kill_process(&args, 0, &victim)
 }
 
 func get_oom_score(pid int) int {
