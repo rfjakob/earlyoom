@@ -85,7 +85,7 @@ func TestIsAlive(t *testing.T) {
 }
 
 func TestIsAliveMock(t *testing.T) {
-	mockProcdir, err := os.MkdirTemp("", t.Name())
+	mockProcdir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
