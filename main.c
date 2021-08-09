@@ -63,6 +63,17 @@ void handle_sigchld(int sig)
     waitpid(-1, NULL, WNOHANG);
 }
 
+// Dry-run oom kill to make sure that
+// (1) it works
+// (2) the stack grows to maximum size before calling mlockall()
+static void startup_selftests(const poll_loop_args_t* args) {
+    {
+        debug("%s: dry-running oom kill...\n", __func__);
+        procinfo_t victim = find_largest_process(args);
+        kill_process(args, 0, &victim);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
@@ -308,14 +319,8 @@ int main(int argc, char* argv[])
     fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
         args.mem_kill_percent, args.swap_kill_percent);
 
-    /* Dry-run oom kill to make sure stack grows to maximum size before
-     * calling mlockall()
-     */
-    debug("dry-running kill_largest_process()...\n");
-    {
-        procinfo_t victim = find_largest_process(&args);
-        kill_process(&args, 0, &victim);
-    }
+
+    startup_selftests(&args);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
