@@ -135,7 +135,6 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         warn("dryrun, not actually sending any signal\n");
         return 0;
     }
-    meminfo_t m = { 0 };
     const unsigned poll_ms = 100;
     if (args->kill_process_group) {
         int res = getpgid(pid);
@@ -158,7 +157,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         // We have sent SIGTERM but now have dropped below SIGKILL limits.
         // Escalate to SIGKILL.
         if (sig != SIGKILL) {
-            m = parse_meminfo();
+            meminfo_t m = parse_meminfo();
             print_mem_stats(debug, m);
             if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
@@ -170,7 +169,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
                 }
             }
         } else if (enable_debug) {
-            m = parse_meminfo();
+            meminfo_t m = parse_meminfo();
             print_mem_stats(printf, m);
         }
         if (!is_alive(pid)) {

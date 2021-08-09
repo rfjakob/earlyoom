@@ -27,11 +27,10 @@ int main()
     long bs = page_size * NUM_PAGES;
     long cnt = 0, last_sum = 0;
     struct timeval tv1;
-    char* p;
     signal(SIGTERM, handle_sigterm);
     gettimeofday(&tv1, NULL);
     while (1) {
-        p = malloc(bs);
+        char* p = malloc(bs);
         if (!p) {
             printf("malloc failed\n");
             continue;
