@@ -75,7 +75,7 @@ meminfo_t parse_meminfo()
     meminfo_t m = { 0 };
 
     if (fd == NULL) {
-        char buf[256];
+        char buf[PATH_LEN] = { 0 };
         snprintf(buf, sizeof(buf), "%s/%s", procdir_path, "meminfo");
         fd = fopen(buf, "r");
     }
@@ -136,7 +136,7 @@ bool is_alive(int pid)
         return false;
     }
 
-    char buf[256];
+    char buf[PATH_LEN] = { 0 };
     // Read /proc/[pid]/stat
     snprintf(buf, sizeof(buf), "%s/%d/stat", procdir_path, pid);
     FILE* f = fopen(buf, "r");

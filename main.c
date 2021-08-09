@@ -334,7 +334,7 @@ int main(int argc, char* argv[])
 // Returns errno (success = 0)
 static int set_oom_score_adj(int oom_score_adj)
 {
-    char buf[256];
+    char buf[PATH_LEN] = { 0 };
     pid_t pid = getpid();
 
     snprintf(buf, sizeof(buf), "%s/%d/oom_score_adj", procdir_path, pid);
