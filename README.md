@@ -235,8 +235,7 @@ Please note that this configuration file has no effect on earlyoom instances out
 Command line options
 --------------------
 ```
-./earlyoom -h
-earlyoom v1.7-preview
+earlyoom v1.6.2-34-g75a8852-dirty
 Usage: ./earlyoom [OPTION]...
 
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
@@ -250,6 +249,7 @@ Usage: ./earlyoom [OPTION]...
   -M SIZE[,KILL_SIZE]       set available memory minimum to SIZE KiB
   -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB
   -n                        enable d-bus notifications
+  -N /PATH/TO/SCRIPT        call script after oom kill
   -g                        kill all processes within a process group
   -d                        enable debugging messages
   -v                        print version information and exit
@@ -261,7 +261,6 @@ Usage: ./earlyoom [OPTION]...
   --avoid REGEX             avoid killing processes matching REGEX
   --dryrun                  dry run (do not kill any processes)
   -h, --help                this help text
-
 ```
 
 See the [man page](MANPAGE.md) for details.
