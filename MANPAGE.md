@@ -108,18 +108,19 @@ To actually see the notifications in your GUI session, you need to have
 [systembus-notify](https://github.com/rfjakob/systembus-notify)
 running as your user.
 
-#### -N SCRIPT
-Run the given script for each process killed.
+#### -N /PATH/TO/SCRIPT
+Run the given script for each process killed. Must be an absolute path.
 
 Within the script, information about the killed process can be obtained via the
 following environment variables:
 
     EARLYOOM_PID     Process PID
-    EARLYOOM_NAME    Process name/path
+    EARLYOOM_NAME    Process name truncated to 16 bytes (as reported in /proc/PID/comm)
     EARLYOOM_UID     UID of the user running the process
 
-Warning: In case of dryrun mode, the script will be executed in rapid
-succession, ensure you have some sort of rate-limit implemented.
+WARNING: `EARLYOOM_NAME` can contain spaces, newlines, special characters
+and is controlled by the user, or it can be empty! Make sure that your
+notification script can handle that!
 
 #### -g
 Kill all processes that have same process group id (PGID) as the process

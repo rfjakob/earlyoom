@@ -64,13 +64,22 @@ void handle_sigchld(int sig)
 }
 
 // Dry-run oom kill to make sure that
-// (1) it works
+// (1) it works (meaning /proc is accessible)
 // (2) the stack grows to maximum size before calling mlockall()
-static void startup_selftests(const poll_loop_args_t* args) {
+static void startup_selftests(const poll_loop_args_t* args)
+{
     {
         debug("%s: dry-running oom kill...\n", __func__);
         procinfo_t victim = find_largest_process(args);
         kill_process(args, 0, &victim);
+    }
+    if (args->notify_ext) {
+        if (args->notify_ext[0] != '/') {
+            warn("%s: -N: notify script '%s' is not an absolute path\n", __func__, args->notify_ext);
+        }
+        if (access(args->notify_ext, X_OK)) {
+            warn("%s: -N: notify script '%s' is not executable: %s\n", __func__, args->notify_ext, strerror(errno));
+        }
     }
 }
 
@@ -318,7 +327,6 @@ int main(int argc, char* argv[])
         args.mem_term_percent, args.swap_term_percent);
     fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
         args.mem_kill_percent, args.swap_kill_percent);
-
 
     startup_selftests(&args);
 

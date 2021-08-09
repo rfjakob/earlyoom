@@ -61,7 +61,7 @@ static void notify_dbus(const char* summary, const char* body)
     // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
     execl("/usr/bin/dbus-send", "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
         summary2, body2, NULL);
-    warn("notify: exec failed: %s\n", strerror(errno));
+    warn("%s: exec failed: %s\n", __func__, strerror(errno));
     exit(1);
 }
 
@@ -86,12 +86,12 @@ static void notify_ext(const char* script, const procinfo_t* victim)
     setenv("EARLYOOM_UID", uid_str, 1);
     setenv("EARLYOOM_NAME", victim->name, 1);
 
-    execlp(script, script, NULL);
-    warn("notify_ext: exec failed: %s\n", strerror(errno));
+    execl(script, script, NULL);
+    warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
     exit(1);
 }
 
-static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t *victim)
+static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t* victim)
 {
     // Dry run can cause the notify function to be called on each poll as
     // nothing is immediately done to change the situation we don't know how
