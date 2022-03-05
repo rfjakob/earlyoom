@@ -274,10 +274,13 @@ accept
 
 Changelog
 ---------
-* vNEXT
+* v1.7, 2022-03-05
+  * Add `-N` flag to run a script every time a process is killed ([commit](https://github.com/rfjakob/earlyoom/commit/afe03606f077a1a17e6fbc238400b3ce7a9ef2be),
+    [man page section](https://github.com/rfjakob/earlyoom/blob/master/MANPAGE.md#-n-pathtoscript))
   * Add `-g` flag to kill whole process group ([#247](https://github.com/rfjakob/earlyoom/pull/247))
   * Remove `-i` flag (ignored for compatibility), it does
     not work properly on Linux kernels 5.9+ ([#234](https://github.com/rfjakob/earlyoom/issues/234))
+  * Hardening: Drop ambient capabilities on startup ([#234](https://github.com/rfjakob/earlyoom/pull/228))
 
 * v1.6.2, 2020-10-14
   * Double-check memory situation before killing victim ([commit](https://github.com/rfjakob/earlyoom/commit/e34e0fcec5d9f60eb19a48a3ec2bab175818fdd8))
