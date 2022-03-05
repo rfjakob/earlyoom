@@ -66,7 +66,7 @@ void handle_sigchld(int sig)
 // Dry-run oom kill to make sure that
 // (1) it works (meaning /proc is accessible)
 // (2) the stack grows to maximum size before calling mlockall()
-static void startup_selftests(const poll_loop_args_t* args)
+static void startup_selftests(poll_loop_args_t* args)
 {
     {
         debug("%s: dry-running oom kill...\n", __func__);
@@ -75,9 +75,9 @@ static void startup_selftests(const poll_loop_args_t* args)
     }
     if (args->notify_ext) {
         if (args->notify_ext[0] != '/') {
-            warn("%s: -N: notify script '%s' is not an absolute path\n", __func__, args->notify_ext);
-        }
-        if (access(args->notify_ext, X_OK)) {
+            warn("%s: -N: notify script '%s' is not an absolute path, disabling -N\n", __func__, args->notify_ext);
+            args->notify_ext = NULL;
+        } else if (access(args->notify_ext, X_OK)) {
             warn("%s: -N: notify script '%s' is not executable: %s\n", __func__, args->notify_ext, strerror(errno));
         }
     }
