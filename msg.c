@@ -10,14 +10,32 @@
 #include "globals.h"
 #include "msg.h"
 
-// color_log writed to `f`, prefixing the `color` code if `f` is a tty.
+// color_log writes to `f`, prefixing the `color` code if `f` is a tty.
 static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
 {
-    char* reset = "\033[0m";
-    if (!isatty(fileno(f))) {
+    // Find out (and cache) if we should use color
+    static int stdout_is_tty = -1;
+    static int stderr_is_tty = -1;
+    bool is_tty = false;
+
+    if (fileno(f) == fileno(stdout)) {
+        if (stdout_is_tty == -1) {
+            stdout_is_tty = isatty(fileno(stdout));
+        }
+        is_tty = stdout_is_tty;
+    } else if (fileno(f) == fileno(stderr)) {
+        if (stderr_is_tty == -1) {
+            stderr_is_tty = isatty(fileno(stderr));
+        }
+        is_tty = stderr_is_tty;
+    }
+    // fds other than stdout and stderr never get color
+    const char* reset = "\033[0m";
+    if (!is_tty) {
         color = "";
         reset = "";
     }
+
     fputs(color, f);
     vfprintf(f, fmt, vl);
     fputs(reset, f);
