@@ -5,13 +5,14 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h> /* Definition of SYS_* constants */
 #include <time.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include "globals.h"
 #include "kill.h"
@@ -126,26 +127,40 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
+int send_signal(int pidfd_or_negative_pgid, int sig)
+{
+    if (pidfd_or_negative_pgid >= 0) {
+        return (int)syscall(SYS_pidfd_send_signal, pidfd_or_negative_pgid, sig, NULL, 0);
+    } else {
+        return kill(pidfd_or_negative_pgid, sig);
+    }
+}
+
 /*
- * Send the selected signal to "pid" and wait for the process to exit
+ * Send the selected signal to `victim` and wait for it to exit
  * (max 10 seconds)
  */
-int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
+int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
 {
     if (args->dryrun && sig != 0) {
         warn("dryrun, not actually sending any signal\n");
         return 0;
     }
+    int pidfd_or_negative_pgid = victim->pidfd;
+    int pid_or_negative_pgid = victim->pid;
     const unsigned poll_ms = 100;
     if (args->kill_process_group) {
-        int res = getpgid(pid);
+        int res = getpgid(victim->pid);
         if (res < 0) {
             return res;
         }
-        pid = -res;
-        warn("killing whole process group %d (-g flag is active)\n", res);
+        pidfd_or_negative_pgid = -res;
+        pid_or_negative_pgid = -res;
+        if (sig != 0) {
+            warn("killing whole process group %d (-g flag is active)\n", res);
+        }
     }
-    int res = kill(pid, sig);
+    int res = send_signal(pidfd_or_negative_pgid, sig);
     if (res != 0) {
         return res;
     }
@@ -153,6 +168,18 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
     if (sig == 0) {
         return 0;
     }
+
+#ifdef __NR_process_mrelease
+    if (pidfd_or_negative_pgid >= 0) {
+        int res = (int)syscall(__NR_process_mrelease, pidfd_or_negative_pgid, 0);
+        if (res != 0) {
+            warn("process_mrelease pidfd=%d failed: %s\n", pidfd_or_negative_pgid, strerror(errno));
+        } else {
+            debug("process_mrelease success\n");
+        }
+    }
+#endif
+
     for (unsigned i = 0; i < 100; i++) {
         float secs = (float)(i * poll_ms) / 1000;
         // We have sent SIGTERM but now have dropped below SIGKILL limits.
@@ -162,7 +189,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             print_mem_stats(debug, m);
             if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
-                res = kill(pid, sig);
+                res = send_signal(pidfd_or_negative_pgid, sig);
                 // kill first, print after
                 warn("escalating to SIGKILL after %.1f seconds\n", secs);
                 if (res != 0) {
@@ -173,7 +200,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             meminfo_t m = parse_meminfo();
             print_mem_stats(printf, m);
         }
-        if (!is_alive(pid)) {
+        if (!is_alive(pid_or_negative_pgid)) {
             warn("process exited after %.1f seconds\n", secs);
             return 0;
         }
@@ -268,6 +295,15 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         cur->uid = res;
     }
+    {
+        int res = (int)syscall(SYS_pidfd_open, cur->pid, 0);
+        if (res < 0) {
+            // can happen if process has already exited
+            debug("pid %d: error opening pidfd: %s\n", cur->pid, strerror(errno));
+            return false;
+        }
+        cur->pidfd = res;
+    }
     return true;
 }
 
@@ -296,7 +332,10 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
         clock_gettime(CLOCK_MONOTONIC, &t0);
     }
 
-    procinfo_t victim = { 0 };
+    procinfo_t victim = {
+        .pidfd = -1,
+        /* omitted fields are set to zero */
+    };
     while (1) {
         errno = 0;
         struct dirent* d = readdir(procdir);
@@ -313,6 +352,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
 
         procinfo_t cur = {
             .pid = (int)strtol(d->d_name, NULL, 10),
+            .pidfd = -1,
             .uid = -1,
             .badness = -1,
             .VmRSSkiB = -1,
@@ -326,6 +366,12 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
 
         if (larger) {
             debug(" <--- new victim\n");
+            if (victim.pidfd >= 0) {
+                int res = close(victim.pidfd);
+                if (res != 0) {
+                    warn("%s: pid %d: error closing pidfd %d: %s\n", __func__, victim.pid, victim.pidfd, strerror(errno));
+                }
+            }
             victim = cur;
         } else {
             debug("\n");
@@ -353,7 +399,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
  * Kill the victim process, wait for it to exit, send a gui notification
  * (if enabled).
  */
-void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim)
+void kill_process(const poll_loop_args_t* args, int sig, procinfo_t* victim)
 {
     if (victim->pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
@@ -378,8 +424,16 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
             sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
     }
 
-    int res = kill_wait(args, victim->pid, sig);
+    int res = kill_wait(args, victim, sig);
     int saved_errno = errno;
+
+    if (victim->pidfd >= 0) {
+        int res = close(victim->pidfd);
+        if (res != 0) {
+            warn("%s: pid %d: error closing pidfd %d: %s\n", __func__, victim->pid, victim->pidfd, strerror(errno));
+        }
+        victim->pidfd = -1;
+    }
 
     // Send the GUI notification AFTER killing a process. This makes it more likely
     // that there is enough memory to spawn the notification helper.

@@ -123,13 +123,13 @@ meminfo_t parse_meminfo()
     return m;
 }
 
-bool is_alive(int pid)
+bool is_alive(int pid_or_negative_pgid)
 {
     // whole process group (-g flag)?
-    if (pid < 0) {
+    if (pid_or_negative_pgid < 0) {
         // signal 0 does nothing, but we do get an error when the process
         // group does not exist.
-        int res = kill(pid, 0);
+        int res = kill(pid_or_negative_pgid, 0);
         if (res == 0) {
             return true;
         }
@@ -138,7 +138,7 @@ bool is_alive(int pid)
 
     char buf[PATH_LEN] = { 0 };
     // Read /proc/[pid]/stat
-    snprintf(buf, sizeof(buf), "%s/%d/stat", procdir_path, pid);
+    snprintf(buf, sizeof(buf), "%s/%d/stat", procdir_path, pid_or_negative_pgid);
     FILE* f = fopen(buf, "r");
     if (f == NULL) {
         // Process is gone - good.
