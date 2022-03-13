@@ -274,6 +274,11 @@ accept
 
 Changelog
 ---------
+
+* vNEXT, in progress
+  * Use `pidfd_open` and `process_mrelease` ([#266](https://github.com/rfjakob/earlyoom/issues/266))
+  * Support `NO_COLOR` (https://no-color.org/)
+
 * v1.7, 2022-03-05
   * Add `-N` flag to run a script every time a process is killed ([commit](https://github.com/rfjakob/earlyoom/commit/afe03606f077a1a17e6fbc238400b3ce7a9ef2be),
     [man page section](https://github.com/rfjakob/earlyoom/blob/master/MANPAGE.md#-n-pathtoscript))
