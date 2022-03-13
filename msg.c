@@ -16,19 +16,31 @@ static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
     // Find out (and cache) if we should use color
     static int stdout_is_tty = -1;
     static int stderr_is_tty = -1;
+    static int no_color = -1;
     bool is_tty = false;
 
-    if (fileno(f) == fileno(stdout)) {
-        if (stdout_is_tty == -1) {
-            stdout_is_tty = isatty(fileno(stdout));
+    if (no_color == -1) {
+        // https://no-color.org/
+        if (getenv("NO_COLOR") != NULL) {
+            no_color = 1;
+        } else {
+            no_color = 0;
         }
-        is_tty = stdout_is_tty;
-    } else if (fileno(f) == fileno(stderr)) {
-        if (stderr_is_tty == -1) {
-            stderr_is_tty = isatty(fileno(stderr));
-        }
-        is_tty = stderr_is_tty;
     }
+    if (no_color == 0) {
+        if (fileno(f) == fileno(stdout)) {
+            if (stdout_is_tty == -1) {
+                stdout_is_tty = isatty(fileno(stdout));
+            }
+            is_tty = stdout_is_tty;
+        } else if (fileno(f) == fileno(stderr)) {
+            if (stderr_is_tty == -1) {
+                stderr_is_tty = isatty(fileno(stderr));
+            }
+            is_tty = stderr_is_tty;
+        }
+    }
+
     // fds other than stdout and stderr never get color
     const char* reset = "\033[0m";
     if (!is_tty) {
