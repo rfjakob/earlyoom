@@ -149,6 +149,15 @@ prefer killing processes matching REGEX (adds 300 to oom_score)
 #### \-\-avoid REGEX
 avoid killing processes matching REGEX (subtracts 300 from oom_score)
 
+#### \-\-ignore REGEX
+ignore processes matching REGEX.
+
+Unlike the \-\-avoid option, this option disables any potential killing of the matched processes
+that might have occurred due to the processes attaining a high oom_score.
+
+Use this option with caution as other processes might be sacrificed in place of the ignored
+processes when earlyoom determines to kill processes.
+
 #### \-\-dryrun
 dry run (do not kill any processes)
 
