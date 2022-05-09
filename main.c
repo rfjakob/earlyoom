@@ -39,6 +39,7 @@ enum {
     LONG_OPT_PREFER = 513,
     LONG_OPT_AVOID,
     LONG_OPT_DRYRUN,
+    LONG_OPT_IGNORE,
 };
 
 static int set_oom_score_adj(int);
@@ -96,8 +97,10 @@ int main(int argc, char* argv[])
     int set_my_priority = 0;
     char* prefer_cmds = NULL;
     char* avoid_cmds = NULL;
+    char* ignore_cmds = NULL;
     regex_t _prefer_regex;
     regex_t _avoid_regex;
+    regex_t _ignore_regex;
 
     /* request line buffering for stdout - otherwise the output
      * may lag behind stderr */
@@ -125,6 +128,7 @@ int main(int argc, char* argv[])
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
+        { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -224,6 +228,9 @@ int main(int argc, char* argv[])
             warn("dryrun mode enabled, will not kill anything\n");
             args.dryrun = 1;
             break;
+        case LONG_OPT_IGNORE:
+            ignore_cmds = optarg;
+            break;
         case 'h':
             fprintf(stderr,
                 "Usage: %s [OPTION]...\n"
@@ -249,6 +256,7 @@ int main(int argc, char* argv[])
                 "                            -100\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
+                "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
@@ -303,6 +311,13 @@ int main(int argc, char* argv[])
             fatal(6, "could not compile regexp '%s'\n", avoid_cmds);
         }
         fprintf(stderr, "Will avoid killing process names that match regex '%s'\n", avoid_cmds);
+    }
+    if (ignore_cmds) {
+        args.ignore_regex = &_ignore_regex;
+        if (regcomp(args.ignore_regex, ignore_cmds, REG_EXTENDED | REG_NOSUB) != 0) {
+            fatal(6, "could not compile regexp '%s'\n", ignore_cmds);
+        }
+        fprintf(stderr, "Will ignore process names that match regex '%s'\n", ignore_cmds);
     }
     if (set_my_priority) {
         bool fail = 0;

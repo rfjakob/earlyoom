@@ -231,7 +231,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         cur->badness = res;
     }
 
-    if ((args->prefer_regex || args->avoid_regex)) {
+    if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
         int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
         if (res < 0) {
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
@@ -242,6 +242,9 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             cur->badness += BADNESS_AVOID;
+        }
+        if (args->ignore_regex && regexec(args->ignore_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+            return false;
         }
     }
 
@@ -388,7 +391,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
     if (victim.pid == getpid()) {
         warn("%s: selected myself (pid %d). Do you use hidpid? See https://github.com/rfjakob/earlyoom/wiki/proc-hidepid\n",
             __func__, victim.pid);
-        // zeroize victim struct
+        // zero victim struct
         victim = (const procinfo_t) { 0 };
     }
 
