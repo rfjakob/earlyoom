@@ -23,6 +23,8 @@ typedef struct {
     /* prefer/avoid killing these processes. NULL = no-op. */
     regex_t* prefer_regex;
     regex_t* avoid_regex;
+    /* will ignore these processes. NULL = no-op. */
+    regex_t* ignore_regex;
     /* memory report interval, in milliseconds */
     int report_interval_ms;
     /* Flag --dryrun was passed */
