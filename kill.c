@@ -127,14 +127,26 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
-int send_signal(int pidfd_or_negative_pgid, int sig)
-{
+#if defined(SYS_pidfd_send_signal) && defined(__NR_process_mrelease) && defined(SYS_pidfd_open)
+#define USE_PROCESS_MRELEASE
+#endif
+
+#ifdef USE_PROCESS_MRELEASE
+
+int send_signal(int pidfd_or_negative_pgid, int sig) {
     if (pidfd_or_negative_pgid >= 0) {
-        return (int)syscall(SYS_pidfd_send_signal, pidfd_or_negative_pgid, sig, NULL, 0);
+        return (int) syscall(SYS_pidfd_send_signal, pidfd_or_negative_pgid, sig, NULL, 0);
     } else {
         return kill(pidfd_or_negative_pgid, sig);
     }
 }
+#else
+
+int send_signal(int pid, int sig) {
+    return kill(pid, sig);
+}
+
+#endif
 
 /*
  * Send the selected signal to `victim` and wait for it to exit
@@ -160,7 +172,14 @@ int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
             warn("killing whole process group %d (-g flag is active)\n", res);
         }
     }
-    int res = send_signal(pidfd_or_negative_pgid, sig);
+    int res;
+    int pid_or_pidfd_or_negative_pgid;
+    if (victim->pidfd >= 0) {
+        pid_or_pidfd_or_negative_pgid = pidfd_or_negative_pgid;
+    } else {
+        pid_or_pidfd_or_negative_pgid = pid_or_negative_pgid;
+    }
+    res = send_signal(pid_or_pidfd_or_negative_pgid, sig);
     if (res != 0) {
         return res;
     }
@@ -189,7 +208,7 @@ int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
             print_mem_stats(debug, m);
             if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
-                res = send_signal(pidfd_or_negative_pgid, sig);
+                res = send_signal(pid_or_pidfd_or_negative_pgid, sig);
                 // kill first, print after
                 warn("escalating to SIGKILL after %.1f seconds\n", secs);
                 if (res != 0) {
@@ -298,6 +317,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         cur->uid = res;
     }
+#ifdef USE_PROCESS_MRELEASE
     {
         int res = (int)syscall(SYS_pidfd_open, cur->pid, 0);
         if (res < 0) {
@@ -307,6 +327,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         cur->pidfd = res;
     }
+#endif
     return true;
 }
 
