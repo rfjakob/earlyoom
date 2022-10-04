@@ -58,12 +58,6 @@ double min(double x, double y)
     return y;
 }
 
-void handle_sigchld(int sig)
-{
-    (void)sig; // unused
-    waitpid(-1, NULL, WNOHANG);
-}
-
 // Dry-run oom kill to make sure that
 // (1) it works (meaning /proc is accessible)
 // (2) the stack grows to maximum size before calling mlockall()
@@ -107,7 +101,7 @@ int main(int argc, char* argv[])
     setlinebuf(stdout);
 
     /* clean up dbus-send zombies */
-    signal(SIGCHLD, handle_sigchld);
+    signal(SIGCHLD, SIG_IGN);
 
     fprintf(stderr, "earlyoom " VERSION "\n");
 
