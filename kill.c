@@ -27,6 +27,13 @@
 // At most 1 notification per second when --dryrun is active
 #define NOTIFY_RATELIMIT 1
 
+#if defined(__NR__pidfd_open) && defined(__NR__pidfd_send_signal)
+#define HAVE_PIDFD
+#define PID_OR_PIDFD(pid, pidfd) (pidfd)
+#else
+#define PID_OR_PIDFD(pid, pidfd) (pid)
+#endif
+
 static bool isnumeric(char* str)
 {
     int i = 0;
@@ -127,14 +134,21 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
+#ifdef HAVE_PIDFD
 int send_signal(int pidfd_or_negative_pgid, int sig)
 {
     if (pidfd_or_negative_pgid >= 0) {
-        return (int)syscall(SYS_pidfd_send_signal, pidfd_or_negative_pgid, sig, NULL, 0);
+        return (int)syscall(__NR_pidfd_send_signal, pidfd_or_negative_pgid, sig, NULL, 0);
     } else {
         return kill(pidfd_or_negative_pgid, sig);
     }
 }
+#else
+int send_signal(int pid_or_negative_pgid, int sig)
+{
+    return kill(pid_or_negative_pgid, sig);
+}
+#endif
 
 /*
  * Send the selected signal to `victim` and wait for it to exit
@@ -146,7 +160,7 @@ int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
         warn("dryrun, not actually sending any signal\n");
         return 0;
     }
-    int pidfd_or_negative_pgid = victim->pidfd;
+    int pidfd_or_negative_pgid = PID_OR_PIDFD(victim->pid, victim->pidfd);
     int pid_or_negative_pgid = victim->pid;
     const unsigned poll_ms = 100;
     if (args->kill_process_group) {
@@ -298,8 +312,10 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         cur->uid = res;
     }
+
+#ifdef HAVE_PIDFD
     {
-        int res = (int)syscall(SYS_pidfd_open, cur->pid, 0);
+        int res = (int)syscall(__NR_pidfd_open, cur->pid, 0);
         if (res < 0) {
             // can happen if process has already exited
             debug("pid %d: error opening pidfd: %s\n", cur->pid, strerror(errno));
@@ -307,6 +323,8 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         cur->pidfd = res;
     }
+#endif
+
     return true;
 }
 
