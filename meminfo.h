@@ -21,7 +21,6 @@ typedef struct {
 
 typedef struct procinfo {
     int pid;
-    int pidfd;
     int uid;
     int badness;
     int oom_score_adj;
