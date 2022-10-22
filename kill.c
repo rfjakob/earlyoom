@@ -127,40 +127,56 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
-int send_signal(int pidfd_or_negative_pgid, int sig)
-{
-    if (pidfd_or_negative_pgid >= 0) {
-        return (int)syscall(SYS_pidfd_send_signal, pidfd_or_negative_pgid, sig, NULL, 0);
+// Call the process_mrelease() syscall to release all the memory of
+// the killed process as quickly as possible - see https://lwn.net/Articles/864184/
+// for details.
+#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
+void mrelease(const pid_t pid) {
+    int pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
+    if (pidfd < 0) {
+        // can happen if process has already exited
+        debug("mrelease: pid %d: error opening pidfd: %s\n", pid, strerror(errno));
+        return;
+    }
+    int res = (int)syscall(__NR_process_mrelease, pidfd, 0);
+    if (res != 0) {
+        warn("mrelease: pid=%d pidfd=%d failed: %s\n", pid, pidfd, strerror(errno));
     } else {
-        return kill(pidfd_or_negative_pgid, sig);
+        debug("mrelease: pid=%d pidfd=%d success\n", pid, pidfd);
     }
 }
+#else
+void mrelease(__attribute__((unused)) const pid_t pid) {
+    debug("mrelease: process_mrelease() and/or pidfd_open() not available\n");
+}
+#ifndef __NR_pidfd_open
+    #warning "__NR_pidfd_open is undefined, cannot use process_mrelease"
+#endif
+#ifndef __NR_process_mrelease
+    #warning "__NR_process_mrelease is undefined, cannot use process_mrelease"
+#endif
+#endif
 
 /*
- * Send the selected signal to `victim` and wait for it to exit
+ * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
  */
-int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
+int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 {
     if (args->dryrun && sig != 0) {
         warn("dryrun, not actually sending any signal\n");
         return 0;
     }
-    int pidfd_or_negative_pgid = victim->pidfd;
-    int pid_or_negative_pgid = victim->pid;
     const unsigned poll_ms = 100;
     if (args->kill_process_group) {
-        int res = getpgid(victim->pid);
+        int res = getpgid(pid);
         if (res < 0) {
             return res;
         }
-        pidfd_or_negative_pgid = -res;
-        pid_or_negative_pgid = -res;
-        if (sig != 0) {
-            warn("killing whole process group %d (-g flag is active)\n", res);
-        }
+        pid = -res;
+        warn("killing whole process group %d (-g flag is active)\n", res);
     }
-    int res = send_signal(pidfd_or_negative_pgid, sig);
+    int res = kill(pid, sig);
     if (res != 0) {
         return res;
     }
@@ -169,16 +185,10 @@ int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
         return 0;
     }
 
-#ifdef __NR_process_mrelease
-    if (pidfd_or_negative_pgid >= 0) {
-        int res = (int)syscall(__NR_process_mrelease, pidfd_or_negative_pgid, 0);
-        if (res != 0) {
-            warn("process_mrelease pidfd=%d failed: %s\n", pidfd_or_negative_pgid, strerror(errno));
-        } else {
-            debug("process_mrelease success\n");
-        }
+    // Can't call process_mrelease on a process group
+    if (pid > 0) {
+        mrelease(pid);
     }
-#endif
 
     for (unsigned i = 0; i < 100; i++) {
         float secs = (float)(i * poll_ms) / 1000;
@@ -189,7 +199,7 @@ int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
             print_mem_stats(debug, m);
             if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
-                res = send_signal(pidfd_or_negative_pgid, sig);
+                res = kill(pid, sig);
                 // kill first, print after
                 warn("escalating to SIGKILL after %.1f seconds\n", secs);
                 if (res != 0) {
@@ -200,7 +210,7 @@ int kill_wait(const poll_loop_args_t* args, const procinfo_t* victim, int sig)
             meminfo_t m = parse_meminfo();
             print_mem_stats(printf, m);
         }
-        if (!is_alive(pid_or_negative_pgid)) {
+        if (!is_alive(pid)) {
             warn("process exited after %.1f seconds\n", secs);
             return 0;
         }
@@ -298,15 +308,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         cur->uid = res;
     }
-    {
-        int res = (int)syscall(SYS_pidfd_open, cur->pid, 0);
-        if (res < 0) {
-            // can happen if process has already exited
-            debug("pid %d: error opening pidfd: %s\n", cur->pid, strerror(errno));
-            return false;
-        }
-        cur->pidfd = res;
-    }
     return true;
 }
 
@@ -335,10 +336,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
         clock_gettime(CLOCK_MONOTONIC, &t0);
     }
 
-    procinfo_t victim = {
-        .pidfd = -1,
-        /* omitted fields are set to zero */
-    };
+    procinfo_t victim = { 0 };
     while (1) {
         errno = 0;
         struct dirent* d = readdir(procdir);
@@ -355,7 +353,6 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
 
         procinfo_t cur = {
             .pid = (int)strtol(d->d_name, NULL, 10),
-            .pidfd = -1,
             .uid = -1,
             .badness = -1,
             .VmRSSkiB = -1,
@@ -369,12 +366,6 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
 
         if (larger) {
             debug(" <--- new victim\n");
-            if (victim.pidfd >= 0) {
-                int res = close(victim.pidfd);
-                if (res != 0) {
-                    warn("%s: pid %d: error closing pidfd %d: %s\n", __func__, victim.pid, victim.pidfd, strerror(errno));
-                }
-            }
             victim = cur;
         } else {
             debug("\n");
@@ -402,7 +393,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
  * Kill the victim process, wait for it to exit, send a gui notification
  * (if enabled).
  */
-void kill_process(const poll_loop_args_t* args, int sig, procinfo_t* victim)
+void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim)
 {
     if (victim->pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
@@ -427,16 +418,8 @@ void kill_process(const poll_loop_args_t* args, int sig, procinfo_t* victim)
             sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
     }
 
-    int res = kill_wait(args, victim, sig);
+    int res = kill_wait(args, victim->pid, sig);
     int saved_errno = errno;
-
-    if (victim->pidfd >= 0) {
-        int res = close(victim->pidfd);
-        if (res != 0) {
-            warn("%s: pid %d: error closing pidfd %d: %s\n", __func__, victim->pid, victim->pidfd, strerror(errno));
-        }
-        victim->pidfd = -1;
-    }
 
     // Send the GUI notification AFTER killing a process. This makes it more likely
     // that there is enough memory to spawn the notification helper.
