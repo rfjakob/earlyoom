@@ -15,12 +15,62 @@ jobs:
     # https://github.com/actions/runner/issues/1188
     - run: ls -l /proc/self/fd
 
+# Build and test in Ubuntu VM provided by Github CI
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0 # Make "git describe" work
-
     - run: sudo apt-get install -qq pandoc cppcheck
-
     - run: make
-
     - run: make test
+    - run: git clean -dxff
+
+# And also build in a number of docker containers of older
+# distributions
+    - name: Build in Debian Bullseye container
+      uses: addnab/docker-run-action@v3
+      with:
+        image: debian:bullseye
+        options: -v ${{ github.workspace }}:/work
+        run: |
+          set -ex
+          apt-get -qq update > /dev/null < /dev/null
+          apt-get -qq install make gcc > /dev/null < /dev/null
+          cd /work
+          make
+    - run: git clean -dxff
+
+    - name: Build and test in Amazon Linux 2
+      uses: addnab/docker-run-action@v3
+      with:
+        image: amazonlinux:2
+        options: -v ${{ github.workspace }}:/work
+        run: |
+          set -ex
+          yum -qy install make gcc
+          cd /work
+          make
+    - run: git clean -dxff
+
+    - name: Build and test in Oracle Linux 7 (similar to RHEL 7, CentOS 7)
+      uses: addnab/docker-run-action@v3
+      with:
+        image: oraclelinux:7
+        options: -v ${{ github.workspace }}:/work
+        run: |
+          set -ex
+          yum -qy install make gcc
+          cd /work
+          make
+    - run: git clean -dxff
+
+    - name: Build and test in Oracle Linux 8 (similar to RHEL 8, CentOS 8)
+      uses: addnab/docker-run-action@v3
+      with:
+        image: oraclelinux:8
+        options: -v ${{ github.workspace }}:/work
+        run: |
+          set -ex
+          dnf -qy install make gcc
+          cd /work
+          make
+    - run: git clean -dxff
