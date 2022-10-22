@@ -316,7 +316,7 @@ void debug_print_procinfo(const procinfo_t* cur)
     if (!enable_debug) {
         return;
     }
-    debug("pid %5d: badness %3d vm_rss %7lld uid %4d oom_score_adj %4d \"%s\"",
+    debug("pid %5d: badness %3d VmRSS %7lld uid %4d oom_score_adj %4d \"%s\"",
         cur->pid, cur->badness, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
 }
 
