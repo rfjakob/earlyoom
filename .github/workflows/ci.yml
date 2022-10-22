@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron:  '0 12 * * *' # Every day noon UTC
+    - cron: '0 23 * * 5' # Every Friday at 23:00
 
 jobs:
   build:
@@ -26,7 +26,7 @@ jobs:
 
 # And also build in a number of docker containers of older
 # distributions
-    - name: Build in Debian Bullseye container
+    - name: Build and test in Debian Bullseye
       uses: addnab/docker-run-action@v3
       with:
         image: debian:bullseye
@@ -34,9 +34,10 @@ jobs:
         run: |
           set -ex
           apt-get -qq update > /dev/null < /dev/null
-          apt-get -qq install make gcc > /dev/null < /dev/null
+          apt-get -qq install make gcc golang git ca-certificates > /dev/null < /dev/null
           cd /work
           make
+          make test
     - run: git clean -dxff
 
     - name: Build and test in Amazon Linux 2
@@ -46,31 +47,33 @@ jobs:
         options: -v ${{ github.workspace }}:/work
         run: |
           set -ex
-          yum -qy install make gcc
+          yum -y -q install make gcc golang git
           cd /work
+          git config --global --add safe.directory /work # Fix for: fatal: detected dubious ownership in repository at '/work'
           make
+          make test
     - run: git clean -dxff
 
-    - name: Build and test in Oracle Linux 7 (similar to RHEL 7, CentOS 7)
+    - name: Build in Oracle Linux 7 (similar to RHEL 7, CentOS 7)
       uses: addnab/docker-run-action@v3
       with:
         image: oraclelinux:7
         options: -v ${{ github.workspace }}:/work
         run: |
           set -ex
-          yum -qy install make gcc
+          yum -y -q install make gcc git
           cd /work
           make
     - run: git clean -dxff
 
-    - name: Build and test in Oracle Linux 8 (similar to RHEL 8, CentOS 8)
+    - name: Build in Oracle Linux 8 (similar to RHEL 8, CentOS 8)
       uses: addnab/docker-run-action@v3
       with:
         image: oraclelinux:8
         options: -v ${{ github.workspace }}:/work
         run: |
           set -ex
-          dnf -qy install make gcc
+          dnf -y -q install make gcc git
           cd /work
           make
     - run: git clean -dxff
