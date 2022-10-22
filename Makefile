@@ -1,4 +1,10 @@
-VERSION ?= $(shell git describe --tags --dirty 2> /dev/null)
+# Setting GIT_DIR keeps git from ascending to parent directories
+# and gives a nicer error message
+VERSION ?= $(shell GIT_DIR=$(shell pwd)/.git git describe --tags --dirty)
+ifeq ($(VERSION),)
+VERSION := "(unknown version)"
+$(warning Could not get version from git, setting to $(VERSION))
+endif
 CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" -g -fstack-protector-all -std=gnu99
 
 DESTDIR ?=
@@ -7,10 +13,6 @@ BINDIR ?= /bin
 SYSCONFDIR ?= /etc
 SYSTEMDUNITDIR ?= $(SYSCONFDIR)/systemd/system
 PANDOC := $(shell command -v pandoc 2> /dev/null)
-
-ifeq ($(VERSION),)
-VERSION := "(unknown version)"
-endif
 
 .PHONY: all clean install uninstall format test
 
