@@ -19,7 +19,9 @@
 #include "meminfo.h"
 #include "msg.h"
 
+// Processes matching "--prefer REGEX" get BADNESS_PREFER added to their badness
 #define BADNESS_PREFER 300
+// Processes matching "--avoid REGEX" get BADNESS_AVOID added to their badness
 #define BADNESS_AVOID -300
 
 // Buffer size for UID/GID/PID string conversion
