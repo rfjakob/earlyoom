@@ -133,7 +133,8 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
 // the killed process as quickly as possible - see https://lwn.net/Articles/864184/
 // for details.
 #if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
-void mrelease(const pid_t pid) {
+void mrelease(const pid_t pid)
+{
     int pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
     if (pidfd < 0) {
         // can happen if process has already exited
@@ -148,14 +149,15 @@ void mrelease(const pid_t pid) {
     }
 }
 #else
-void mrelease(__attribute__((unused)) const pid_t pid) {
+void mrelease(__attribute__((unused)) const pid_t pid)
+{
     debug("mrelease: process_mrelease() and/or pidfd_open() not available\n");
 }
 #ifndef __NR_pidfd_open
-    #warning "__NR_pidfd_open is undefined, cannot use process_mrelease"
+#warning "__NR_pidfd_open is undefined, cannot use process_mrelease"
 #endif
 #ifndef __NR_process_mrelease
-    #warning "__NR_process_mrelease is undefined, cannot use process_mrelease"
+#warning "__NR_process_mrelease is undefined, cannot use process_mrelease"
 #endif
 #endif
 

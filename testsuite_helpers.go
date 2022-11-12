@@ -26,7 +26,8 @@ type exitVals struct {
 const earlyoomBinary = "./earlyoom"
 
 // The periodic memory report looks like this:
-//   mem avail: 4998 MiB (63 %), swap free: 0 MiB (0 %)
+//
+//	mem avail: 4998 MiB (63 %), swap free: 0 MiB (0 %)
 const memReport = "mem avail: "
 
 // runEarlyoom runs earlyoom, waits for the first "mem avail:" status line,
@@ -94,14 +95,14 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 }
 
 /*
-	$ ls -l /proc/$(pgrep earlyoom)/fd
-	total 0
-	lrwx------. 1 jakob jakob 64 Feb 22 14:36 0 -> /dev/pts/2
-	lrwx------. 1 jakob jakob 64 Feb 22 14:36 1 -> /dev/pts/2
-	lrwx------. 1 jakob jakob 64 Feb 22 14:36 2 -> /dev/pts/2
-	lr-x------. 1 jakob jakob 64 Feb 22 14:36 3 -> /proc/meminfo
+$ ls -l /proc/$(pgrep earlyoom)/fd
+total 0
+lrwx------. 1 jakob jakob 64 Feb 22 14:36 0 -> /dev/pts/2
+lrwx------. 1 jakob jakob 64 Feb 22 14:36 1 -> /dev/pts/2
+lrwx------. 1 jakob jakob 64 Feb 22 14:36 2 -> /dev/pts/2
+lr-x------. 1 jakob jakob 64 Feb 22 14:36 3 -> /proc/meminfo
 
-	Plus one for /proc/[pid]/stat which may possibly be open as well
+Plus one for /proc/[pid]/stat which may possibly be open as well
 */
 const openFdsMax = 5
 
