@@ -10,7 +10,8 @@ typedef struct {
     // Values from /proc/meminfo, in KiB or converted to MiB.
     long long MemTotalKiB;
     long long MemTotalMiB;
-    long long MemAvailableMiB; // -1 means no data available
+    long long MemAvailableKiB;
+    long long MemAvailableMiB;
     long long SwapTotalMiB;
     long long SwapTotalKiB;
     long long SwapFreeMiB;

@@ -97,9 +97,9 @@ meminfo_t parse_meminfo()
     m.AnonPagesKiB = get_entry_fatal("AnonPages:", buf);
     long long SwapFree = get_entry_fatal("SwapFree:", buf);
 
-    long long MemAvailable = get_entry("MemAvailable:", buf);
-    if (MemAvailable < 0) {
-        MemAvailable = available_guesstimate(buf);
+    m.MemAvailableKiB = get_entry("MemAvailable:", buf);
+    if (m.MemAvailableKiB < 0) {
+        m.MemAvailableKiB = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
             fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
                             "         Falling back to guesstimate\n");
@@ -108,7 +108,7 @@ meminfo_t parse_meminfo()
     }
 
     // Calculate percentages
-    m.MemAvailablePercent = (double)MemAvailable * 100 / (double)m.MemTotalKiB;
+    m.MemAvailablePercent = (double)m.MemAvailableKiB * 100 / (double)m.MemTotalKiB;
     m.AnonPagesPercent = (double)m.AnonPagesKiB * 100 / (double)m.MemTotalKiB;
     if (m.SwapTotalKiB > 0) {
         m.SwapFreePercent = (double)SwapFree * 100 / (double)m.SwapTotalKiB;
@@ -118,7 +118,7 @@ meminfo_t parse_meminfo()
 
     // Convert kiB to MiB
     m.MemTotalMiB = m.MemTotalKiB / 1024;
-    m.MemAvailableMiB = MemAvailable / 1024;
+    m.MemAvailableMiB = m.MemAvailableKiB / 1024;
     m.SwapTotalMiB = m.SwapTotalKiB / 1024;
     m.SwapFreeMiB = SwapFree / 1024;
 
