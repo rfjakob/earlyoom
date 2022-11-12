@@ -14,9 +14,11 @@ typedef struct {
     long long SwapTotalMiB;
     long long SwapTotalKiB;
     long long SwapFreeMiB;
+    long long AnonPagesKiB;
     // Calculated percentages
     double MemAvailablePercent; // percent of total memory that is available
     double SwapFreePercent; // percent of total swap that is free
+    double AnonPagesPercent; // percent of total memory that is used by processes
 } meminfo_t;
 
 typedef struct procinfo {
