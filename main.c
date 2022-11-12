@@ -334,7 +334,7 @@ int main(int argc, char* argv[])
 
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
-        m.MemTotalMiB, m.SwapTotalMiB);
+        m.MemTotalKiB / 1024, m.SwapTotalKiB / 1024);
     fprintf(stderr, "sending SIGTERM when mem <= " PRIPCT " and swap <= " PRIPCT ",\n",
         args.mem_term_percent, args.swap_term_percent);
     fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
@@ -396,11 +396,11 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const unsigned min_sleep = 100;
     const unsigned max_sleep = 1000;
 
-    long long mem_headroom_kib = (long long)((m->MemAvailablePercent - args->mem_term_percent) * 10 * (double)m->MemTotalMiB);
+    long long mem_headroom_kib = (long long)((m->MemAvailablePercent - args->mem_term_percent) * (double)m->MemTotalKiB / 100);
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }
-    long long swap_headroom_kib = (long long)((m->SwapFreePercent - args->swap_term_percent) * 10 * (double)m->SwapTotalMiB);
+    long long swap_headroom_kib = (long long)((m->SwapFreePercent - args->swap_term_percent) * (double)m->SwapTotalKiB / 100);
     if (swap_headroom_kib < 0) {
         swap_headroom_kib = 0;
     }
@@ -430,7 +430,7 @@ static int lowmem_sig(const poll_loop_args_t* args, const meminfo_t* m)
         return 0;
 
     long long want_kib = (long long)((double)m->SwapTotalKiB * args->swap_term_percent / 100 + (double)m->MemTotalKiB * args->mem_term_percent / 100);
-    long long have_kib = m->MemAvailableKiB + m->SwapFreeMiB * 1024;
+    long long have_kib = m->MemAvailableKiB + m->SwapFreeKiB;
     // how much do we have to free by killing processes?
     long long to_free_kib = want_kib - have_kib;
     debug("%s: want_kib=%lld have_kib=%lld to_free_kib=%lld\n", __func__, want_kib, have_kib, to_free_kib);
