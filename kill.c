@@ -203,6 +203,9 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         return 0;
     }
 
+    struct timespec t0 = { 0 };
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+
 #if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
     // Call the process_mrelease() syscall to release all the memory of
     // the killed process as quickly as possible - see https://lwn.net/Articles/864184/
@@ -219,7 +222,10 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 #endif
 
     for (unsigned i = 0; i < 100; i++) {
-        float secs = (float)(i * poll_ms) / 1000;
+        struct timespec t1 = { 0 };
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        float secs = (float)(t1.tv_sec - t0.tv_sec) + (float)(t1.tv_nsec - t0.tv_nsec) / (float)1e9;
+
         // We have sent SIGTERM but now have dropped below SIGKILL limits.
         // Escalate to SIGKILL.
         if (sig != SIGKILL) {
@@ -239,7 +245,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             print_mem_stats(printf, m);
         }
         if (!is_alive(pid)) {
-            warn("process exited after %.1f seconds\n", secs);
+            warn("process %d exited after %.3f seconds\n", pid, secs);
             return 0;
         }
         struct timespec req = { .tv_sec = (time_t)(poll_ms / 1000), .tv_nsec = (poll_ms % 1000) * 1000000 };
