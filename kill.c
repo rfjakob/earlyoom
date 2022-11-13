@@ -129,9 +129,6 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
-// Call the process_mrelease() syscall to release all the memory of
-// the killed process as quickly as possible - see https://lwn.net/Articles/864184/
-// for details.
 #if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
 void mrelease(const pid_t pid)
 {
@@ -167,6 +164,8 @@ void mrelease(__attribute__((unused)) const pid_t pid)
  */
 int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 {
+    int pidfd = -1;
+
     if (args->dryrun && sig != 0) {
         warn("dryrun, not actually sending any signal\n");
         return 0;
@@ -180,8 +179,23 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         pid = -res;
         warn("killing whole process group %d (-g flag is active)\n", res);
     }
+
+#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
+    // Open the pidfd *before* calling kill().
+    // Otherwise process_mrelease() fails in 50% of cases with ESRCH.
+    if (!args->kill_process_group && sig != 0) {
+        pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
+        if (pidfd < 0) {
+            warn("%s pid %d: error opening pidfd: %s\n", __func__, pid, strerror(errno));
+        }
+    }
+#endif
+
     int res = kill(pid, sig);
     if (res != 0) {
+        if (pidfd >= 0) {
+            close(pidfd);
+        }
         return res;
     }
     /* signal 0 does not kill the process. Don't wait for it to exit */
@@ -189,10 +203,20 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         return 0;
     }
 
-    // Can't call process_mrelease on a process group
-    if (pid > 0) {
-        mrelease(pid);
+#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
+    // Call the process_mrelease() syscall to release all the memory of
+    // the killed process as quickly as possible - see https://lwn.net/Articles/864184/
+    // for details.
+    if (pidfd >= 0) {
+        int res = (int)syscall(__NR_process_mrelease, pidfd, 0);
+        if (res != 0) {
+            warn("%s pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
+        } else {
+            debug("%s pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
+        }
+        close(pidfd);
     }
+#endif
 
     for (unsigned i = 0; i < 100; i++) {
         float secs = (float)(i * poll_ms) / 1000;
