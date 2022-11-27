@@ -4,8 +4,6 @@ earlyoom - The Early OOM Daemon
 [![CI](https://github.com/rfjakob/earlyoom/actions/workflows/ci.yml/badge.svg)](https://github.com/rfjakob/earlyoom/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/release/rfjakob/earlyoom.svg)](https://github.com/rfjakob/earlyoom/releases)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/rfjakob/earlyoom.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/rfjakob/earlyoom/alerts/)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/rfjakob/earlyoom.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/rfjakob/earlyoom/context:cpp)
 
 The oom-killer generally has a bad reputation among Linux users. This may be
 part of the reason Linux invokes it only when it has absolutely no other choice.
