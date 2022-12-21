@@ -20,6 +20,8 @@ typedef struct {
     char* notify_ext;
     /* kill all processes within a process group */
     bool kill_process_group;
+    /* do not kill processes owned by root */
+    bool ignore_root_user;
     /* prefer/avoid killing these processes. NULL = no-op. */
     regex_t* prefer_regex;
     regex_t* avoid_regex;
