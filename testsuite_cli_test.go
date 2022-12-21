@@ -101,9 +101,10 @@ func TestCli(t *testing.T) {
 		// We use {"-r=0"} instead of {"-r", "0"} so runEarlyoom() can detect that there will be no output
 		{args: []string{"-r=0"}, code: -1, stderrContains: startupMsg, stdoutEmpty: true},
 		{args: []string{"-r", "0.1"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
-		// Test --avoid and --prefer
+		// Test --avoid, --prefer and -ignore-root-user
 		{args: []string{"--avoid", "MyProcess1"}, code: -1, stderrContains: "Will avoid killing", stdoutContains: memReport},
 		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Preferring to kill", stdoutContains: memReport},
+		{args: []string{"--ignore-root-user"}, code: -1, stderrContains: "Processes owned by root will not be killed", stdoutContains: memReport},
 		{args: []string{"-i"}, code: -1, stderrContains: "Option -i is ignored"},
 		// Extra arguments should error out
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},

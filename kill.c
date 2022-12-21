@@ -267,6 +267,19 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     }
 
     {
+        int res = get_uid(cur->pid);
+        if (res < 0) {
+            debug("pid %d: error reading uid: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+        cur->uid = res;
+    }
+    if (cur->uid == 0 && args->ignore_root_user) {
+        // Ignore processes owned by root user.
+        return false;
+    }
+
+    {
         int res = get_oom_score(cur->pid);
         if (res < 0) {
             debug("pid %d: error reading oom_score: %s\n", cur->pid, strerror(-res));
@@ -333,14 +346,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
             return false;
         }
-    }
-    {
-        int res = get_uid(cur->pid);
-        if (res < 0) {
-            debug("pid %d: error reading uid: %s\n", cur->pid, strerror(-res));
-            return false;
-        }
-        cur->uid = res;
     }
     return true;
 }

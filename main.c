@@ -40,6 +40,7 @@ enum {
     LONG_OPT_AVOID,
     LONG_OPT_DRYRUN,
     LONG_OPT_IGNORE,
+    LONG_OPT_IGNORE_ROOT,
 };
 
 static int set_oom_score_adj(int);
@@ -86,6 +87,7 @@ int main(int argc, char* argv[])
         .mem_kill_percent = 5,
         .swap_kill_percent = 5,
         .report_interval_ms = 1000,
+        .ignore_root_user = false,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
@@ -127,6 +129,7 @@ int main(int argc, char* argv[])
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
         { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
+        { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
@@ -215,6 +218,10 @@ int main(int argc, char* argv[])
         case 'p':
             set_my_priority = 1;
             break;
+        case LONG_OPT_IGNORE_ROOT:
+            args.ignore_root_user = true;
+            fprintf(stderr, "Processes owned by root will not be killed\n");
+            break;
         case LONG_OPT_PREFER:
             prefer_cmds = optarg;
             break;
@@ -251,6 +258,7 @@ int main(int argc, char* argv[])
                 "                            to 0 to disable completely\n"
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -100\n"
+                "  --ignore-root-user        do not kill processes owned by root\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --ignore REGEX            ignore processes matching REGEX\n"
