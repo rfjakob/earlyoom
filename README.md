@@ -378,7 +378,7 @@ Changelog
   * Add `--prefer` and `--avoid` options (@TomJohnZ)
   * Add support for GUI notifications, add options `-n` and `-N`
 * v0.12: Add `-M` and `-S` options (@nailgun); add man page, parameterize Makefile (@yangfl)
-* v0.11: Fix undefined behavoir in get_entry_fatal (missing return, [commit](https://github.com/rfjakob/earlyoom/commit/9251d25618946723eb8a829404ebf1a65d99dbb0))
+* v0.11: Fix undefined behavior in get_entry_fatal (missing return, [commit](https://github.com/rfjakob/earlyoom/commit/9251d25618946723eb8a829404ebf1a65d99dbb0))
 * v0.10: Allow to override Makefile's VERSION variable to make packaging easier,
   add `-v` command-line option
 * v0.9: If oom_score of all processes is 0, use VmRss to find a victim

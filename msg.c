@@ -114,7 +114,7 @@ static double parse_part(term_kill_tuple_t* tuple, const char* part, long long u
     }
     if (errno) {
         snprintf(tuple->err, sizeof(tuple->err),
-            "converson error: %s", strerror(errno));
+            "conversion error: %s", strerror(errno));
         return 0;
     }
     if (val > (double)upper_limit) {
