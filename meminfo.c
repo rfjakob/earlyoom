@@ -176,7 +176,7 @@ bool is_alive(int pid)
 /* Read /proc/[pid]/[name] and convert to integer.
  * As the value may legitimately be < 0 (think oom_score_adj),
  * it is stored in the `out` pointer, and the return value is either
- * 0 (sucess) or -errno (failure).
+ * 0 (success) or -errno (failure).
  */
 static int read_proc_file_integer(const int pid, const char* name, int* out)
 {

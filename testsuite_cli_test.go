@@ -25,7 +25,7 @@ type cliTestCase struct {
 	stderrEmpty bool
 }
 
-func paseMeminfoLine(l string) int64 {
+func parseMeminfoLine(l string) int64 {
 	fields := strings.Split(l, " ")
 	asciiVal := fields[len(fields)-2]
 	val, err := strconv.ParseInt(asciiVal, 10, 64)
@@ -51,10 +51,10 @@ func parseMeminfo() (memTotal int64, swapTotal int64) {
 	lines := strings.Split(string(content), "\n")
 	for _, l := range lines {
 		if strings.HasPrefix(l, "MemTotal:") {
-			memTotal = paseMeminfoLine(l)
+			memTotal = parseMeminfoLine(l)
 		}
 		if strings.HasPrefix(l, "SwapTotal:") {
-			swapTotal = paseMeminfoLine(l)
+			swapTotal = parseMeminfoLine(l)
 		}
 	}
 	return

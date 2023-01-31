@@ -446,7 +446,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     } else if (sig == 0) {
         sig_name = "0 (no-op signal)";
     }
-    // sig == 0 is used as a self-test during startup. Don't notifiy the user.
+    // sig == 0 is used as a self-test during startup. Don't notify the user.
     if (sig != 0 || enable_debug) {
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB\n",
             sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
