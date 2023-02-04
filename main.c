@@ -429,30 +429,11 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
  */
 static int lowmem_sig(const poll_loop_args_t* args, const meminfo_t* m)
 {
-    int sig = 0;
     if (m->MemAvailablePercent <= args->mem_kill_percent && m->SwapFreePercent <= args->swap_kill_percent)
-        sig = SIGKILL;
+        return SIGKILL;
     else if (m->MemAvailablePercent <= args->mem_term_percent && m->SwapFreePercent <= args->swap_term_percent)
-        sig = SIGTERM;
-    else
-        return 0;
-
-    long long want_kib = (long long)((double)m->SwapTotalKiB * args->swap_term_percent / 100 + (double)m->MemTotalKiB * args->mem_term_percent / 100);
-    long long have_kib = m->MemAvailableKiB + m->SwapFreeKiB;
-    // how much do we have to free by killing processes?
-    long long to_free_kib = want_kib - have_kib;
-    debug("%s: want_kib=%lld have_kib=%lld to_free_kib=%lld\n", __func__, want_kib, have_kib, to_free_kib);
-
-    // Let's not kill *everything* when the user has filled up /dev/shm and /tmp (when on tmpfs).
-    if (to_free_kib >= m->AnonPagesKiB) {
-        warn("We need to free %lld MiB, but there's only %lld MiB of anon memory that we could free!\n",
-            to_free_kib / 1024, m->AnonPagesKiB / 1024);
-        warn("Nothing we can do here. Sleeping 1 second.\n");
-        sleep(1);
-        return 0;
-    }
-
-    return sig;
+        return SIGTERM;
+    return 0;
 }
 
 // poll_loop is the main event loop. Never returns.
