@@ -276,7 +276,7 @@ Changelog
 
 * vNEXT, in progress
   * Introduce UserMemTotal and calculate MemAvailablePercent based on it
-    ([commit]()https://github.com/rfjakob/earlyoom/commit/459d76296d3d0a0b59ee1e2e48ad2271429de916)
+    ([commit](https://github.com/rfjakob/earlyoom/commit/459d76296d3d0a0b59ee1e2e48ad2271429de916))
   * Use `process_mrelease` ([#266](https://github.com/rfjakob/earlyoom/issues/266))
   * Support `NO_COLOR` (https://no-color.org/)
 
