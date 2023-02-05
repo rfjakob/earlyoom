@@ -7,16 +7,19 @@
 #include <stdbool.h>
 
 typedef struct {
-    // Values from /proc/meminfo, in KiB or converted to MiB.
+    // Values from /proc/meminfo, in KiB
     long long MemTotalKiB;
     long long MemAvailableKiB;
     long long SwapTotalKiB;
     long long SwapFreeKiB;
     long long AnonPagesKiB;
+    // Calculated values
+    // UserMemTotalKiB = MemAvailableKiB + AnonPagesKiB.
+    // Represents the total amount of memory that may be used by user processes.
+    long long UserMemTotalKiB;
     // Calculated percentages
     double MemAvailablePercent; // percent of total memory that is available
     double SwapFreePercent; // percent of total swap that is free
-    double AnonPagesPercent; // percent of total memory that is used by processes
 } meminfo_t;
 
 typedef struct procinfo {

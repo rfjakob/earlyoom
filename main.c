@@ -341,8 +341,8 @@ int main(int argc, char* argv[])
     }
 
     // Print memory limits
-    fprintf(stderr, "mem total: %4lld MiB, swap total: %4lld MiB\n",
-        m.MemTotalKiB / 1024, m.SwapTotalKiB / 1024);
+    fprintf(stderr, "user mem total: %4lld MiB, swap total: %4lld MiB\n",
+        m.UserMemTotalKiB / 1024, m.SwapTotalKiB / 1024);
     fprintf(stderr, "sending SIGTERM when mem <= " PRIPCT " and swap <= " PRIPCT ",\n",
         args.mem_term_percent, args.swap_term_percent);
     fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
@@ -404,7 +404,7 @@ static unsigned sleep_time_ms(const poll_loop_args_t* args, const meminfo_t* m)
     const unsigned min_sleep = 100;
     const unsigned max_sleep = 1000;
 
-    long long mem_headroom_kib = (long long)((m->MemAvailablePercent - args->mem_term_percent) * (double)m->MemTotalKiB / 100);
+    long long mem_headroom_kib = (long long)((m->MemAvailablePercent - args->mem_term_percent) * (double)m->UserMemTotalKiB / 100);
     if (mem_headroom_kib < 0) {
         mem_headroom_kib = 0;
     }

@@ -95,7 +95,7 @@ meminfo_t parse_meminfo()
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
     m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
     m.AnonPagesKiB = get_entry_fatal("AnonPages:", buf);
-    long long SwapFree = get_entry_fatal("SwapFree:", buf);
+    m.SwapFreeKiB = get_entry_fatal("SwapFree:", buf);
 
     m.MemAvailableKiB = get_entry("MemAvailable:", buf);
     if (m.MemAvailableKiB < 0) {
@@ -107,11 +107,13 @@ meminfo_t parse_meminfo()
         }
     }
 
+    // Calculated values
+    m.UserMemTotalKiB = m.MemAvailableKiB + m.AnonPagesKiB;
+
     // Calculate percentages
-    m.MemAvailablePercent = (double)m.MemAvailableKiB * 100 / (double)m.MemTotalKiB;
-    m.AnonPagesPercent = (double)m.AnonPagesKiB * 100 / (double)m.MemTotalKiB;
+    m.MemAvailablePercent = (double)m.MemAvailableKiB * 100 / (double)m.UserMemTotalKiB;
     if (m.SwapTotalKiB > 0) {
-        m.SwapFreePercent = (double)SwapFree * 100 / (double)m.SwapTotalKiB;
+        m.SwapFreePercent = (double)m.SwapFreeKiB * 100 / (double)m.SwapTotalKiB;
     } else {
         m.SwapFreePercent = 0;
     }
@@ -302,13 +304,11 @@ long long get_vm_rss_kib(int pid)
  */
 void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...), const meminfo_t m)
 {
-    out_func("mem avail: %5lld of %5lld MiB (" PRIPCT "), swap free: %4lld of %4lld MiB (" PRIPCT "), anon: %5lld MiB (" PRIPCT ")\n",
+    out_func("mem avail: %5lld of %5lld MiB (" PRIPCT "), swap free: %4lld of %4lld MiB (" PRIPCT ")\n",
         m.MemAvailableKiB / 1024,
-        m.MemTotalKiB / 1024,
+        m.UserMemTotalKiB / 1024,
         m.MemAvailablePercent,
         m.SwapFreeKiB / 1024,
         m.SwapTotalKiB / 1024,
-        m.SwapFreePercent,
-        m.AnonPagesKiB / 1024,
-        m.AnonPagesPercent);
+        m.SwapFreePercent);
 }
