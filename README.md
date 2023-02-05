@@ -62,20 +62,31 @@ victims (see below).
 
 Why not trigger the kernel oom killer?
 --------------------------------------
-Earlyoom does not use `echo f > /proc/sysrq-trigger` because [the Chrome people made
+earlyoom does not use `echo f > /proc/sysrq-trigger` because:
+
+(1)
+
+In some kernel versions (tested on 4.0.5), triggering the kernel
+oom killer manually does not work at all.
+That is, it may only free some graphics
+memory (that will be allocated immediately again) and not actually kill
+any process. [Here](https://gist.github.com/rfjakob/346b7dc611fc3cdf4011) you
+can see how this looks like on my machine (Intel integrated graphics).
+
+This problem has been fixed
+in Linux v5.17
+([commit f530243a](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f530243a172d2ff03f88d0056f838928d6445c6d))
+.
+
+(2)
+
+[the Chrome people made
 their browser (and all electron-based apps - vscode, skype, discord etc) always be
 the first (innocent!) victim by setting `oom_score_adj`
 very high]( https://code.google.com/p/chromium/issues/detail?id=333617).
 Instead, earlyoom finds out itself by reading through `/proc/*/status`
 (actually `/proc/*/statm`, which contains the same information but is easier to
 parse programmatically).
-
-Additionally, in recent kernels (tested on 4.0.5), triggering the kernel
-oom killer manually may not work at all.
-That is, it may only free some graphics
-memory (that will be allocated immediately again) and not actually kill
-any process. [Here](https://gist.github.com/rfjakob/346b7dc611fc3cdf4011) you
-can see how this looks like on my machine (Intel integrated graphics).
 
 How much memory does earlyoom use?
 ----------------------------------
