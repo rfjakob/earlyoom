@@ -341,8 +341,8 @@ int main(int argc, char* argv[])
     }
 
     // Print memory limits
-    fprintf(stderr, "user mem total: %4lld MiB, swap total: %4lld MiB\n",
-        m.UserMemTotalKiB / 1024, m.SwapTotalKiB / 1024);
+    fprintf(stderr, "mem total: %4lld MiB, user mem total: %4lld MiB, swap total: %4lld MiB\n",
+        m.MemTotalKiB / 1024, m.UserMemTotalKiB / 1024, m.SwapTotalKiB / 1024);
     fprintf(stderr, "sending SIGTERM when mem <= " PRIPCT " and swap <= " PRIPCT ",\n",
         args.mem_term_percent, args.swap_term_percent);
     fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
