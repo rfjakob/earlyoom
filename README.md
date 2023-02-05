@@ -47,11 +47,10 @@ Note that you need a recent version of
 a recent kernel, but an old version of `free`, you can get the value
 from `grep MemAvailable /proc/meminfo`.
 
-When both your available memory and free swap drop below 10% of the total,
+When both your available memory and free swap drop below 10% of the total memory available
+to userspace processes (=total-shared),
 it will send the `SIGTERM` signal to the process that uses the most memory in the opinion of
-the kernel (`/proc/*/oom_score`). It can optionally (`-i` option) ignore
-any positive adjustments set in `/proc/*/oom_score_adj` to protect innocent
-victims (see below).
+the kernel (`/proc/*/oom_score`).
 
 #### See also
 * [nohang](https://github.com/hakavlad/nohang), a similar project like earlyoom,
@@ -64,9 +63,7 @@ Why not trigger the kernel oom killer?
 --------------------------------------
 earlyoom does not use `echo f > /proc/sysrq-trigger` because:
 
-(1)
-
-In some kernel versions (tested on 4.0.5), triggering the kernel
+In some kernel versions (tested on v4.0.5), triggering the kernel
 oom killer manually does not work at all.
 That is, it may only free some graphics
 memory (that will be allocated immediately again) and not actually kill
@@ -78,15 +75,7 @@ in Linux v5.17
 ([commit f530243a](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f530243a172d2ff03f88d0056f838928d6445c6d))
 .
 
-(2)
-
-[the Chrome people made
-their browser (and all electron-based apps - vscode, skype, discord etc) always be
-the first (innocent!) victim by setting `oom_score_adj`
-very high]( https://code.google.com/p/chromium/issues/detail?id=333617).
-Instead, earlyoom finds out itself by reading through `/proc/*/status`
-(actually `/proc/*/statm`, which contains the same information but is easier to
-parse programmatically).
+Like the Linux kernel would, earlyoom finds its victim by reading through `/proc/*/oom_score`.
 
 How much memory does earlyoom use?
 ----------------------------------
@@ -215,7 +204,7 @@ succession, ensure you have some sort of rate-limit implemented.
 
 The command-line flag `--prefer` specifies processes to prefer killing;
 likewise, `--avoid` specifies
-processes to avoid killing. The list of processes is specified by a regex expression.
+processes to avoid killing. Processes is specified by a POSIX regular expression.
 For instance, to avoid having `foo` and `bar` be killed:
 
 ```bash
@@ -286,7 +275,9 @@ Changelog
 ---------
 
 * vNEXT, in progress
-  * Use `pidfd_open` and `process_mrelease` ([#266](https://github.com/rfjakob/earlyoom/issues/266))
+  * Introduce UserMemTotal and calculate MemAvailablePercent based on it
+    ([commit]()https://github.com/rfjakob/earlyoom/commit/459d76296d3d0a0b59ee1e2e48ad2271429de916)
+  * Use `process_mrelease` ([#266](https://github.com/rfjakob/earlyoom/issues/266))
   * Support `NO_COLOR` (https://no-color.org/)
 
 * v1.7, 2022-03-05
