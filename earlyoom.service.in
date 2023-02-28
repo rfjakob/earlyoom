@@ -9,6 +9,10 @@ ExecStart=:TARGET:/earlyoom $EARLYOOM_ARGS
 DynamicUser=true
 # Allow killing processes and calling mlockall()
 AmbientCapabilities=CAP_KILL CAP_IPC_LOCK
+# Give priority to our process
+Nice=-20
+# Avoid getting killed by OOM
+OOMScoreAdjust=-100
 # We don't need write access anywhere
 ProtectSystem=strict
 # We don't need /home at all, make it inaccessible
