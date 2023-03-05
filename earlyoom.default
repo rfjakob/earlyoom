@@ -6,8 +6,8 @@ EARLYOOM_ARGS="-r 3600"
 
 # Examples:
 
-# Print memory report every second instead of every minute
-# EARLYOOM_ARGS="-r 1"
+# Print memory report every minute instead of every hour
+# EARLYOOM_ARGS="-r 60"
 
 # Available minimum memory 5%
 # EARLYOOM_ARGS="-m 5"
