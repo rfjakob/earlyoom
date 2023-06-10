@@ -16,6 +16,7 @@
 int fatal(int code, char* fmt, ...) __attribute__((noreturn, format(printf, 2, 3)));
 int warn(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 int debug(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+int info(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 typedef struct {
     // If the conversion failed, err contains the error message.
@@ -27,5 +28,7 @@ typedef struct {
 
 term_kill_tuple_t parse_term_kill_tuple(const char* optarg, long long upper_limit);
 void fix_truncated_utf8(char* str);
+
+void earlyoom_syslog_init();
 
 #endif

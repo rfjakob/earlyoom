@@ -41,6 +41,7 @@ enum {
     LONG_OPT_DRYRUN,
     LONG_OPT_IGNORE,
     LONG_OPT_IGNORE_ROOT,
+    LONG_OPT_USE_SYSLOG,
 };
 
 static int set_oom_score_adj(int);
@@ -130,6 +131,7 @@ int main(int argc, char* argv[])
         { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
+        { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
@@ -232,6 +234,9 @@ int main(int argc, char* argv[])
             warn("dryrun mode enabled, will not kill anything\n");
             args.dryrun = 1;
             break;
+        case LONG_OPT_USE_SYSLOG:
+            earlyoom_syslog_init();
+            break;
         case LONG_OPT_IGNORE:
             ignore_cmds = optarg;
             break;
@@ -263,6 +268,7 @@ int main(int argc, char* argv[])
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
+                "  --syslog                  use syslog instead of std streams\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);
@@ -471,7 +477,7 @@ static void poll_loop(const poll_loop_args_t* args)
                 kill_process(args, sig, &victim);
             }
         } else if (args->report_interval_ms && report_countdown_ms <= 0) {
-            print_mem_stats(printf, m);
+            print_mem_stats(info, m);
             report_countdown_ms = args->report_interval_ms;
         }
         unsigned sleep_ms = sleep_time_ms(args, &m);

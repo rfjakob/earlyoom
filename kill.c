@@ -242,7 +242,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             }
         } else if (enable_debug) {
             meminfo_t m = parse_meminfo();
-            print_mem_stats(printf, m);
+            print_mem_stats(info, m);
         }
         if (!is_alive(pid)) {
             warn("process %d exited after %.3f seconds\n", pid, secs);

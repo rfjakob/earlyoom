@@ -6,9 +6,12 @@
 #include <stdlib.h>
 #include <string.h> // need strlen()
 #include <unistd.h>
+#include <syslog.h>
 
 #include "globals.h"
 #include "msg.h"
+
+static int use_syslog = 0;
 
 // color_log writes to `f`, prefixing the `color` code if `f` is a tty.
 static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
@@ -60,6 +63,24 @@ static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
     }
 }
 
+static void logger(int priority, FILE* f, const char* color, const char* fmt, va_list vl)
+{
+    if (use_syslog) {
+        vsyslog(priority, fmt, vl);
+    } else {
+        color_log(f, color, fmt, vl);
+    }
+}
+
+void earlyoom_syslog_init(void)
+{
+    if (!use_syslog) {
+        use_syslog = 1;
+        openlog("earlyoom", LOG_PID | LOG_NDELAY, LOG_DAEMON);
+        atexit(closelog);
+    }
+}
+
 // Print message, prefixed with "fatal: ", to stderr and exit with "code".
 // Example: fatal(6, "could not compile regexp '%s'\n", regex_str);
 int fatal(int code, char* fmt, ...)
@@ -69,7 +90,7 @@ int fatal(int code, char* fmt, ...)
     snprintf(fmt2, sizeof(fmt2), "fatal: %s", fmt);
     va_list vl;
     va_start(vl, fmt);
-    color_log(stderr, red, fmt2, vl);
+    logger(LOG_ERR, stderr, red, fmt2, vl);
     va_end(vl);
     exit(code);
 }
@@ -80,7 +101,7 @@ int warn(const char* fmt, ...)
     const char* yellow = "\033[33m";
     va_list vl;
     va_start(vl, fmt);
-    color_log(stderr, yellow, fmt, vl);
+    logger(LOG_WARNING, stderr, yellow, fmt, vl);
     va_end(vl);
     return 0;
 }
@@ -94,7 +115,17 @@ int debug(const char* fmt, ...)
     const char* gray = "\033[2m";
     va_list vl;
     va_start(vl, fmt);
-    color_log(stdout, gray, fmt, vl);
+    logger(LOG_DEBUG, stdout, gray, fmt, vl);
+    va_end(vl);
+    return 0;
+}
+
+// Print info message to stdout. No prefix is added.
+int info(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    logger(LOG_INFO, stdout, "", fmt, vl);
     va_end(vl);
     return 0;
 }
