@@ -161,6 +161,9 @@ processes when earlyoom determines to kill processes.
 #### \-\-dryrun
 dry run (do not kill any processes)
 
+#### \-\-syslog
+use syslog instead of std streams
+
 #### -h, \-\-help
 this help text
 
