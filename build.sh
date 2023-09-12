@@ -41,7 +41,7 @@ git checkout -b package$$ $tag
 
 make clean
 # static build
-make CFLAGS='-static'
+make VERSION=$version
 make earlyoom.1.gz
 # verify the static binary
 set +e
