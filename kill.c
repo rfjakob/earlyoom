@@ -455,6 +455,14 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (sig != 0 || enable_debug) {
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB\n",
             sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
+
+        char cmdline[CMDLINE_LEN] = { 0 };
+        int res = get_cmdline(victim->pid, cmdline, sizeof(cmdline));
+        if (res < 0) {
+            debug("pid %d: error reading process name: %s\n", victim->pid, strerror(-res));
+        } else {
+            warn("process %d cmdline \"%s\"\n", victim->pid, cmdline);
+        }
     }
 
     int res = kill_wait(args, victim->pid, sig);
