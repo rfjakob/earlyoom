@@ -22,8 +22,8 @@ if [ -d /etc/yum.repos.d ]; then
     cat Makefile  | grep gzip
 fi
 
-# info
-tag=v1.7.x && version=$tag
+# get the latest tag
+tag=$(git describe --tags --abbrev=0) && version=$tag
 echo "version: $version"
 arch=$(uname -m)
 echo "arch: $arch"
