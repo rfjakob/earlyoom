@@ -161,6 +161,9 @@ processes when earlyoom determines to kill processes.
 #### \-\-dryrun
 dry run (do not kill any processes)
 
+### \-\-get-cmdline
+show cmdline when earlyoom determines to kill a process.
+
 #### \-\-syslog
 use syslog instead of std streams
 

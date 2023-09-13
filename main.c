@@ -42,6 +42,7 @@ enum {
     LONG_OPT_IGNORE,
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
+    LONG_OPT_GET_CMDLINE,
 };
 
 static int set_oom_score_adj(int);
@@ -89,6 +90,7 @@ int main(int argc, char* argv[])
         .swap_kill_percent = 5,
         .report_interval_ms = 1000,
         .ignore_root_user = false,
+        .get_cmdline = false,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
@@ -130,6 +132,7 @@ int main(int argc, char* argv[])
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
         { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
+        { "get-cmdline", no_argument, NULL, LONG_OPT_GET_CMDLINE },
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "help", no_argument, NULL, 'h' },
@@ -234,6 +237,10 @@ int main(int argc, char* argv[])
             warn("dryrun mode enabled, will not kill anything\n");
             args.dryrun = 1;
             break;
+        case LONG_OPT_GET_CMDLINE:
+            warn("get-cmdline mode enabled, will show the cmdline when kill a process\n");
+            args.get_cmdline = true;
+            break;
         case LONG_OPT_USE_SYSLOG:
             earlyoom_syslog_init();
             break;
@@ -268,6 +275,7 @@ int main(int argc, char* argv[])
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
+                "  --get-cmdline             show cmdline when kill the process\n"
                 "  --syslog                  use syslog instead of std streams\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
