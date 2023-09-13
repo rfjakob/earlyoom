@@ -273,6 +273,12 @@ int get_cmdline(int pid, char* out, size_t outlen)
     if (n < 1) {
         return -ENODATA;
     }
+    /* replace new line charater with space */
+    for (size_t i = 0; i < n; i++) {
+        if (out[i] == '\0') {
+            out[i] = ' ';
+        }
+    }
     // Strip trailing newline
     out[n - 1] = 0;
     fix_truncated_utf8(out);
