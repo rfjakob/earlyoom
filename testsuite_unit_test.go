@@ -187,6 +187,26 @@ func Test_get_comm(t *testing.T) {
 	}
 }
 
+func Test_get_cmdline(t *testing.T) {
+	pid := os.Getpid()
+	res, comm := get_cmdline(pid)
+	if res != 0 {
+		t.Fatalf("error %d", res)
+	}
+	if len(comm) == 0 {
+		t.Fatalf("empty process cmdline %q", comm)
+	}
+	t.Logf("process name %q", comm)
+	// Error case
+	res, comm = get_cmdline(INT32_MAX)
+	if res != -ENOENT {
+		t.Fail()
+	}
+	if comm != "" {
+		t.Fail()
+	}
+}
+
 func Benchmark_parse_meminfo(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		parse_meminfo()
@@ -236,6 +256,19 @@ func Benchmark_get_comm(b *testing.B) {
 		res, comm := get_comm(pid)
 		if len(comm) == 0 {
 			b.Fatalf("empty process name %q", comm)
+		}
+		if res != 0 {
+			b.Fatalf("error %d", res)
+		}
+	}
+}
+
+func Benchmark_get_cmdline(b *testing.B) {
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		res, comm := get_cmdline(pid)
+		if len(comm) == 0 {
+			b.Fatalf("empty process cmdline %q", comm)
 		}
 		if res != 0 {
 			b.Fatalf("error %d", res)

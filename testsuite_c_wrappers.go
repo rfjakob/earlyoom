@@ -70,6 +70,12 @@ func get_comm(pid int) (int, string) {
 	return int(res), C.GoString(cstr)
 }
 
+func get_cmdline(pid int) (int, string) {
+	cstr := C.CString(strings.Repeat("\000", 256))
+	res := C.get_cmdline(C.int(pid), cstr, 256)
+	return int(res), C.GoString(cstr)
+}
+
 func procdir_path(str string) {
 	cstr := C.CString(str)
 	C.procdir_path = cstr
