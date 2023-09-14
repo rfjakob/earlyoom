@@ -22,8 +22,6 @@ typedef struct {
     bool kill_process_group;
     /* do not kill processes owned by root */
     bool ignore_root_user;
-    /* Flag -- show cmdline while send sig to process */
-    bool get_cmdline;
     /* prefer/avoid killing these processes. NULL = no-op. */
     regex_t* prefer_regex;
     regex_t* avoid_regex;

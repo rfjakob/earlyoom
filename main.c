@@ -89,7 +89,6 @@ int main(int argc, char* argv[])
         .swap_kill_percent = 5,
         .report_interval_ms = 1000,
         .ignore_root_user = false,
-        .get_cmdline = false,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
