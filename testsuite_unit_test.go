@@ -196,7 +196,7 @@ func Test_get_cmdline(t *testing.T) {
 	if len(comm) == 0 {
 		t.Fatalf("empty process cmdline %q", comm)
 	}
-	t.Logf("process name %q", comm)
+	t.Logf("process cmdline %q", comm)
 	// Error case
 	res, comm = get_cmdline(INT32_MAX)
 	if res != -ENOENT {

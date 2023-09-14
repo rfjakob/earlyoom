@@ -244,7 +244,7 @@ int get_comm(int pid, char* out, size_t outlen)
     if (n < 1) {
         return -ENODATA;
     }
-    // Strip trailing newline
+    // Strip trailing space
     out[n - 1] = 0;
     fix_truncated_utf8(out);
     return 0;
@@ -273,13 +273,13 @@ int get_cmdline(int pid, char* out, size_t outlen)
     if (n < 1) {
         return -ENODATA;
     }
-    /* replace new line charater with space */
+    /* replace null character with space */
     for (size_t i = 0; i < n; i++) {
         if (out[i] == '\0') {
             out[i] = ' ';
         }
     }
-    // Strip trailing newline
+    // Strip trailing space
     out[n - 1] = 0;
     fix_truncated_utf8(out);
     return 0;

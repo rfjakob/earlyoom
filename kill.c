@@ -295,12 +295,10 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
             return false;
         }
-        if (args->get_cmdline) {
-            res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
-            if (res < 0) {
-                debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
-                return false;
-            }
+        res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
+        if (res < 0) {
+            debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
+            return false;
         }
         if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             cur->badness += BADNESS_PREFER;
@@ -354,12 +352,10 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
             return false;
         }
-        if (args->get_cmdline) {
-            res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
-            if (res < 0) {
-                debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
-                return false;
-            }
+        res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
+        if (res < 0) {
+            debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
+            return false;
         }
     }
     return true;
@@ -470,9 +466,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (sig != 0 || enable_debug) {
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB\n",
             sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
-        if (args->get_cmdline) {
-            warn("process %d cmdline \"%s\"\n", victim->pid, victim->cmdline);
-        }
+        warn("process %d cmdline \"%s\"\n", victim->pid, victim->cmdline);
     }
 
     int res = kill_wait(args, victim->pid, sig);
