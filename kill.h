@@ -22,6 +22,8 @@ typedef struct {
     bool kill_process_group;
     /* do not kill processes owned by root */
     bool ignore_root_user;
+    /* find process with the largest rss */
+    bool sort_by_rss;
     /* prefer/avoid killing these processes. NULL = no-op. */
     regex_t* prefer_regex;
     regex_t* avoid_regex;

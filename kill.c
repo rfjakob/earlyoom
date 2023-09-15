@@ -306,25 +306,49 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
     }
 
-    if (cur->badness < victim->badness) {
-        return false;
-    }
-
-    {
-        long long res = get_vm_rss_kib(cur->pid);
-        if (res < 0) {
-            debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
+    if (args->sort_by_rss) {
+         /* find process with the largest rss */
+        {
+            long long res = get_vm_rss_kib(cur->pid);
+            if (res < 0) {
+                debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
+                return false;
+            }
+            cur->VmRSSkiB = res;
+        }
+        if (cur->VmRSSkiB == 0) {
+            // Kernel threads have zero rss
             return false;
         }
-        cur->VmRSSkiB = res;
-    }
+        if (cur->VmRSSkiB < victim->VmRSSkiB) {
+            return false;
+        }
 
-    if (cur->VmRSSkiB == 0) {
-        // Kernel threads have zero rss
-        return false;
-    }
-    if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
-        return false;
+        if (cur->VmRSSkiB == victim->VmRSSkiB && cur->badness <= victim->badness) {
+            return false;
+        }
+    } else {
+        /* find process with the largest oom_score */
+        if (cur->badness < victim->badness) {
+            return false;
+        }
+
+        {
+            long long res = get_vm_rss_kib(cur->pid);
+            if (res < 0) {
+                debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
+                return false;
+            }
+            cur->VmRSSkiB = res;
+        }
+
+        if (cur->VmRSSkiB == 0) {
+            // Kernel threads have zero rss
+            return false;
+        }
+        if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
+            return false;
+        }
     }
 
     // Skip processes with oom_score_adj = -1000, like the
@@ -371,7 +395,7 @@ void debug_print_procinfo(const procinfo_t* cur)
 }
 
 /*
- * Find the process with the largest oom_score.
+ * Find the process with the largest oom_score or rss(when flag --sort-by-rss is set).
  */
 procinfo_t find_largest_process(const poll_loop_args_t* args)
 {

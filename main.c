@@ -42,6 +42,7 @@ enum {
     LONG_OPT_IGNORE,
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
+    LONG_OPT_SORT_BY_RSS,
 };
 
 static int set_oom_score_adj(int);
@@ -89,6 +90,7 @@ int main(int argc, char* argv[])
         .swap_kill_percent = 5,
         .report_interval_ms = 1000,
         .ignore_root_user = false,
+        .sort_by_rss = false,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
@@ -131,6 +133,7 @@ int main(int argc, char* argv[])
         { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
+        { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -224,6 +227,10 @@ int main(int argc, char* argv[])
             args.ignore_root_user = true;
             fprintf(stderr, "Processes owned by root will not be killed\n");
             break;
+        case LONG_OPT_SORT_BY_RSS:
+            args.sort_by_rss = true;
+            fprintf(stderr, "Find process with the largest rss\n");
+            break;
         case LONG_OPT_PREFER:
             prefer_cmds = optarg;
             break;
@@ -264,6 +271,7 @@ int main(int argc, char* argv[])
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -100\n"
                 "  --ignore-root-user        do not kill processes owned by root\n"
+                "  --sort-by-rss             find process with the largest rss (default oom_score)\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --ignore REGEX            ignore processes matching REGEX\n"
