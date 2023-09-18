@@ -295,11 +295,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
             return false;
         }
-        res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
-        if (res < 0) {
-            debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
-            return false;
-        }
         if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             cur->badness += BADNESS_PREFER;
         }
@@ -352,12 +347,16 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
             return false;
         }
-        res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
+    }
+    /* read cmdline */
+    {
+        int res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
         if (res < 0) {
             debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
             return false;
         }
     }
+
     return true;
 }
 
