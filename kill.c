@@ -89,6 +89,7 @@ static void notify_ext(const char* script, const procinfo_t* victim)
     setenv("EARLYOOM_PID", pid_str, 1);
     setenv("EARLYOOM_UID", uid_str, 1);
     setenv("EARLYOOM_NAME", victim->name, 1);
+    setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
 
     execl(script, script, NULL);
     warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
@@ -347,6 +348,15 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             return false;
         }
     }
+    /* read cmdline */
+    {
+        int res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
+        if (res < 0) {
+            debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -455,6 +465,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (sig != 0 || enable_debug) {
         warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB\n",
             sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
+        warn("process %d cmdline \"%s\"\n", victim->pid, victim->cmdline);
     }
 
     int res = kill_wait(args, victim->pid, sig);

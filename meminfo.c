@@ -244,7 +244,42 @@ int get_comm(int pid, char* out, size_t outlen)
     if (n < 1) {
         return -ENODATA;
     }
-    // Strip trailing newline
+    // Strip trailing space
+    out[n - 1] = 0;
+    fix_truncated_utf8(out);
+    return 0;
+}
+
+
+/* Read /proc/[pid]/cmdline (process command line truncated to 256 bytes).
+ * Returns 0 on success and -errno on error.
+ */
+int get_cmdline(int pid, char* out, size_t outlen)
+{
+    char path[PATH_LEN] = { 0 };
+    snprintf(path, sizeof(path), "%s/%d/cmdline", procdir_path, pid);
+    FILE* f = fopen(path, "r");
+    if (f == NULL) {
+        return -errno;
+    }
+    size_t n = fread(out, 1, outlen - 1, f);
+    if (ferror(f)) {
+        int fread_errno = errno;
+        perror("get_cmdline: fread() failed");
+        fclose(f);
+        return -fread_errno;
+    }
+    fclose(f);
+    if (n < 1) {
+        return -ENODATA;
+    }
+    /* replace null character with space */
+    for (size_t i = 0; i < n; i++) {
+        if (out[i] == '\0') {
+            out[i] = ' ';
+        }
+    }
+    // Strip trailing space
     out[n - 1] = 0;
     fix_truncated_utf8(out);
     return 0;

@@ -116,6 +116,7 @@ following environment variables:
 
     EARLYOOM_PID     Process PID
     EARLYOOM_NAME    Process name truncated to 16 bytes (as reported in /proc/PID/comm)
+    EARLYOOM_CMDLINE Process cmdline truncated to 256 bytes (as reported in /proc/PID/cmdline)
     EARLYOOM_UID     UID of the user running the process
 
 WARNING: `EARLYOOM_NAME` can contain spaces, newlines, special characters
