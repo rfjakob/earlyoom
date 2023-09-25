@@ -306,6 +306,11 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
     }
 
+    if (cur->VmRSSkiB == 0) {
+        // Kernel threads have zero rss
+        return false;
+    }
+
     if (args->sort_by_rss) {
          /* find process with the largest rss */
         {
@@ -315,10 +320,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
                 return false;
             }
             cur->VmRSSkiB = res;
-        }
-        if (cur->VmRSSkiB == 0) {
-            // Kernel threads have zero rss
-            return false;
         }
         if (cur->VmRSSkiB < victim->VmRSSkiB) {
             return false;
@@ -342,10 +343,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             cur->VmRSSkiB = res;
         }
 
-        if (cur->VmRSSkiB == 0) {
-            // Kernel threads have zero rss
-            return false;
-        }
         if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
             return false;
         }
