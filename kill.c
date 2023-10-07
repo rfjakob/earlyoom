@@ -24,6 +24,11 @@
 // Processes matching "--avoid REGEX" get BADNESS_AVOID added to their badness
 #define BADNESS_AVOID -300
 
+// Processes matching "--prefer REGEX" get VMRSS_PREFER added to their VmRSSkiB
+#define VMRSS_PREFER 3145728
+// Processes matching "--avoid REGEX" get VMRSS_AVOID added to their VmRSSkiB
+#define VMRSS_AVOID -3145728
+
 // Buffer size for UID/GID/PID string conversion
 #define UID_BUFSIZ 128
 // At most 1 notification per second when --dryrun is active
@@ -289,6 +294,15 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         cur->badness = res;
     }
 
+    {
+        long long res = get_vm_rss_kib(cur->pid);
+        if (res < 0) {
+            debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
+            return false;
+        }
+        cur->VmRSSkiB = res;
+    }
+
     if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
         int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
         if (res < 0) {
@@ -297,14 +311,14 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
-                return true;
+                cur->VmRSSkiB += VMRSS_PREFER;
             } else {
                 cur->badness += BADNESS_PREFER;
             }
         }
         if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
-                return false;
+                cur->VmRSSkiB += VMRSS_AVOID;
             } else {
                 cur->badness += BADNESS_AVOID;
             }
@@ -321,14 +335,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
 
     if (args->sort_by_rss) {
          /* find process with the largest rss */
-        {
-            long long res = get_vm_rss_kib(cur->pid);
-            if (res < 0) {
-                debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
-                return false;
-            }
-            cur->VmRSSkiB = res;
-        }
         if (cur->VmRSSkiB < victim->VmRSSkiB) {
             return false;
         }
@@ -340,15 +346,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         /* find process with the largest oom_score */
         if (cur->badness < victim->badness) {
             return false;
-        }
-
-        {
-            long long res = get_vm_rss_kib(cur->pid);
-            if (res < 0) {
-                debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
-                return false;
-            }
-            cur->VmRSSkiB = res;
         }
 
         if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
