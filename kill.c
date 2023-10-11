@@ -24,6 +24,11 @@
 // Processes matching "--avoid REGEX" get BADNESS_AVOID added to their badness
 #define BADNESS_AVOID -300
 
+// Processes matching "--prefer REGEX" get VMRSS_PREFER added to their VmRSSkiB
+#define VMRSS_PREFER 3145728
+// Processes matching "--avoid REGEX" get VMRSS_AVOID added to their VmRSSkiB
+#define VMRSS_AVOID -3145728
+
 // Buffer size for UID/GID/PID string conversion
 #define UID_BUFSIZ 128
 // At most 1 notification per second when --dryrun is active
@@ -289,27 +294,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         cur->badness = res;
     }
 
-    if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
-        int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
-        if (res < 0) {
-            debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
-            return false;
-        }
-        if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
-            cur->badness += BADNESS_PREFER;
-        }
-        if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
-            cur->badness += BADNESS_AVOID;
-        }
-        if (args->ignore_regex && regexec(args->ignore_regex, cur->name, (size_t)0, NULL, 0) == 0) {
-            return false;
-        }
-    }
-
-    if (cur->badness < victim->badness) {
-        return false;
-    }
-
     {
         long long res = get_vm_rss_kib(cur->pid);
         if (res < 0) {
@@ -319,12 +303,54 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         cur->VmRSSkiB = res;
     }
 
+    if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
+        int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
+        if (res < 0) {
+            debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
+            return false;
+        }
+        if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+            if (args->sort_by_rss) {
+                cur->VmRSSkiB += VMRSS_PREFER;
+            } else {
+                cur->badness += BADNESS_PREFER;
+            }
+        }
+        if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+            if (args->sort_by_rss) {
+                cur->VmRSSkiB += VMRSS_AVOID;
+            } else {
+                cur->badness += BADNESS_AVOID;
+            }
+        }
+        if (args->ignore_regex && regexec(args->ignore_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+            return false;
+        }
+    }
+
     if (cur->VmRSSkiB == 0) {
         // Kernel threads have zero rss
         return false;
     }
-    if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
-        return false;
+
+    if (args->sort_by_rss) {
+         /* find process with the largest rss */
+        if (cur->VmRSSkiB < victim->VmRSSkiB) {
+            return false;
+        }
+
+        if (cur->VmRSSkiB == victim->VmRSSkiB && cur->badness <= victim->badness) {
+            return false;
+        }
+    } else {
+        /* find process with the largest oom_score */
+        if (cur->badness < victim->badness) {
+            return false;
+        }
+
+        if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
+            return false;
+        }
     }
 
     // Skip processes with oom_score_adj = -1000, like the
@@ -371,7 +397,7 @@ void debug_print_procinfo(const procinfo_t* cur)
 }
 
 /*
- * Find the process with the largest oom_score.
+ * Find the process with the largest oom_score or rss(when flag --sort-by-rss is set).
  */
 procinfo_t find_largest_process(const poll_loop_args_t* args)
 {
