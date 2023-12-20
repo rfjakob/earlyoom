@@ -42,6 +42,7 @@ enum {
     LONG_OPT_IGNORE,
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
+    LONG_OPT_USE_SYSLOG_STDERR,
     LONG_OPT_SORT_BY_RSS,
 };
 
@@ -135,6 +136,7 @@ int main(int argc, char* argv[])
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
+        { "syslog-stderr", no_argument, NULL, LONG_OPT_USE_SYSLOG_STDERR },
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
@@ -244,6 +246,9 @@ int main(int argc, char* argv[])
         case LONG_OPT_USE_SYSLOG:
             earlyoom_syslog_init();
             break;
+        case LONG_OPT_USE_SYSLOG_STDERR:
+            earlyoom_syslog_stderr();
+            break;
         case LONG_OPT_IGNORE:
             ignore_cmds = optarg;
             break;
@@ -277,6 +282,7 @@ int main(int argc, char* argv[])
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
                 "  --syslog                  use syslog instead of std streams\n"
+                "  --syslog-stderr           use with --syslog, only write stderr to syslog\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);
