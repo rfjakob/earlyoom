@@ -53,7 +53,7 @@ Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKIL
 #### -M SIZE[,KILL_SIZE]
 As an alternative to specifying a percentage of total memory, `-M` sets
 the available memory minimum to SIZE KiB. The value is internally converted
-to a percentage. If you pass both `-M` and `-m`, the lower value is used.
+to a percentage. If you pass both `-M` and `-m`, the lower value is used by default.
 Example: Reserve 10% of RAM but at most 1 GiB:
 
     earlyoom -m 10 -M 1048576
@@ -63,9 +63,12 @@ earlyoom sends SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGT
 #### -S SIZE[,KILL_SIZE]
 As an alternative to specifying a percentage of total swap, `-S` sets
 the free swap minimum to SIZE KiB. The value is internally converted
-to a percentage. If you pass both `-S` and `-s`, the lower value is used.
+to a percentage. If you pass both `-S` and `-s`, the lower value is used by default.
 
 Send SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
+
+#### -a
+To sum up values from KiB and from percentages of memory and swap instead of choosing lower.
 
 #### -k
 removed in earlyoom v1.2, ignored for compatibility
