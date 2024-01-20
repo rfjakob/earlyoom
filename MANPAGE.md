@@ -26,7 +26,7 @@ If there is a failure when trying to kill a process, **earlyoom** sleeps for
 # OPTIONS
 
 #### -m PERCENT[,KILL_PERCENT]
-set available memory minimum to PERCENT of total (default 10 %).
+set available memory minimum to PERCENT of MemAvailable+AnonPages (as reported in **/proc/meminfo**) at the time of initialization (default 10 %).
 
 earlyoom starts sending SIGTERM once **both** memory **and** swap are below their
 respective PERCENT setting. It sends SIGKILL once **both** are below their respective
