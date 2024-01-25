@@ -12,6 +12,7 @@
 #include "msg.h"
 
 static int use_syslog = 0;
+static int use_syslog_stderr = 0;
 
 // color_log writes to `f`, prefixing the `color` code if `f` is a tty.
 static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
@@ -65,8 +66,11 @@ static void color_log(FILE* f, const char* color, const char* fmt, va_list vl)
 
 static void logger(int priority, FILE* f, const char* color, const char* fmt, va_list vl)
 {
-    if (use_syslog) {
+    if (use_syslog && use_syslog_stderr == 0) {
         vsyslog(priority, fmt, vl);
+    } else if (use_syslog && use_syslog_stderr == 1 && fileno(f) == fileno(stderr)) {
+        vsyslog(priority, fmt, vl);
+        color_log(f, color, fmt, vl);
     } else {
         color_log(f, color, fmt, vl);
     }
@@ -79,6 +83,11 @@ void earlyoom_syslog_init(void)
         openlog("earlyoom", LOG_PID | LOG_NDELAY, LOG_DAEMON);
         atexit(closelog);
     }
+}
+
+void earlyoom_syslog_stderr(void)
+{
+    use_syslog_stderr = 1;
 }
 
 // Print message, prefixed with "fatal: ", to stderr and exit with "code".
