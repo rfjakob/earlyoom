@@ -166,7 +166,15 @@ find process with the largest rss (default oom_score)
 dry run (do not kill any processes)
 
 #### \-\-syslog
-use syslog instead of std streams
+use syslog instead of std streams.
+
+Usually this is not needed as systemd handles logging
+of all output.
+
+The \-\-syslog option may be useful for minimal embedded
+systems that don't run systemd.
+See https://github.com/rfjakob/earlyoom/pull/292 for some
+background info.
 
 #### -h, \-\-help
 this help text
