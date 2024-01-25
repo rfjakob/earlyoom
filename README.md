@@ -236,6 +236,7 @@ Command line options
 earlyoom v1.6.2-34-g75a8852-dirty
 Usage: ./earlyoom [OPTION]...
 
+  -a                        sum up minimums in KiB and PERCENT
   -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total
                             (default 10 %).
                             earlyoom sends SIGTERM once below PERCENT, then
@@ -279,6 +280,8 @@ Changelog
     ([commit](https://github.com/rfjakob/earlyoom/commit/459d76296d3d0a0b59ee1e2e48ad2271429de916))
   * Use `process_mrelease` ([#266](https://github.com/rfjakob/earlyoom/issues/266))
   * Support `NO_COLOR` (https://no-color.org/)
+  * Allow summing up `-M` and `-m`, and `-S` and `-s` (`-a` option) instead of using the
+    lower value.
 
 * v1.7, 2022-03-05
   * Add `-N` flag to run a script every time a process is killed ([commit](https://github.com/rfjakob/earlyoom/commit/afe03606f077a1a17e6fbc238400b3ce7a9ef2be),

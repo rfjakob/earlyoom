@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
     meminfo_t m = parse_meminfo();
 
     int c;
-    const char* short_opt = "m:s:M:S:kingN:dvr:ph";
+    const char* short_opt = "m:s:M:S:kingN:dvr:ph:a";
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
         { "help", no_argument, NULL, 'h' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
-    bool have_m = 0, have_M = 0, have_s = 0, have_S = 0;
+    bool have_m = 0, have_M = 0, have_s = 0, have_S = 0, have_a = 0;
     double mem_term_kib = 0, mem_kill_kib = 0, swap_term_kib = 0, swap_kill_kib = 0;
 
     while ((c = getopt_long(argc, argv, short_opt, long_opt, NULL)) != -1) {
@@ -148,6 +148,10 @@ int main(int argc, char* argv[])
         switch (c) {
         case -1: /* no more arguments */
         case 0: /* long option toggles */
+            break;
+        case 'a':
+            // to sum up minimums in KiB and percentages for memory and swap instead of choosing lower.
+            have_a = 1;
             break;
         case 'm':
             // Use 99 as upper limit. Passing "-m 100" makes no sense.
@@ -251,6 +255,7 @@ int main(int argc, char* argv[])
             fprintf(stderr,
                 "Usage: %s [OPTION]...\n"
                 "\n"
+                "  -a                        sum up minimums in KiB and PERCENT\n"
                 "  -m PERCENT[,KILL_PERCENT] set available memory minimum to PERCENT of total\n"
                 "                            (default 10 %%).\n"
                 "                            earlyoom sends SIGTERM once below PERCENT, then\n"
@@ -294,9 +299,16 @@ int main(int argc, char* argv[])
         double M_term_percent = 100 * mem_term_kib / (double)m.MemTotalKiB;
         double M_kill_percent = 100 * mem_kill_kib / (double)m.MemTotalKiB;
         if (have_m) {
-            // Both -m and -M were passed. Use the lower of both values.
-            args.mem_term_percent = min(args.mem_term_percent, M_term_percent);
-            args.mem_kill_percent = min(args.mem_kill_percent, M_kill_percent);
+            // Both -m and -M were passed.
+            if (have_a) {
+                // sum up -m and -M values.
+                args.mem_term_percent = args.mem_term_percent + M_term_percent;
+                args.mem_kill_percent = args.mem_kill_percent + M_kill_percent;
+            } else {
+                // Use the lower of both values.
+                args.mem_term_percent = min(args.mem_term_percent, M_term_percent);
+                args.mem_kill_percent = min(args.mem_kill_percent, M_kill_percent);
+            }
         } else {
             // Only -M was passed.
             args.mem_term_percent = M_term_percent;
@@ -308,9 +320,16 @@ int main(int argc, char* argv[])
         double S_term_percent = 100 * swap_term_kib / (double)m.SwapTotalKiB;
         double S_kill_percent = 100 * swap_kill_kib / (double)m.SwapTotalKiB;
         if (have_s) {
-            // Both -s and -S were passed. Use the lower of both values.
-            args.swap_term_percent = min(args.swap_term_percent, S_term_percent);
-            args.swap_kill_percent = min(args.swap_kill_percent, S_kill_percent);
+            // Both -s and -S were passed.
+            if (have_a) {
+                // sum up -s and -S values.
+                args.swap_term_percent = args.swap_term_percent + S_term_percent;
+                args.swap_kill_percent = args.swap_kill_percent + S_kill_percent;
+            } else {
+                // Use the lower of both values.
+                args.swap_term_percent = min(args.swap_term_percent, S_term_percent);
+                args.swap_kill_percent = min(args.swap_kill_percent, S_kill_percent);
+            }
         } else {
             // Only -S was passed.
             args.swap_term_percent = S_term_percent;
