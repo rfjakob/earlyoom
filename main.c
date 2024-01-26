@@ -291,8 +291,8 @@ int main(int argc, char* argv[])
     }
     // Merge "-M" with "-m" values
     if (have_M) {
-        double M_term_percent = 100 * mem_term_kib / (double)m.MemTotalKiB;
-        double M_kill_percent = 100 * mem_kill_kib / (double)m.MemTotalKiB;
+        double M_term_percent = 100 * mem_term_kib / (double)m.UserMemTotalKiB;
+        double M_kill_percent = 100 * mem_kill_kib / (double)m.UserMemTotalKiB;
         if (have_m) {
             // Both -m and -M were passed. Use the lower of both values.
             args.mem_term_percent = min(args.mem_term_percent, M_term_percent);
