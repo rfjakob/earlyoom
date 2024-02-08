@@ -1,6 +1,7 @@
 [Unit]
 Description=Early OOM Daemon
 Documentation=man:earlyoom(1) https://github.com/rfjakob/earlyoom
+Conflicts=systemd-oomd.service systemd-oomd.socket nohang.service nohang-desktop.service oomd.service
 
 [Service]
 EnvironmentFile=-:SYSCONFDIR:/default/earlyoom
