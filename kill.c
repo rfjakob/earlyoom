@@ -135,35 +135,6 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
-#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
-void mrelease(const pid_t pid)
-{
-    int pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
-    if (pidfd < 0) {
-        // can happen if process has already exited
-        debug("mrelease: pid %d: error opening pidfd: %s\n", pid, strerror(errno));
-        return;
-    }
-    int res = (int)syscall(__NR_process_mrelease, pidfd, 0);
-    if (res != 0) {
-        warn("mrelease: pid=%d pidfd=%d failed: %s\n", pid, pidfd, strerror(errno));
-    } else {
-        debug("mrelease: pid=%d pidfd=%d success\n", pid, pidfd);
-    }
-}
-#else
-void mrelease(__attribute__((unused)) const pid_t pid)
-{
-    debug("mrelease: process_mrelease() and/or pidfd_open() not available\n");
-}
-#ifndef __NR_pidfd_open
-#warning "__NR_pidfd_open is undefined, cannot use process_mrelease"
-#endif
-#ifndef __NR_process_mrelease
-#warning "__NR_process_mrelease is undefined, cannot use process_mrelease"
-#endif
-#endif
-
 /*
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
