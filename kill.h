@@ -33,6 +33,8 @@ typedef struct {
     int report_interval_ms;
     /* Flag --dryrun was passed */
     bool dryrun;
+    /* Flag --prefer-only was passed */
+    bool prefer_only;
 } poll_loop_args_t;
 
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim);

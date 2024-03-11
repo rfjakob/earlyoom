@@ -43,6 +43,7 @@ enum {
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
+    LONG_OPT_PREFER_ONLY,
 };
 
 static int set_oom_score_adj(int);
@@ -129,6 +130,7 @@ int main(int argc, char* argv[])
     const char* short_opt = "m:s:M:S:kingN:dvr:ph";
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
+        { "prefer-only", no_argument, NULL, LONG_OPT_PREFER_ONLY },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
         { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
@@ -234,6 +236,10 @@ int main(int argc, char* argv[])
         case LONG_OPT_PREFER:
             prefer_cmds = optarg;
             break;
+        case LONG_OPT_PREFER_ONLY:
+            warn("prefer-only mode enabled, will only kill processes matching --prefer\n");
+            args.prefer_only = 1;
+            break;
         case LONG_OPT_AVOID:
             avoid_cmds = optarg;
             break;
@@ -273,6 +279,7 @@ int main(int argc, char* argv[])
                 "  --ignore-root-user        do not kill processes owned by root\n"
                 "  --sort-by-rss             find process with the largest rss (default oom_score)\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
+                "  --prefer-only             only kill processes matched by --prefer\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
@@ -323,6 +330,14 @@ int main(int argc, char* argv[])
             fatal(6, "could not compile regexp '%s'\n", prefer_cmds);
         }
         fprintf(stderr, "Preferring to kill process names that match regex '%s'\n", prefer_cmds);
+    }
+    if (args.prefer_only) {
+        if (!prefer_cmds) {
+            fatal(EINVAL, "prefer-only requires --prefer\n");
+        } else if (avoid_cmds) {
+            avoid_cmds = NULL;
+            warn("prefer-only and --avoid are mutually exclusive, ignoring --avoid\n");
+        }
     }
     if (avoid_cmds) {
         args.avoid_regex = &_avoid_regex;
