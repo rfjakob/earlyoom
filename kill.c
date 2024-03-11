@@ -309,11 +309,15 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
             return false;
         }
-        if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
-            if (args->sort_by_rss) {
-                cur->VmRSSkiB += VMRSS_PREFER;
-            } else {
-                cur->badness += BADNESS_PREFER;
+        if (args->prefer_regex) {
+            if (regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
+                if (args->sort_by_rss) {
+                    cur->VmRSSkiB += VMRSS_PREFER;
+                } else {
+                    cur->badness += BADNESS_PREFER;
+                }
+            } else if (args->prefer_only) {
+                return false;
             }
         }
         if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
