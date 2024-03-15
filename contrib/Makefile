@@ -4,4 +4,4 @@ zombie: *.c
 .PHONY: format
 format:
 	autopep8 -i *.py
-	clang-format -i *.c
+	clang-format --style=file -i *.c
