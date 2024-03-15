@@ -135,19 +135,52 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
+#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
+#define HAVE_MRELEASE
+#else
+#warning process_mrelease is not supported. earlyoom will still work but with degraded performance.
+#endif
+
+// kill_release kills a process and calls process_mrelease to
+// release the memory as quickly as possible.
+//
+// See https://lwn.net/Articles/864184/ for details on process_mrelease.
+int kill_release(const pid_t pid, const int pidfd, const int sig)
+{
+    int res = kill(pid, sig);
+    if (res != 0) {
+        return res;
+    }
+    // Can't do process_mrelease without a pidfd.
+    if (pidfd < 0) {
+        return 0;
+    }
+#if defined(HAVE_MRELEASE)
+    res = (int)syscall(__NR_process_mrelease, pidfd, 0);
+    if (res != 0) {
+        warn("%s pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
+    } else {
+        debug("%s pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
+    }
+#endif
+    // Return 0 regardless of process_mrelease outcome
+    return 0;
+}
+
 /*
  * Send the selected signal to "pid" and wait for the process to exit
  * (max 10 seconds)
  */
 int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 {
+    const unsigned poll_ms = 100;
     int pidfd = -1;
 
     if (args->dryrun && sig != 0) {
         warn("dryrun, not actually sending any signal\n");
         return 0;
     }
-    const unsigned poll_ms = 100;
+
     if (args->kill_process_group) {
         int res = getpgid(pid);
         if (res < 0) {
@@ -157,46 +190,30 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         warn("killing whole process group %d (-g flag is active)\n", res);
     }
 
-#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
+#if defined(HAVE_MRELEASE)
     // Open the pidfd *before* calling kill().
-    // Otherwise process_mrelease() fails in 50% of cases with ESRCH.
     if (!args->kill_process_group && sig != 0) {
         pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
         if (pidfd < 0) {
             warn("%s pid %d: error opening pidfd: %s\n", __func__, pid, strerror(errno));
         }
     }
+#else
+    warn("%s pid %d: system does not support process_mrelease, skipping\n", __func__, pid);
 #endif
 
-    int res = kill(pid, sig);
+    int res = kill_release(pid, pidfd, sig);
     if (res != 0) {
-        if (pidfd >= 0) {
-            close(pidfd);
-        }
-        return res;
+        goto out_close;
     }
+
     /* signal 0 does not kill the process. Don't wait for it to exit */
     if (sig == 0) {
-        return 0;
+        goto out_close;
     }
 
     struct timespec t0 = { 0 };
     clock_gettime(CLOCK_MONOTONIC, &t0);
-
-#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
-    // Call the process_mrelease() syscall to release all the memory of
-    // the killed process as quickly as possible - see https://lwn.net/Articles/864184/
-    // for details.
-    if (pidfd >= 0) {
-        int res = (int)syscall(__NR_process_mrelease, pidfd, 0);
-        if (res != 0) {
-            warn("%s pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
-        } else {
-            debug("%s pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
-        }
-        close(pidfd);
-    }
-#endif
 
     for (unsigned i = 0; i < 100; i++) {
         struct timespec t1 = { 0 };
@@ -210,11 +227,11 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             print_mem_stats(debug, m);
             if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
-                res = kill(pid, sig);
+                res = kill_release(pid, pidfd, sig);
                 // kill first, print after
-                warn("escalating to SIGKILL after %.1f seconds\n", secs);
+                warn("escalating to SIGKILL after %.3f seconds\n", secs);
                 if (res != 0) {
-                    return res;
+                    goto out_close;
                 }
             }
         } else if (enable_debug) {
@@ -223,13 +240,24 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         }
         if (!is_alive(pid)) {
             warn("process %d exited after %.3f seconds\n", pid, secs);
-            return 0;
+            goto out_close;
         }
         struct timespec req = { .tv_sec = (time_t)(poll_ms / 1000), .tv_nsec = (poll_ms % 1000) * 1000000 };
         nanosleep(&req, NULL);
     }
+
+    res = -1;
     errno = ETIME;
-    return -1;
+
+out_close:
+    if (pidfd >= 0) {
+        int saved_errno = errno;
+        if (close(pidfd)) {
+            warn("%s pid %d: error closing pidfd %d: %s\n", __func__, pid, pidfd, strerror(errno));
+        }
+        errno = saved_errno;
+    }
+    return res;
 }
 
 // is_larger finds out if the process with pid `cur->pid` uses more memory
@@ -305,7 +333,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     }
 
     if (args->sort_by_rss) {
-         /* find process with the largest rss */
+        /* find process with the largest rss */
         if (cur->VmRSSkiB < victim->VmRSSkiB) {
             return false;
         }

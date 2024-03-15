@@ -250,7 +250,6 @@ int get_comm(int pid, char* out, size_t outlen)
     return 0;
 }
 
-
 /* Read /proc/[pid]/cmdline (process command line truncated to 256 bytes).
  * Returns 0 on success and -errno on error.
  */

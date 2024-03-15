@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // need strlen()
-#include <unistd.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include "globals.h"
 #include "msg.h"
