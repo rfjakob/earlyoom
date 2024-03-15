@@ -6,7 +6,8 @@ Should look like this in ps:
 
 $ ps auxwwww | grep zombie
 jakob     7513  0.0  0.0   2172   820 pts/1    S+   13:44   0:00 ./zombie
-jakob     7514  0.0  0.0      0     0 pts/1    Z+   13:44   0:00 [zombie] <defunct>
+jakob     7514  0.0  0.0      0     0 pts/1    Z+   13:44   0:00 [zombie]
+<defunct>
 */
 
 #include <stdio.h>
@@ -24,6 +25,7 @@ int main()
     }
     if (pid > 0) {
         /* parent */
+        printf("zombie created, pid %d. Sleeping 10 minutes.\n", pid);
         sleep(600);
         int wstatus;
         wait(&wstatus);
