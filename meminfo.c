@@ -269,9 +269,6 @@ int get_cmdline(int pid, char* out, size_t outlen)
         return -fread_errno;
     }
     fclose(f);
-    if (n < 1) {
-        return -ENODATA;
-    }
     /* replace null character with space */
     for (size_t i = 0; i < n; i++) {
         if (out[i] == '\0') {
