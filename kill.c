@@ -327,11 +327,6 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
         }
     }
 
-    if (cur->VmRSSkiB == 0) {
-        // Kernel threads have zero rss
-        return false;
-    }
-
     if (args->sort_by_rss) {
         /* find process with the largest rss */
         if (cur->VmRSSkiB < victim->VmRSSkiB) {
