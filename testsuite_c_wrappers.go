@@ -39,7 +39,8 @@ func parse_meminfo() C.meminfo_t {
 
 func find_largest_process() {
 	var args C.poll_loop_args_t
-	C.find_largest_process(&args)
+	var m C.meminfo_t
+	C.find_largest_process(&args, &m)
 }
 
 func kill_process() {

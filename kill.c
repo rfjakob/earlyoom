@@ -264,7 +264,7 @@ out_close:
 // than our current `victim`.
 // In the process, it fills the `cur` structure. It does so lazily, meaning
 // it only fills the fields it needs to make a decision.
-bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur)
+bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_t* victim, procinfo_t* cur)
 {
     if (cur->pid <= 1) {
         // Let's not kill init.
@@ -398,7 +398,7 @@ void debug_print_procinfo(const procinfo_t* cur)
 /*
  * Find the process with the largest oom_score or rss(when flag --sort-by-rss is set).
  */
-procinfo_t find_largest_process(const poll_loop_args_t* args)
+procinfo_t find_largest_process(const poll_loop_args_t* args, const meminfo_t* m)
 {
     DIR* procdir = opendir(procdir_path);
     if (procdir == NULL) {
@@ -434,7 +434,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
             /* omitted fields are set to zero */
         };
 
-        bool larger = is_larger(args, &victim, &cur);
+        bool larger = is_larger(args, m, &victim, &cur);
 
         debug_print_procinfo(&cur);
 
