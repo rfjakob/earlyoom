@@ -329,6 +329,16 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
 
     if (args->sort_by_rss) {
         /* find process with the largest rss */
+
+        // Zombie main thread or other shenanigans?
+        if (cur->VmRSSkiB == 0 && cur->badness > 0) {
+            // Acc. to https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/fs/proc/base.c?h=v6.8#n561
+            // oom_score goes from 0 to 2000.
+            cur->VmRSSkiB = (m->MemTotalKiB + m->SwapTotalKiB) * cur->badness / 2000;
+            warn("%s pid %d: rss=0 but oom_score=%d. Zombie main thread? Estimating rss=%lld\n",
+                __func__, cur->pid, cur->badness, cur->VmRSSkiB);
+        }
+
         if (cur->VmRSSkiB < victim->VmRSSkiB) {
             return false;
         }
