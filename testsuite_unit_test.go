@@ -225,23 +225,21 @@ func Test_parse_proc_pid_stat_buf(t *testing.T) {
 	}
 }
 
-func Test_parse_proc_pid_stat_Self(t *testing.T) {
-	pid := os.Getpid()
-	path := fmt.Sprintf("/proc/%d/stat", pid)
-	stat, err := linuxproc.ReadProcessStat(path)
+func Test_parse_proc_pid_stat_1(t *testing.T) {
+	stat, err := linuxproc.ReadProcessStat("/proc/1/stat")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, want := parse_proc_pid_stat(1) // Stupid hack to get a C.pid_stat_t
-	want.state = _Ctype_char(stat.State[0])
-	want.ppid = _Ctype_int(stat.Ppid)
-	want.num_threads = _Ctype_long(stat.NumThreads)
-
-	res, have := parse_proc_pid_stat(pid)
+	res, have := parse_proc_pid_stat(1)
 	if !res {
 		t.Fatal(res)
 	}
+
+	want := have
+	want.state = _Ctype_char(stat.State[0])
+	want.ppid = _Ctype_int(stat.Ppid)
+	want.num_threads = _Ctype_long(stat.NumThreads)
 
 	if have != want {
 		t.Errorf("\nhave=%#v\nwant=%#v", have, want)
