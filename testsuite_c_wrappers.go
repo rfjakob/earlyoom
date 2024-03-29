@@ -10,6 +10,7 @@ import (
 // #include "kill.h"
 // #include "msg.h"
 // #include "globals.h"
+// #include "proc_pid.h"
 import "C"
 
 func parse_term_kill_tuple(optarg string, upper_limit int) (error, float64, float64) {
@@ -80,4 +81,15 @@ func get_cmdline(pid int) (int, string) {
 func procdir_path(str string) {
 	cstr := C.CString(str)
 	C.procdir_path = cstr
+}
+
+func parse_proc_pid_stat_buf(buf string) (res bool, out C.pid_stat_t) {
+	cbuf := C.CString(buf)
+	res = bool(C.parse_proc_pid_stat_buf(&out, cbuf))
+	return res, out
+}
+
+func parse_proc_pid_stat(pid int) (res bool, out C.pid_stat_t) {
+	res = bool(C.parse_proc_pid_stat(&out, C.int(pid)))
+	return res, out
 }

@@ -1,12 +1,15 @@
 package earlyoom_testsuite
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"syscall"
 	"testing"
 	"unicode/utf8"
+
+	linuxproc "github.com/c9s/goprocinfo/linux"
 )
 
 // On Fedora 31 (Linux 5.4), /proc/sys/kernel/pid_max = 4194304.
@@ -207,6 +210,87 @@ func Test_get_cmdline(t *testing.T) {
 	}
 }
 
+func Test_parse_proc_pid_stat_buf(t *testing.T) {
+	should_error_out := []string{
+		"",
+		"x",
+		"\000\000\000",
+		")",
+	}
+	for _, v := range should_error_out {
+		res, _ := parse_proc_pid_stat_buf(v)
+		if res {
+			t.Errorf("Should have errored out at %q", v)
+		}
+	}
+}
+
+func Test_parse_proc_pid_stat_Self(t *testing.T) {
+	pid := os.Getpid()
+	path := fmt.Sprintf("/proc/%d/stat", pid)
+	stat, err := linuxproc.ReadProcessStat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, out := parse_proc_pid_stat(pid)
+	if !res {
+		t.Fatal(res)
+	}
+	if byte(out.state) != stat.State[0] {
+		t.Error()
+	}
+	if int64(out.ppid) != stat.Ppid {
+		t.Error()
+	}
+	if int64(out.num_threads) != stat.NumThreads {
+		t.Error()
+	}
+}
+
+func Test_parse_proc_pid_stat_Mock(t *testing.T) {
+	mockProcdir, err := ioutil.TempDir("", t.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	procdir_path(mockProcdir)
+	defer procdir_path("/proc")
+
+	if err := os.Mkdir(mockProcdir+"/100", 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	// Real /proc/pid/stat string for gnome-shell
+	template := "549077 (%s) S 547891 549077 549077 0 -1 4194560 245592 104 342 5 108521 28953 0 1 20 0 23 0 4816953 5260238848 65528 18446744073709551615 94179647238144 94179647245825 140730757359824 0 0 0 0 16781312 17656 0 0 0 17 1 0 0 0 0 0 94179647252976 94179647254904 94179672109056 140730757367876 140730757367897 140730757367897 140730757369827 0"
+	content := []string{
+		fmt.Sprintf(template, "gnome-shell"),
+		fmt.Sprintf(template, ""),
+		fmt.Sprintf(template, ": - )"),
+		fmt.Sprintf(template, "()()()())))(((()))()()"),
+		fmt.Sprintf(template, "   \n\n    "),
+	}
+
+	// Stupid hack to get a C.pid_stat_t
+	_, want := parse_proc_pid_stat(1)
+	want.state = 'S'
+	want.ppid = 547891
+	want.num_threads = 23
+
+	for _, c := range content {
+		statFile := mockProcdir + "/100/stat"
+		if err := ioutil.WriteFile(statFile, []byte(c), 0600); err != nil {
+			t.Fatal(err)
+		}
+		res, have := parse_proc_pid_stat(100)
+		if !res {
+			t.Error()
+		}
+		if have != want {
+			t.Errorf("have=%v, want=%v for /proc/100/stat=%q", have, want, c)
+		}
+	}
+}
+
 func Benchmark_parse_meminfo(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		parse_meminfo()
@@ -272,6 +356,19 @@ func Benchmark_get_cmdline(b *testing.B) {
 		}
 		if res != 0 {
 			b.Fatalf("error %d", res)
+		}
+	}
+}
+
+func Benchmark_parse_proc_pid_stat(b *testing.B) {
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		res, out := parse_proc_pid_stat(pid)
+		if out.num_threads == 0 {
+			b.Fatalf("no threads???")
+		}
+		if !res {
+			b.Fatal("failed")
 		}
 	}
 }
