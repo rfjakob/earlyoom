@@ -233,18 +233,18 @@ func Test_parse_proc_pid_stat_Self(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, out := parse_proc_pid_stat(pid)
+	_, want := parse_proc_pid_stat(1) // Stupid hack to get a C.pid_stat_t
+	want.state = _Ctype_char(stat.State[0])
+	want.ppid = _Ctype_int(stat.Ppid)
+	want.num_threads = _Ctype_long(stat.NumThreads)
+
+	res, have := parse_proc_pid_stat(pid)
 	if !res {
 		t.Fatal(res)
 	}
-	if byte(out.state) != stat.State[0] {
-		t.Error()
-	}
-	if int64(out.ppid) != stat.Ppid {
-		t.Error()
-	}
-	if int64(out.num_threads) != stat.NumThreads {
-		t.Error()
+
+	if have != want {
+		t.Errorf("\nhave=%#v\nwant=%#v", have, want)
 	}
 }
 
@@ -286,7 +286,7 @@ func Test_parse_proc_pid_stat_Mock(t *testing.T) {
 			t.Error()
 		}
 		if have != want {
-			t.Errorf("have=%v, want=%v for /proc/100/stat=%q", have, want, c)
+			t.Errorf("/proc/100/stat=%q:\nhave=%#v\nwant=%#v", have, want, c)
 		}
 	}
 }
