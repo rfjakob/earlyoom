@@ -271,6 +271,13 @@ accept
 
 * Use case reports and feedback
 
+Implementation Notes
+--------------------
+
+* We don't use [procps/libproc2](https://man7.org/linux/man-pages/man3/procps_pids.3.html) because
+  procps_pids_select(), for some reason, always parses /proc/$pid/status.
+  This is relatively expensive, and we don't need it.
+
 Changelog
 ---------
 
