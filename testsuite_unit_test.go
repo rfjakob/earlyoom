@@ -99,21 +99,23 @@ func TestIsAliveMock(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	statString := func(comm string, state string) string {
+		template := "144815 (%s) %s 17620 144815 144815 34817 247882 4194304 20170 1855121 1 3321 28 46 3646 3366 20 0 1 0 10798280 237576192 1065 18446744073709551615 94174652813312 94174653706789 140724247111872 0 0 0 65536 3686404 1266761467 0 0 0 17 0 0 0 9 0 0 94174653946928 94174653994640 94174663303168 140724247119367 140724247119377 140724247119377 140724247121902 0"
+		return fmt.Sprintf(template, comm, state)
+	}
 	testCases := []struct {
 		content string
 		res     bool
 	}{
-		{"144815 (bash) S 17620 144815 144815 34817 247882 4194304 20170 1855121 1 3321 28 46 3646 3366 20 0 1 0 10798280 237576192 1065 18446744073709551615 94174652813312 94174653706789 140724247111872 0 0 0 65536 3686404 1266761467 0 0 0 17 0 0 0 9 0 0 94174653946928 94174653994640 94174663303168 140724247119367 140724247119377 140724247119377 140724247121902 0",
-			true}, // full string from actual system
-		{"123 (bash) R 123 123 123", true}, // truncated for brevity
-		{"123 (bash) Z 123 123 123", false},
+		{statString("bash", "R"), true}, // full string from actual system
+		{statString("bash", "Z"), false},
 		// hostile process names that try to fake "I am dead"
-		{"123 (foo) Z ) R 123 123 123", true},
-		{"123 (foo) Z) R 123 123 123", true},
-		{"123 (foo)Z ) R 123 123 123", true},
-		{"123 (foo)\nZ\n) R 123 123 123", true},
-		{"123 (foo)\tZ\t) R 123 123 123", true},
-		{"123 (foo)  Z   ) R 123 123 123", true},
+		{statString("foo) Z ", "R"), true},
+		{statString("foo) Z", "R"), true},
+		{statString("foo)Z ", "R"), true},
+		{statString("foo)\nZ\n", "R"), true},
+		{statString("foo)\tZ\t", "R"), true},
+		{statString("foo)  Z  ", "R"), true},
 	}
 
 	for _, tc := range testCases {
