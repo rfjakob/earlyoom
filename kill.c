@@ -158,9 +158,9 @@ int kill_release(const pid_t pid, const int pidfd, const int sig)
 #if defined(HAVE_MRELEASE)
     res = (int)syscall(__NR_process_mrelease, pidfd, 0);
     if (res != 0) {
-        warn("%s pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
+        warn("%s: pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
     } else {
-        debug("%s pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
+        debug("%s: pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
     }
 #endif
     // Return 0 regardless of process_mrelease outcome
