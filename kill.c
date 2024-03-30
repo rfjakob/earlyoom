@@ -248,6 +248,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 
     res = -1;
     errno = ETIME;
+    warn("process %d did not exit\n", pid);
 
 out_close:
     if (pidfd >= 0) {
