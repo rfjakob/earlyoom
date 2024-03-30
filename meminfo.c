@@ -15,6 +15,7 @@
 #include "globals.h"
 #include "meminfo.h"
 #include "msg.h"
+#include "proc_pid.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: "MemTotal:")
@@ -134,42 +135,14 @@ bool is_alive(int pid)
         return false;
     }
 
-    char buf[PATH_LEN] = { 0 };
-    // Read /proc/[pid]/stat
-    snprintf(buf, sizeof(buf), "%s/%d/stat", procdir_path, pid);
-    FILE* f = fopen(buf, "r");
-    if (f == NULL) {
-        // Process is gone - good.
+    pid_stat_t stat;
+    if(!parse_proc_pid_stat(&stat, pid)) {
         return false;
     }
 
-    // File content looks like this:
-    // 10751 (cat) R 2663 10751 2663[...]
-    // File may be bigger than 256 bytes, but we only need the first 20 or so.
-    memset(buf, 0, sizeof(buf));
-    size_t len = fread(buf, 1, sizeof(buf), f);
-    bool read_error = ferror(f) || len == 0;
-    fclose(f);
-    if (read_error) {
-        warn("%s: fread failed: %s\n", __func__, strerror(errno));
-        return false;
-    }
-
-    // Find last ")" by searching from the end
-    int i = sizeof(buf) - 1;
-    for (; i >= 0; i--) {
-        if (buf[i] == ')')
-            break;
-    }
-    if (i <= 0 || i + 2 >= (int)sizeof(buf)) {
-        warn("%s: could not find closing bracket\n", __func__);
-        return false;
-    }
-    char state = buf[i + 2];
-
-    debug("process state: %c\n", state);
-    if (state == 'Z') {
-        // A zombie process does not use any memory. Consider it dead.
+    debug("%s: state=%c num_threads=%ld\n", __func__, stat.state, stat.num_threads);
+    if (stat.state == 'Z' && stat.num_threads == 1) {
+        // A zombie process without subthreads does not use any memory. Consider it dead.
         return false;
     }
     return true;
