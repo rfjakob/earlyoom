@@ -116,6 +116,8 @@ func TestIsAliveMock(t *testing.T) {
 		{statString("foo)\nZ\n", "R"), true},
 		{statString("foo)\tZ\t", "R"), true},
 		{statString("foo)  Z  ", "R"), true},
+		// Actual stat string from https://github.com/rfjakob/zombiemem
+		{"777295 (zombiemem) Z 773303 777295 773303 34817 777295 4227084 262246 0 1 0 18 49 0 0 20 0 2 0 8669053 0 0 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 3 0 0 0 0 0 0 0 0 0 0 0 0 0", true},
 	}
 
 	for _, tc := range testCases {
