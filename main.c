@@ -79,6 +79,14 @@ static void startup_selftests(poll_loop_args_t* args, const meminfo_t* m)
             warn("%s: -N: notify script '%s' is not executable: %s\n", __func__, args->notify_ext, strerror(errno));
         }
     }
+
+#ifdef PROFILE_FIND_LARGEST_PROCESS
+    warn("PROFILE_FIND_LARGEST_PROCESS: looping forever on find_largest_process()\n");
+    while(1) {
+        find_largest_process(args, m);
+    };
+#endif
+
 }
 
 int main(int argc, char* argv[])
