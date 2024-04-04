@@ -260,7 +260,7 @@ int get_cmdline(int pid, char* out, size_t outlen)
 int get_uid(int pid)
 {
     char path[PATH_LEN] = { 0 };
-    snprintf(path, sizeof(path), "/proc/%d", pid);
+    snprintf(path, sizeof(path), "%s/%d", procdir_path, pid);
     struct stat st = { 0 };
     int res = stat(path, &st);
     if (res < 0) {
