@@ -275,7 +275,7 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
     {
         int res = get_uid(cur->pid);
         if (res < 0) {
-            debug("pid %d: error reading uid: %s\n", cur->pid, strerror(-res));
+            debug("%s: pid %d: error reading uid: %s\n", __func__, cur->pid, strerror(-res));
             return false;
         }
         cur->uid = res;
@@ -288,7 +288,7 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
     {
         int res = get_oom_score(cur->pid);
         if (res < 0) {
-            debug("pid %d: error reading oom_score: %s\n", cur->pid, strerror(-res));
+            debug("%s: pid %d: error reading oom_score: %s\n", __func__, cur->pid, strerror(-res));
             return false;
         }
         cur->badness = res;
@@ -297,7 +297,7 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
     {
         long long res = get_vm_rss_kib(cur->pid);
         if (res < 0) {
-            debug("pid %d: error reading rss: %s\n", cur->pid, strerror((int)-res));
+            debug("%s: pid %d: error reading rss: %s\n", __func__, cur->pid, strerror((int)-res));
             return false;
         }
         cur->VmRSSkiB = res;
@@ -306,7 +306,7 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
     if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
         int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
         if (res < 0) {
-            debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
+            debug("%s: pid %d: error reading process name: %s\n", __func__, cur->pid, strerror(-res));
             return false;
         }
         if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
@@ -363,7 +363,7 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
     {
         int res = get_oom_score_adj(cur->pid, &cur->oom_score_adj);
         if (res < 0) {
-            debug("pid %d: error reading oom_score_adj: %s\n", cur->pid, strerror(-res));
+            debug("%s: pid %d: error reading oom_score_adj: %s\n", __func__, cur->pid, strerror(-res));
             return false;
         }
         if (cur->oom_score_adj == -1000) {

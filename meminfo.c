@@ -136,7 +136,7 @@ bool is_alive(int pid)
     }
 
     pid_stat_t stat;
-    if(!parse_proc_pid_stat(&stat, pid)) {
+    if (!parse_proc_pid_stat(&stat, pid)) {
         return false;
     }
 
@@ -224,6 +224,7 @@ int get_comm(int pid, char* out, size_t outlen)
 }
 
 /* Read /proc/[pid]/cmdline (process command line truncated to 256 bytes).
+ * The null bytes are replaced by space.
  * Returns 0 on success and -errno on error.
  */
 int get_cmdline(int pid, char* out, size_t outlen)

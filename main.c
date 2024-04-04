@@ -82,11 +82,10 @@ static void startup_selftests(poll_loop_args_t* args, const meminfo_t* m)
 
 #ifdef PROFILE_FIND_LARGEST_PROCESS
     warn("PROFILE_FIND_LARGEST_PROCESS: looping forever on find_largest_process()\n");
-    while(1) {
+    while (1) {
         find_largest_process(args, m);
     };
 #endif
-
 }
 
 int main(int argc, char* argv[])
