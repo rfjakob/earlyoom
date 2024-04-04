@@ -64,11 +64,11 @@ double min(double x, double y)
 // Dry-run oom kill to make sure that
 // (1) it works (meaning /proc is accessible)
 // (2) the stack grows to maximum size before calling mlockall()
-static void startup_selftests(poll_loop_args_t* args, const meminfo_t* m)
+static void startup_selftests(poll_loop_args_t* args)
 {
     {
         debug("%s: dry-running oom kill...\n", __func__);
-        procinfo_t victim = find_largest_process(args, m);
+        procinfo_t victim = find_largest_process(args);
         kill_process(args, 0, &victim);
     }
     if (args->notify_ext) {
@@ -369,7 +369,7 @@ int main(int argc, char* argv[])
     fprintf(stderr, "        SIGKILL when mem <= " PRIPCT " and swap <= " PRIPCT "\n",
         args.mem_kill_percent, args.swap_kill_percent);
 
-    startup_selftests(&args, &m);
+    startup_selftests(&args);
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
@@ -477,7 +477,7 @@ static void poll_loop(const poll_loop_args_t* args)
                 args->mem_term_percent, args->swap_term_percent);
         }
         if (sig) {
-            procinfo_t victim = find_largest_process(args, &m);
+            procinfo_t victim = find_largest_process(args);
             /* The run time of find_largest_process is proportional to the number
              * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").
              * This is long enough that the situation may have changed in the meantime,

@@ -265,7 +265,7 @@ out_close:
 // than our current `victim`.
 // In the process, it fills the `cur` structure. It does so lazily, meaning
 // it only fills the fields it needs to make a decision.
-bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_t* victim, procinfo_t* cur)
+bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur)
 {
     if (cur->pid <= 1) {
         // Let's not kill init.
@@ -328,24 +328,31 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
         }
     }
 
+    // find process with the largest rss
     if (args->sort_by_rss) {
-        /* find process with the largest rss */
-
-        // Zombie main thread or other shenanigans?
-        if (cur->VmRSSkiB == 0 && cur->badness > 0) {
-            // Acc. to https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/fs/proc/base.c?h=v6.8#n561
-            // oom_score goes from 0 to 2000.
-            cur->VmRSSkiB = (m->MemTotalKiB + m->SwapTotalKiB) * cur->badness / 2000;
-            warn("%s pid %d: rss=0 but oom_score=%d. Zombie main thread? Estimating rss=%lld\n",
-                __func__, cur->pid, cur->badness, cur->VmRSSkiB);
+        // Case 1: neither victim nor cur have rss=0 (zombie main thread).
+        // This is the usual case.
+        if (cur->VmRSSkiB > 0 && victim->VmRSSkiB > 0) {
+            if (cur->VmRSSkiB < victim->VmRSSkiB) {
+                return false;
+            }
+            if (cur->VmRSSkiB == victim->VmRSSkiB && cur->badness <= victim->badness) {
+                return false;
+            }
         }
-
-        if (cur->VmRSSkiB < victim->VmRSSkiB) {
-            return false;
-        }
-
-        if (cur->VmRSSkiB == victim->VmRSSkiB && cur->badness <= victim->badness) {
-            return false;
+        // Case 2: one (or both) have rss=0 (zombie main thread)
+        else {
+            if (cur->VmRSSkiB == 0) {
+                // only print the warning when the zombie is first seen, i.e. as "cur"
+                warn("%s: pid %d: rss=0 but oom_score=%d. Zombie main thread? Using oom_score for decision.\n",
+                    __func__, cur->pid, cur->badness);
+            }
+            if (cur->badness < victim->badness) {
+                return false;
+            }
+            if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
+                return false;
+            }
         }
     } else {
         /* find process with the largest oom_score */
@@ -370,33 +377,32 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
             return false;
         }
     }
-
-    // Looks like we have a new victim. Fill out remaining fields
-    if (strlen(cur->name) == 0) {
-        int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
-        if (res < 0) {
-            debug("pid %d: error reading process name: %s\n", cur->pid, strerror(-res));
-            return false;
-        }
-    }
-    /* read cmdline */
-    {
-        int res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
-        if (res < 0) {
-            debug("pid %d: error reading process cmdline: %s\n", cur->pid, strerror(-res));
-            return false;
-        }
-    }
-
     return true;
 }
 
+void fill_informative_fields(procinfo_t* cur)
+{
+    if (strlen(cur->name) == 0) {
+        int res = get_comm(cur->pid, cur->name, sizeof(cur->name));
+        if (res < 0) {
+            debug("%s: pid %d: error reading process name: %s\n", __func__, cur->pid, strerror(-res));
+        }
+    }
+    if (strlen(cur->cmdline) == 0) {
+        int res = get_cmdline(cur->pid, cur->cmdline, sizeof(cur->cmdline));
+        if (res < 0) {
+            debug("%s: pid %d: error reading process cmdline: %s\n", __func__, cur->pid, strerror(-res));
+        }
+    }
+}
+
 // debug_print_procinfo pretty-prints the process information in `cur`.
-void debug_print_procinfo(const procinfo_t* cur)
+void debug_print_procinfo(procinfo_t* cur)
 {
     if (!enable_debug) {
         return;
     }
+    fill_informative_fields(cur);
     debug("pid %5d: badness %3d VmRSS %7lld uid %4d oom_score_adj %4d \"%s\"",
         cur->pid, cur->badness, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
 }
@@ -404,7 +410,7 @@ void debug_print_procinfo(const procinfo_t* cur)
 /*
  * Find the process with the largest oom_score or rss(when flag --sort-by-rss is set).
  */
-procinfo_t find_largest_process(const poll_loop_args_t* args, const meminfo_t* m)
+procinfo_t find_largest_process(const poll_loop_args_t* args)
 {
     DIR* procdir = opendir(procdir_path);
     if (procdir == NULL) {
@@ -440,7 +446,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args, const meminfo_t* m
             /* omitted fields are set to zero */
         };
 
-        bool larger = is_larger(args, m, &victim, &cur);
+        bool larger = is_larger(args, &victim, &cur);
 
         debug_print_procinfo(&cur);
 

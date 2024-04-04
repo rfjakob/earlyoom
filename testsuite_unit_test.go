@@ -293,6 +293,55 @@ func Test_parse_proc_pid_stat_Mock(t *testing.T) {
 	}
 }
 
+func permute_is_larger(t *testing.T, sort_by_rss bool, procs []mockProcProcess) {
+	args := poll_loop_args_t(sort_by_rss)
+	for i := range procs {
+		for j := range procs {
+			// If the entry is later in the list, is_larger should return true.
+			want := j > i
+			have := is_larger(&args, procs[i], procs[j])
+			if want != have {
+				t.Errorf("j%d/pid%d larger than i%d/pid%d? want=%v have=%v", j, procs[j].pid, i, procs[i].pid, want, have)
+			}
+		}
+	}
+}
+
+func Test_is_larger(t *testing.T) {
+	procs := []mockProcProcess{
+		// smallest
+		{pid: 100, oom_score: 100, VmRSSkiB: 1234},
+		{pid: 101, oom_score: 100, VmRSSkiB: 1238},
+		{pid: 102, oom_score: 101, VmRSSkiB: 4},
+		{pid: 103, oom_score: 102, VmRSSkiB: 4},
+		{pid: 104, oom_score: 103, VmRSSkiB: 0, num_threads: 2}, // zombie main thread
+		// largest
+	}
+
+	mockProc(t, procs)
+	t.Logf("procdir_path=%q", procdir_path(""))
+
+	permute_is_larger(t, false, procs)
+}
+
+func Test_is_larger_by_rss(t *testing.T) {
+	procs := []mockProcProcess{
+		// smallest
+		{pid: 100, oom_score: 100, VmRSSkiB: 4},
+		{pid: 101, oom_score: 100, VmRSSkiB: 8},
+		{pid: 102, oom_score: 101, VmRSSkiB: 8},
+		{pid: 103, oom_score: 99, VmRSSkiB: 12},
+		{pid: 104, oom_score: 102, VmRSSkiB: 0, num_threads: 2}, // zombie main thread
+		{pid: 105, oom_score: 102, VmRSSkiB: 12},
+		// largest
+	}
+
+	mockProc(t, procs)
+	t.Logf("procdir_path=%q", procdir_path(""))
+
+	permute_is_larger(t, true, procs)
+}
+
 func Benchmark_parse_meminfo(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		parse_meminfo()

@@ -36,6 +36,7 @@ typedef struct {
 } poll_loop_args_t;
 
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim);
-procinfo_t find_largest_process(const poll_loop_args_t* args, const meminfo_t* m);
+procinfo_t find_largest_process(const poll_loop_args_t* args);
+bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur);
 
 #endif

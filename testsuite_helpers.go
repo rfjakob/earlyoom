@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -11,6 +12,9 @@ import (
 	"testing"
 	"time"
 )
+
+// #include "meminfo.h"
+import "C"
 
 type exitVals struct {
 	stdout string
@@ -144,4 +148,78 @@ func extractCmdExitCode(err error) int {
 	}
 	log.Panicf("could not decode error %#v", err)
 	return 0
+}
+
+type mockProcProcess struct {
+	pid         int
+	state       string // set to "R" when empty
+	oom_score   int
+	VmRSSkiB    int
+	comm        string
+	num_threads int // set to 1 when zero
+}
+
+func (m *mockProcProcess) toProcinfo_t() (p C.procinfo_t) {
+	p.pid = C.int(m.pid)
+	p.badness = C.int(m.oom_score)
+	p.VmRSSkiB = C.longlong(m.VmRSSkiB)
+	for i, v := range []byte(m.comm) {
+		p.name[i] = C.char(v)
+	}
+	return p
+}
+
+func mockProc(t *testing.T, procs []mockProcProcess) {
+	mockProcdir, err := ioutil.TempDir("", t.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	procdir_path(mockProcdir)
+
+	for _, p := range procs {
+		if p.state == "" {
+			p.state = "R"
+		}
+		if p.num_threads == 0 {
+			p.num_threads = 1
+		}
+
+		pidDir := fmt.Sprintf("%s/%d", mockProcdir, int(p.pid))
+		if err := os.Mkdir(pidDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		// statm
+		//
+		// rss = 2nd field, in pages. The other fields are not used by earlyoom.
+		rss := p.VmRSSkiB * 1024 / os.Getpagesize()
+		content := []byte(fmt.Sprintf("1 %d 3 4 5 6 7\n", rss))
+		if err := ioutil.WriteFile(pidDir+"/statm", content, 0444); err != nil {
+			t.Fatal(err)
+		}
+		// stat
+		//
+		// Real /proc/pid/stat string for gnome-shell
+		template := "549077 (%s) S 547891 549077 549077 0 -1 4194560 245592 104 342 5 108521 28953 0 1 20 0 %d 0 4816953 5260238848 65528 18446744073709551615 94179647238144 94179647245825 140730757359824 0 0 0 0 16781312 17656 0 0 0 17 1 0 0 0 0 0 94179647252976 94179647254904 94179672109056 140730757367876 140730757367897 140730757367897 140730757369827 0\n"
+		content = []byte(fmt.Sprintf(template, p.comm, p.num_threads))
+		if err := ioutil.WriteFile(pidDir+"/stat", content, 0444); err != nil {
+			t.Fatal(err)
+		}
+		// oom_score
+		content = []byte(fmt.Sprintf("%d\n", p.oom_score))
+		if err := ioutil.WriteFile(pidDir+"/oom_score", content, 0444); err != nil {
+			t.Fatal(err)
+		}
+		// oom_score_adj
+		if err := ioutil.WriteFile(pidDir+"/oom_score_adj", []byte("0\n"), 0444); err != nil {
+			t.Fatal(err)
+		}
+		// comm
+		if err := ioutil.WriteFile(pidDir+"/comm", []byte(p.comm+"\n"), 0444); err != nil {
+			t.Fatal(err)
+		}
+		// cmdline
+		if err := ioutil.WriteFile(pidDir+"/cmdline", []byte("foo\000-bar\000-baz"), 0444); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
