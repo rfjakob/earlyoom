@@ -13,6 +13,10 @@ import (
 // #include "proc_pid.h"
 import "C"
 
+func init() {
+	C.enable_debug = 1
+}
+
 func parse_term_kill_tuple(optarg string, upper_limit int) (error, float64, float64) {
 	cs := C.CString(optarg)
 	tuple := C.parse_term_kill_tuple(cs, C.longlong(upper_limit))
@@ -38,10 +42,26 @@ func parse_meminfo() C.meminfo_t {
 	return C.parse_meminfo()
 }
 
+// Wrapper so _test.go code can create a poll_loop_args_t
+// struct. _test.go code cannot use C.
+func poll_loop_args_t(sort_by_rss bool) (args C.poll_loop_args_t) {
+	args.sort_by_rss = C.bool(sort_by_rss)
+	return
+}
+
+func procinfo_t() C.procinfo_t {
+	return C.procinfo_t{}
+}
+
+func is_larger(args *C.poll_loop_args_t, victim mockProcProcess, cur mockProcProcess) bool {
+	cVictim := victim.toProcinfo_t()
+	cCur := cur.toProcinfo_t()
+	return bool(C.is_larger(args, &cVictim, &cCur))
+}
+
 func find_largest_process() {
 	var args C.poll_loop_args_t
-	var m C.meminfo_t
-	C.find_largest_process(&args, &m)
+	C.find_largest_process(&args)
 }
 
 func kill_process() {
@@ -78,9 +98,12 @@ func get_cmdline(pid int) (int, string) {
 	return int(res), C.GoString(cstr)
 }
 
-func procdir_path(str string) {
-	cstr := C.CString(str)
-	C.procdir_path = cstr
+func procdir_path(str string) string {
+	if str != "" {
+		cstr := C.CString(str)
+		C.procdir_path = cstr
+	}
+	return C.GoString(C.procdir_path)
 }
 
 func parse_proc_pid_stat_buf(buf string) (res bool, out C.pid_stat_t) {
