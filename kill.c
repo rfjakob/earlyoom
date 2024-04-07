@@ -403,8 +403,13 @@ void debug_print_procinfo(procinfo_t* cur)
         return;
     }
     fill_informative_fields(cur);
-    debug("pid %5d: badness %3d VmRSS %7lld uid %4d oom_score_adj %4d \"%s\"",
+    debug("%5d %9d %7lld %5d %13d \"%s\"",
         cur->pid, cur->badness, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
+}
+
+void debug_print_procinfo_header()
+{
+    debug("  PID OOM_SCORE  RSSkiB   UID OOM_SCORE_ADJ  COMM\n");
 }
 
 /*
@@ -421,6 +426,8 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
     if (enable_debug) {
         clock_gettime(CLOCK_MONOTONIC, &t0);
     }
+
+    debug_print_procinfo_header();
 
     procinfo_t victim = { 0 };
     while (1) {
