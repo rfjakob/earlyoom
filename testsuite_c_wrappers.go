@@ -17,6 +17,18 @@ func init() {
 	C.enable_debug = 1
 }
 
+func enable_debug(state bool) (oldState bool) {
+	if C.enable_debug == 1 {
+		oldState = true
+	}
+	if state {
+		C.enable_debug = 1
+	} else {
+		C.enable_debug = 0
+	}
+	return
+}
+
 func parse_term_kill_tuple(optarg string, upper_limit int) (error, float64, float64) {
 	cs := C.CString(optarg)
 	tuple := C.parse_term_kill_tuple(cs, C.longlong(upper_limit))

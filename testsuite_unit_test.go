@@ -319,6 +319,7 @@ func Test_is_larger(t *testing.T) {
 	}
 
 	mockProc(t, procs)
+	defer procdir_path("/proc")
 	t.Logf("procdir_path=%q", procdir_path(""))
 
 	permute_is_larger(t, false, procs)
@@ -337,30 +338,39 @@ func Test_is_larger_by_rss(t *testing.T) {
 	}
 
 	mockProc(t, procs)
+	defer procdir_path("/proc")
 	t.Logf("procdir_path=%q", procdir_path(""))
 
 	permute_is_larger(t, true, procs)
 }
 
 func Benchmark_parse_meminfo(b *testing.B) {
+	enable_debug(false)
+
 	for n := 0; n < b.N; n++ {
 		parse_meminfo()
 	}
 }
 
 func Benchmark_kill_process(b *testing.B) {
+	enable_debug(false)
+
 	for n := 0; n < b.N; n++ {
 		kill_process()
 	}
 }
 
 func Benchmark_find_largest_process(b *testing.B) {
+	enable_debug(false)
+
 	for n := 0; n < b.N; n++ {
 		find_largest_process()
 	}
 }
 
 func Benchmark_get_oom_score(b *testing.B) {
+	enable_debug(false)
+
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
 		get_oom_score(pid)
@@ -368,6 +378,8 @@ func Benchmark_get_oom_score(b *testing.B) {
 }
 
 func Benchmark_get_oom_score_adj(b *testing.B) {
+	enable_debug(false)
+
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
 		var out int
@@ -376,6 +388,8 @@ func Benchmark_get_oom_score_adj(b *testing.B) {
 }
 
 func Benchmark_get_vm_rss_kib(b *testing.B) {
+	enable_debug(false)
+
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
 		rss := get_vm_rss_kib(pid)
@@ -386,6 +400,8 @@ func Benchmark_get_vm_rss_kib(b *testing.B) {
 }
 
 func Benchmark_get_comm(b *testing.B) {
+	enable_debug(false)
+
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
 		res, comm := get_comm(pid)
@@ -399,6 +415,8 @@ func Benchmark_get_comm(b *testing.B) {
 }
 
 func Benchmark_get_cmdline(b *testing.B) {
+	enable_debug(false)
+
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
 		res, comm := get_cmdline(pid)
@@ -412,6 +430,8 @@ func Benchmark_get_cmdline(b *testing.B) {
 }
 
 func Benchmark_parse_proc_pid_stat(b *testing.B) {
+	enable_debug(false)
+
 	pid := os.Getpid()
 	for n := 0; n < b.N; n++ {
 		res, out := parse_proc_pid_stat(pid)
