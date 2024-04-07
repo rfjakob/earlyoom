@@ -145,13 +145,23 @@ Be sure to check how your environment behaves beforehand. Use
 to show all processes with the PGID in brackets.
 
 #### \-\-prefer REGEX
-prefer killing processes matching REGEX (adds 300 to oom_score)
+Prefer killing processes whose `comm` name matches REGEX (adds 300 to oom_score).
+
+The `comm` name is the string in `/proc/pid/comm`. It is the first 15 bytes of the
+process name. Longer names are truncated to 15 bytes.
+
+The `comm` name is also what `top`, `pstree`, `ps -e` show. Use any of these tools
+to find the proper `comm` name.
+
+Example: You want to match `gnome-control-center`, which is longer than 15 bytes:
+
+    earlyoom --prefer '^gnome-control-c$'
 
 #### \-\-avoid REGEX
-avoid killing processes matching REGEX (subtracts 300 from oom_score)
+avoid killing processes whose `comm` name matches REGEX (subtracts 300 from oom_score).
 
 #### \-\-ignore REGEX
-ignore processes matching REGEX.
+ignore processes whose `comm` name matches REGEX.
 
 Unlike the \-\-avoid option, this option disables any potential killing of the matched processes
 that might have occurred due to the processes attaining a high oom_score.
