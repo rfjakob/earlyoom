@@ -504,6 +504,11 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
         victim = (const procinfo_t) { 0 };
     }
 
+    if (victim.pid >= 0) {
+        // We will pretty-print the victim later, so get all the info.
+        fill_informative_fields(&victim);
+    }
+
     return victim;
 }
 
