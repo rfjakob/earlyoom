@@ -267,8 +267,8 @@ out_close:
 // it only fills the fields it needs to make a decision.
 bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur)
 {
-    if (cur->pid <= 1) {
-        // Let's not kill init.
+    if (cur->pid <= 2) {
+        // Let's not kill init or kthreadd.
         return false;
     }
 
@@ -303,6 +303,15 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         const long page_size = sysconf(_SC_PAGESIZE);
         cur->VmRSSkiB = cur->stat.rss * page_size / 1024;
+    }
+
+    // A pid is a kernel thread if it's pid or ppid is 2.
+    // At least that's what procs does:
+    // https://github.com/warmchang/procps/blob/d173f5d6db746e3f252a6182aa1906a292fc200f/library/readproc.c#L1325
+    //
+    // The check for pid == 2 has already been done at the top.
+    if (cur->stat.ppid == 2) {
+        return false;
     }
 
     if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
