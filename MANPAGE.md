@@ -73,7 +73,7 @@ removed in earlyoom v1.2, ignored for compatibility
 #### -i
 removed in earlyoom v1.7, ignored for compatibility
 
-#### -d
+#### -d, --debug
 enable debugging messages
 
 #### -v

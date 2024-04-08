@@ -143,6 +143,7 @@ int main(int argc, char* argv[])
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "help", no_argument, NULL, 'h' },
+        { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
     };
     bool have_m = 0, have_M = 0, have_s = 0, have_S = 0;
@@ -271,7 +272,7 @@ int main(int argc, char* argv[])
                 "  -n                        enable d-bus notifications\n"
                 "  -N /PATH/TO/SCRIPT        call script after oom kill\n"
                 "  -g                        kill all processes within a process group\n"
-                "  -d                        enable debugging messages\n"
+                "  -d, --debug               enable debugging messages\n"
                 "  -v                        print version information and exit\n"
                 "  -r INTERVAL               memory report interval in seconds (default 1), set\n"
                 "                            to 0 to disable completely\n"
