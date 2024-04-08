@@ -537,9 +537,9 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     }
     // sig == 0 is used as a self-test during startup. Don't notify the user.
     if (sig != 0 || enable_debug) {
-        warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB\n",
-            sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024);
-        warn("process %d cmdline \"%s\"\n", victim->pid, victim->cmdline);
+        warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB, cmdline \"%s\"\n",
+            sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024,
+            victim->cmdline);
     }
 
     int res = kill_wait(args, victim->pid, sig);
