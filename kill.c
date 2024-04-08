@@ -407,6 +407,14 @@ void fill_informative_fields(procinfo_t* cur)
             debug("%s: pid %d: error reading process cmdline: %s\n", __func__, cur->pid, strerror(-res));
         }
     }
+    if (cur->uid == PROCINFO_FIELD_NOT_SET) {
+        int res = get_uid(cur->pid);
+        if (res < 0) {
+            debug("%s: pid %d: error reading uid: %s\n", __func__, cur->pid, strerror(-res));
+        } else {
+            cur->uid = res;
+        }
+    }
 }
 
 // debug_print_procinfo pretty-prints the process information in `cur`.
