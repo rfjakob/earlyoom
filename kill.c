@@ -272,17 +272,18 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         return false;
     }
 
-    {
+    // Ignore processes owned by root user?
+    if (args->ignore_root_user) {
         int res = get_uid(cur->pid);
         if (res < 0) {
             debug("%s: pid %d: error reading uid: %s\n", __func__, cur->pid, strerror(-res));
             return false;
         }
         cur->uid = res;
-    }
-    if (cur->uid == 0 && args->ignore_root_user) {
-        // Ignore processes owned by root user.
-        return false;
+
+        if (cur->uid == 0) {
+            return false;
+        }
     }
 
     {
