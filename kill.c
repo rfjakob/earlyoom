@@ -429,7 +429,17 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
 
     debug_print_procinfo_header();
 
-    procinfo_t victim = { 0 };
+    const int field_not_set = -9999; // placeholder value
+    const procinfo_t empty_procinfo = {
+        .pid = field_not_set,
+        .uid = field_not_set,
+        .badness = field_not_set,
+        .oom_score_adj = field_not_set,
+        .VmRSSkiB = field_not_set,
+        /* omitted fields are set to zero */
+    };
+
+    procinfo_t victim = empty_procinfo;
     while (1) {
         errno = 0;
         struct dirent* d = readdir(procdir);
@@ -444,14 +454,8 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
         if (!isnumeric(d->d_name))
             continue;
 
-        procinfo_t cur = {
-            .pid = (int)strtol(d->d_name, NULL, 10),
-            .uid = -1,
-            .badness = -1,
-            .VmRSSkiB = -1,
-            .oom_score_adj = -1,
-            /* omitted fields are set to zero */
-        };
+        procinfo_t cur = empty_procinfo;
+        cur.pid = (int)strtol(d->d_name, NULL, 10);
 
         bool larger = is_larger(args, &victim, &cur);
 
