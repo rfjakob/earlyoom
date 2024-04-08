@@ -355,8 +355,9 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         else {
             if (cur->VmRSSkiB == 0) {
                 // only print the warning when the zombie is first seen, i.e. as "cur"
-                warn("%s: pid %d: rss=0 but oom_score=%d. Zombie main thread? Using oom_score for decision.\n",
-                    __func__, cur->pid, cur->badness);
+                get_comm(cur->pid, cur->name, sizeof(cur->name));
+                warn("%s: pid %d \"%s\": rss=0 but oom_score=%d. Zombie main thread? Using oom_score for this process.\n",
+                    __func__, cur->pid, cur->name, cur->badness);
             }
             if (cur->badness < victim->badness) {
                 return false;
