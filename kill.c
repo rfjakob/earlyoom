@@ -287,15 +287,6 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     }
 
     {
-        int res = get_oom_score(cur->pid);
-        if (res < 0) {
-            debug("%s: pid %d: error reading oom_score: %s\n", __func__, cur->pid, strerror(-res));
-            return false;
-        }
-        cur->badness = res;
-    }
-
-    {
         bool res = parse_proc_pid_stat(&cur->stat, cur->pid);
         if (!res) {
             debug("%s: pid %d: error reading stat\n", __func__, cur->pid);
@@ -312,6 +303,15 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     // The check for pid == 2 has already been done at the top.
     if (cur->stat.ppid == 2) {
         return false;
+    }
+
+    {
+        int res = get_oom_score(cur->pid);
+        if (res < 0) {
+            debug("%s: pid %d: error reading oom_score: %s\n", __func__, cur->pid, strerror(-res));
+            return false;
+        }
+        cur->badness = res;
     }
 
     if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
