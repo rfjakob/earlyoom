@@ -29,11 +29,14 @@ bool parse_proc_pid_stat_buf(pid_stat_t* out, char* buf)
         "%*u %*u %*u %*u %*u " // flags, min_flt, cmin_flt, maj_flt, cmaj_flt
         "%*u %*u %*u %*u " // utime, stime, cutime, cstime
         "%*d %*d " // priority, nice
-        "%ld ", // num_threads
+        "%ld " // num_threads
+        "%*d %*d %*d" // itrealvalue, starttime, vsize
+        "%ld ", // rss
         &out->state,
         &out->ppid,
-        &out->num_threads);
-    if (ret != 3) {
+        &out->num_threads,
+        &out->rss);
+    if (ret != 4) {
         return false;
     };
     return true;

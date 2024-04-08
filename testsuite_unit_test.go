@@ -244,6 +244,7 @@ func Test_parse_proc_pid_stat_1(t *testing.T) {
 	want.state = _Ctype_char(stat.State[0])
 	want.ppid = _Ctype_int(stat.Ppid)
 	want.num_threads = _Ctype_long(stat.NumThreads)
+	want.rss = _Ctype_long(stat.Rss)
 
 	if have != want {
 		t.Errorf("\nhave=%#v\nwant=%#v", have, want)
@@ -277,6 +278,7 @@ func Test_parse_proc_pid_stat_Mock(t *testing.T) {
 	want.state = 'S'
 	want.ppid = 547891
 	want.num_threads = 23
+	want.rss = 65528
 
 	for _, c := range content {
 		statFile := mockProcdir + "/100/stat"
@@ -285,10 +287,10 @@ func Test_parse_proc_pid_stat_Mock(t *testing.T) {
 		}
 		res, have := parse_proc_pid_stat(100)
 		if !res {
-			t.Error()
+			t.Errorf("parse_proc_pid_stat returned %v", res)
 		}
 		if have != want {
-			t.Errorf("/proc/100/stat=%q:\nhave=%#v\nwant=%#v", have, want, c)
+			t.Errorf("/proc/100/stat=%q:\nhave=%#v\nwant=%#v", c, have, want)
 		}
 	}
 }

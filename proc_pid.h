@@ -5,7 +5,8 @@
 typedef struct {
     char state;
     int ppid;
-    long int num_threads;
+    long num_threads;
+    long rss;
 } pid_stat_t;
 
 bool parse_proc_pid_stat_buf(pid_stat_t* out, char* buf);
