@@ -160,7 +160,7 @@ int kill_release(const pid_t pid, const int pidfd, const int sig)
     if (res != 0) {
         warn("%s: pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
     } else {
-        debug("%s: pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
+        info("%s: pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
     }
 #endif
     // Return 0 regardless of process_mrelease outcome
@@ -227,9 +227,8 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             print_mem_stats(debug, m);
             if (m.MemAvailablePercent <= args->mem_kill_percent && m.SwapFreePercent <= args->swap_kill_percent) {
                 sig = SIGKILL;
-                res = kill_release(pid, pidfd, sig);
-                // kill first, print after
                 warn("escalating to SIGKILL after %.3f seconds\n", secs);
+                res = kill_release(pid, pidfd, sig);
                 if (res != 0) {
                     goto out_close;
                 }
