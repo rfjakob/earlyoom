@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	linuxproc "github.com/c9s/goprocinfo/linux"
 )
 
 // #include "meminfo.h"
@@ -84,7 +86,12 @@ func runEarlyoom(t *testing.T, args ...string) exitVals {
 		}
 	}
 	timer.Stop()
-	rss := get_vm_rss_kib(cmd.Process.Pid)
+
+	stat, err := linuxproc.ReadProcessStat(fmt.Sprintf("/proc/%d/stat", cmd.Process.Pid))
+	if err != nil {
+		panic(err)
+	}
+	rss := int(stat.Rss)
 	fds := countFds(cmd.Process.Pid)
 	cmd.Process.Kill()
 	err = cmd.Wait()
@@ -199,8 +206,8 @@ func mockProc(t *testing.T, procs []mockProcProcess) {
 		// stat
 		//
 		// Real /proc/pid/stat string for gnome-shell
-		template := "549077 (%s) S 547891 549077 549077 0 -1 4194560 245592 104 342 5 108521 28953 0 1 20 0 %d 0 4816953 5260238848 65528 18446744073709551615 94179647238144 94179647245825 140730757359824 0 0 0 0 16781312 17656 0 0 0 17 1 0 0 0 0 0 94179647252976 94179647254904 94179672109056 140730757367876 140730757367897 140730757367897 140730757369827 0\n"
-		content = []byte(fmt.Sprintf(template, p.comm, p.num_threads))
+		template := "549077 (%s) S 547891 549077 549077 0 -1 4194560 245592 104 342 5 108521 28953 0 1 20 0 %d 0 4816953 5260238848 %d 18446744073709551615 94179647238144 94179647245825 140730757359824 0 0 0 0 16781312 17656 0 0 0 17 1 0 0 0 0 0 94179647252976 94179647254904 94179672109056 140730757367876 140730757367897 140730757367897 140730757369827 0\n"
+		content = []byte(fmt.Sprintf(template, p.comm, p.num_threads, rss))
 		if err := ioutil.WriteFile(pidDir+"/stat", content, 0444); err != nil {
 			t.Fatal(err)
 		}

@@ -5,6 +5,7 @@
 #define PATH_LEN 256
 
 #include <stdbool.h>
+#include "proc_pid.h"
 
 typedef struct {
     // Values from /proc/meminfo, in KiB
@@ -28,6 +29,7 @@ typedef struct procinfo {
     int badness;
     int oom_score_adj;
     long long VmRSSkiB;
+    pid_stat_t stat;
     char name[PATH_LEN];
     char cmdline[PATH_LEN];
 } procinfo_t;
@@ -37,7 +39,6 @@ bool is_alive(int pid);
 void print_mem_stats(int (*out_func)(const char* fmt, ...), const meminfo_t m);
 int get_oom_score(int pid);
 int get_oom_score_adj(const int pid, int* out);
-long long get_vm_rss_kib(int pid);
 int get_comm(int pid, char* out, size_t outlen);
 int get_uid(int pid);
 int get_cmdline(int pid, char* out, size_t outlen);

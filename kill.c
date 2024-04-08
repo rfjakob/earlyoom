@@ -296,12 +296,13 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     }
 
     {
-        long long res = get_vm_rss_kib(cur->pid);
-        if (res < 0) {
-            debug("%s: pid %d: error reading rss: %s\n", __func__, cur->pid, strerror((int)-res));
+        bool res = parse_proc_pid_stat(&cur->stat, cur->pid);
+        if (!res) {
+            debug("%s: pid %d: error reading stat\n", __func__, cur->pid);
             return false;
         }
-        cur->VmRSSkiB = res;
+        const long page_size = sysconf(_SC_PAGESIZE);
+        cur->VmRSSkiB = cur->stat.rss * page_size / 1024;
     }
 
     if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {

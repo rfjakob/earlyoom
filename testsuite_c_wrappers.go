@@ -94,10 +94,6 @@ func get_oom_score_adj(pid int, out *int) int {
 	return int(res)
 }
 
-func get_vm_rss_kib(pid int) int {
-	return int(C.get_vm_rss_kib(C.int(pid)))
-}
-
 func get_comm(pid int) (int, string) {
 	cstr := C.CString(strings.Repeat("\000", 256))
 	res := C.get_comm(C.int(pid), cstr, 256)

@@ -148,19 +148,6 @@ func Test_fix_truncated_utf8(t *testing.T) {
 	}
 }
 
-func Test_get_vm_rss_kib(t *testing.T) {
-	pid := os.Getpid()
-	rss := get_vm_rss_kib(pid)
-	if rss <= 0 {
-		t.Fatalf("our rss can't be <= 0, but we got %d", rss)
-	}
-	// Error case
-	res := get_vm_rss_kib(INT32_MAX)
-	if res != -ENOENT {
-		t.Fail()
-	}
-}
-
 func Test_get_oom_score(t *testing.T) {
 	res := get_oom_score(os.Getpid())
 	// On systems with a lot of RAM, our process may actually have a score of
@@ -386,33 +373,6 @@ func Benchmark_get_oom_score_adj(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		var out int
 		get_oom_score_adj(pid, &out)
-	}
-}
-
-func Benchmark_get_vm_rss_kib(b *testing.B) {
-	enable_debug(false)
-
-	pid := os.Getpid()
-	for n := 0; n < b.N; n++ {
-		rss := get_vm_rss_kib(pid)
-		if rss <= 0 {
-			b.Fatalf("rss <= 0: %d", rss)
-		}
-	}
-}
-
-func Benchmark_get_comm(b *testing.B) {
-	enable_debug(false)
-
-	pid := os.Getpid()
-	for n := 0; n < b.N; n++ {
-		res, comm := get_comm(pid)
-		if len(comm) == 0 {
-			b.Fatalf("empty process name %q", comm)
-		}
-		if res != 0 {
-			b.Fatalf("error %d", res)
-		}
 	}
 }
 

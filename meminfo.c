@@ -269,39 +269,6 @@ int get_uid(int pid)
     return (int)st.st_uid;
 }
 
-// Read VmRSS from /proc/[pid]/statm and convert to kiB.
-// Returns the value (>= 0) or -errno on error.
-long long get_vm_rss_kib(int pid)
-{
-    long long vm_rss_kib = -1;
-    char path[PATH_LEN] = { 0 };
-
-    // Read VmRSS from /proc/[pid]/statm (in pages)
-    snprintf(path, sizeof(path), "%s/%d/statm", procdir_path, pid);
-    FILE* f = fopen(path, "r");
-    if (f == NULL) {
-        return -errno;
-    }
-    int matches = fscanf(f, "%*u %lld", &vm_rss_kib);
-    fclose(f);
-    if (matches < 1) {
-        return -ENODATA;
-    }
-
-    // Read and cache page size
-    static long page_size;
-    if (page_size == 0) {
-        page_size = sysconf(_SC_PAGESIZE);
-        if (page_size <= 0) {
-            fatal(1, "could not read page size\n");
-        }
-    }
-
-    // Convert to kiB
-    vm_rss_kib = vm_rss_kib * page_size / 1024;
-    return vm_rss_kib;
-}
-
 /* Print a status line like
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * as an informational message to stdout (default), or
