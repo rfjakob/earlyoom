@@ -4,8 +4,8 @@
 
 #define PATH_LEN 256
 
-#include <stdbool.h>
 #include "proc_pid.h"
+#include <stdbool.h>
 
 typedef struct {
     // Values from /proc/meminfo, in KiB
@@ -33,6 +33,9 @@ typedef struct procinfo {
     char name[PATH_LEN];
     char cmdline[PATH_LEN];
 } procinfo_t;
+
+// placeholder value for numeric fields
+#define PROCINFO_FIELD_NOT_SET -9999
 
 meminfo_t parse_meminfo();
 bool is_alive(int pid);

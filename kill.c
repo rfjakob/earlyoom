@@ -391,6 +391,8 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     return true;
 }
 
+// Fill the fields in `cur` that are not required for the kill decision.
+// Used to log details about the selected process.
 void fill_informative_fields(procinfo_t* cur)
 {
     if (strlen(cur->name) == 0) {
@@ -440,13 +442,12 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
 
     debug_print_procinfo_header();
 
-    const int field_not_set = -9999; // placeholder value
     const procinfo_t empty_procinfo = {
-        .pid = field_not_set,
-        .uid = field_not_set,
-        .badness = field_not_set,
-        .oom_score_adj = field_not_set,
-        .VmRSSkiB = field_not_set,
+        .pid = PROCINFO_FIELD_NOT_SET,
+        .uid = PROCINFO_FIELD_NOT_SET,
+        .badness = PROCINFO_FIELD_NOT_SET,
+        .oom_score_adj = PROCINFO_FIELD_NOT_SET,
+        .VmRSSkiB = PROCINFO_FIELD_NOT_SET,
         /* omitted fields are set to zero */
     };
 

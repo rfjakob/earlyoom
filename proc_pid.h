@@ -2,6 +2,8 @@
 #ifndef PROC_PID_H
 #define PROC_PID_H
 
+#include <stdbool.h>
+
 typedef struct {
     char state;
     int ppid;
