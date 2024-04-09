@@ -21,6 +21,10 @@ all: earlyoom earlyoom.1 earlyoom.service
 earlyoom: $(wildcard *.c *.h) Makefile
 	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -o $@ $(wildcard *.c)
 
+.PHONY: earlyoom.profile
+earlyoom.profile:
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -DPROFILE_FIND_LARGEST_PROCESS -o earlyoom.profile $(wildcard *.c)
+
 earlyoom.1: MANPAGE.md
 ifdef PANDOC
 	pandoc MANPAGE.md -s -t man > earlyoom.1
@@ -29,7 +33,7 @@ else
 endif
 
 clean:
-	rm -f earlyoom earlyoom.service earlyoom.initscript earlyoom.1 earlyoom.1.gz
+	rm -f earlyoom earlyoom.profile earlyoom.service earlyoom.initscript earlyoom.1 earlyoom.1.gz gmon.out*
 
 install: earlyoom.service install-bin install-default install-man
 	install -d $(DESTDIR)$(SYSTEMDUNITDIR)

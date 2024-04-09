@@ -81,9 +81,23 @@ static void startup_selftests(poll_loop_args_t* args)
     }
 
 #ifdef PROFILE_FIND_LARGEST_PROCESS
-    warn("PROFILE_FIND_LARGEST_PROCESS: looping forever on find_largest_process()\n");
+    struct timespec t0 = { 0 }, t1 = { 0 };
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+
+    warn("PROFILE_FIND_LARGEST_PROCESS: looping forever on find_largest_process(). Use sysprof of perf to capture profile.\n");
+    long i = 0;
     while (1) {
-        find_largest_process(args, m);
+        find_largest_process(args);
+        i++;
+
+        const int avg_n = 1000;
+        if(i%avg_n == 0) {
+            clock_gettime(CLOCK_MONOTONIC, &t1);
+            long delta_usecs = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
+            double avg_wall_time_ms = (double)(delta_usecs / avg_n) / 1000.0;
+            info("average find_largest_process() wall time: %.3lf ms\n", avg_wall_time_ms);
+            clock_gettime(CLOCK_MONOTONIC, &t0);
+        }
     };
 #endif
 }
