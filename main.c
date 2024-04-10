@@ -91,7 +91,7 @@ static void startup_selftests(poll_loop_args_t* args)
         i++;
 
         const int avg_n = 1000;
-        if(i%avg_n == 0) {
+        if (i % avg_n == 0) {
             clock_gettime(CLOCK_MONOTONIC, &t1);
             long delta_usecs = (t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000;
             double avg_wall_time_ms = (double)(delta_usecs / avg_n) / 1000.0;
