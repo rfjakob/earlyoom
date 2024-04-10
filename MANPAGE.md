@@ -252,3 +252,7 @@ The author of earlyoom is Jakob Unterwurzacher ⟨jakobunt@gmail.com⟩.
 
 This manual page was written by Yangfl ⟨mmyangfl@gmail.com⟩, for the Debian
 project (and may be used by others).
+
+# SEE ALSO
+
+nohang(8)
