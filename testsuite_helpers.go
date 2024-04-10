@@ -168,7 +168,7 @@ type mockProcProcess struct {
 
 func (m *mockProcProcess) toProcinfo_t() (p C.procinfo_t) {
 	p.pid = C.int(m.pid)
-	p.badness = C.int(m.oom_score)
+	p.oom_score = C.int(m.oom_score)
 	p.VmRSSkiB = C.longlong(m.VmRSSkiB)
 	for i, v := range []byte(m.comm) {
 		p.name[i] = C.char(v)

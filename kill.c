@@ -19,10 +19,10 @@
 #include "meminfo.h"
 #include "msg.h"
 
-// Processes matching "--prefer REGEX" get BADNESS_PREFER added to their badness
-#define BADNESS_PREFER 300
-// Processes matching "--avoid REGEX" get BADNESS_AVOID added to their badness
-#define BADNESS_AVOID -300
+// Processes matching "--prefer REGEX" get OOM_SCORE_PREFER added to their oom_score
+#define OOM_SCORE_PREFER 300
+// Processes matching "--avoid REGEX" get OOM_SCORE_AVOID added to their oom_score
+#define OOM_SCORE_AVOID -300
 
 // Processes matching "--prefer REGEX" get VMRSS_PREFER added to their VmRSSkiB
 #define VMRSS_PREFER 3145728
@@ -310,7 +310,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             debug("%s: pid %d: error reading oom_score: %s\n", __func__, cur->pid, strerror(-res));
             return false;
         }
-        cur->badness = res;
+        cur->oom_score = res;
     }
 
     if ((args->prefer_regex || args->avoid_regex || args->ignore_regex)) {
@@ -323,14 +323,14 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             if (args->sort_by_rss) {
                 cur->VmRSSkiB += VMRSS_PREFER;
             } else {
-                cur->badness += BADNESS_PREFER;
+                cur->oom_score += OOM_SCORE_PREFER;
             }
         }
         if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
                 cur->VmRSSkiB += VMRSS_AVOID;
             } else {
-                cur->badness += BADNESS_AVOID;
+                cur->oom_score += OOM_SCORE_AVOID;
             }
         }
         if (args->ignore_regex && regexec(args->ignore_regex, cur->name, (size_t)0, NULL, 0) == 0) {
@@ -346,7 +346,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             if (cur->VmRSSkiB < victim->VmRSSkiB) {
                 return false;
             }
-            if (cur->VmRSSkiB == victim->VmRSSkiB && cur->badness <= victim->badness) {
+            if (cur->VmRSSkiB == victim->VmRSSkiB && cur->oom_score <= victim->oom_score) {
                 return false;
             }
         }
@@ -356,22 +356,22 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
                 // only print the warning when the zombie is first seen, i.e. as "cur"
                 get_comm(cur->pid, cur->name, sizeof(cur->name));
                 warn("%s: pid %d \"%s\": rss=0 but oom_score=%d. Zombie main thread? Using oom_score for this process.\n",
-                    __func__, cur->pid, cur->name, cur->badness);
+                    __func__, cur->pid, cur->name, cur->oom_score);
             }
-            if (cur->badness < victim->badness) {
+            if (cur->oom_score < victim->oom_score) {
                 return false;
             }
-            if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
+            if (cur->oom_score == victim->oom_score && cur->VmRSSkiB <= victim->VmRSSkiB) {
                 return false;
             }
         }
     } else {
         /* find process with the largest oom_score */
-        if (cur->badness < victim->badness) {
+        if (cur->oom_score < victim->oom_score) {
             return false;
         }
 
-        if (cur->badness == victim->badness && cur->VmRSSkiB <= victim->VmRSSkiB) {
+        if (cur->oom_score == victim->oom_score && cur->VmRSSkiB <= victim->VmRSSkiB) {
             return false;
         }
     }
@@ -425,7 +425,7 @@ void debug_print_procinfo(procinfo_t* cur)
     }
     fill_informative_fields(cur);
     debug("%5d %9d %7lld %5d %13d \"%s\"",
-        cur->pid, cur->badness, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
+        cur->pid, cur->oom_score, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
 }
 
 void debug_print_procinfo_header()
@@ -453,7 +453,7 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
     const procinfo_t empty_procinfo = {
         .pid = PROCINFO_FIELD_NOT_SET,
         .uid = PROCINFO_FIELD_NOT_SET,
-        .badness = PROCINFO_FIELD_NOT_SET,
+        .oom_score = PROCINFO_FIELD_NOT_SET,
         .oom_score_adj = PROCINFO_FIELD_NOT_SET,
         .VmRSSkiB = PROCINFO_FIELD_NOT_SET,
         /* omitted fields are set to zero */
@@ -536,8 +536,8 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     }
     // sig == 0 is used as a self-test during startup. Don't notify the user.
     if (sig != 0 || enable_debug) {
-        warn("sending %s to process %d uid %d \"%s\": badness %d, VmRSS %lld MiB, cmdline \"%s\"\n",
-            sig_name, victim->pid, victim->uid, victim->name, victim->badness, victim->VmRSSkiB / 1024,
+        warn("sending %s to process %d uid %d \"%s\": oom_score %d, VmRSS %lld MiB, cmdline \"%s\"\n",
+            sig_name, victim->pid, victim->uid, victim->name, victim->oom_score, victim->VmRSSkiB / 1024,
             victim->cmdline);
     }
 
