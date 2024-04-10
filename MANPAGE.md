@@ -17,7 +17,8 @@ after running out of patience.
 
 **earlyoom** checks the amount of available memory and free swap up to 10 times a
 second (less often if there is a lot of free memory).
-If **both** memory **and** swap are below 10%, it will kill the largest process (highest `oom_score`).
+If **both** memory **and** swap (if any) are below 10%, it will kill the
+largest process (highest `oom_score`).
 The percentage value is configurable via command line arguments.
 
 If there is a failure when trying to kill a process, **earlyoom** sleeps for
