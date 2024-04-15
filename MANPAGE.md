@@ -19,7 +19,8 @@ after running out of patience.
 second (less often if there is a lot of free memory).
 If **both** memory **and** swap (if any) are below 10%, it will kill the
 largest process (highest `oom_score`).
-The percentage value is configurable via command line arguments.
+
+The percentage values are configurable via command line arguments.
 
 If there is a failure when trying to kill a process, **earlyoom** sleeps for
 1 second to limit log spam due to recurring errors.
@@ -27,10 +28,20 @@ If there is a failure when trying to kill a process, **earlyoom** sleeps for
 # OPTIONS
 
 #### -m PERCENT[,KILL_PERCENT]
-set available memory minimum to PERCENT of total (default 10 %).
+set available memory minimum to PERCENT of `user mem total` (default 10 %).
 
-earlyoom starts sending SIGTERM once **both** memory **and** swap are below their
-respective PERCENT setting. It sends SIGKILL once **both** are below their respective
+`user mem total`, introduced in earlyoom v1.8, is the memory accessible by userspace
+(`MemAvailable`+`AnonPages` as reported in `/proc/meminfo`).
+When a tmpfs ramdisk fills up, `user mem total` shrinks accordingly.
+
+By using a percentage of `user mem total` as opposed to total memory,
+the set memory minimum can always be achieved by killing processes, even
+when tmpfs fills a large portion of memory.
+
+earlyoom sends SIGTERM once **both** available memory **and** free swap are
+below their respective PERCENT settings.
+
+It sends SIGKILL once **both** are below their respective
 KILL_PERCENT setting (default PERCENT/2).
 
 Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKILL.
@@ -54,7 +65,11 @@ Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKIL
 #### -M SIZE[,KILL_SIZE]
 As an alternative to specifying a percentage of total memory, `-M` sets
 the available memory minimum to SIZE KiB. The value is internally converted
-to a percentage. If you pass both `-M` and `-m`, the lower value is used.
+to the percentage of `mem total` as reported on startup. `user mem total` is
+NOT used for the startup calculation because that would make the outcome dependent
+on how filled tmpfs is at that moment.
+
+If you pass both `-M` and `-m`, the lower value is used.
 Example: Reserve 10% of RAM but at most 1 GiB:
 
     earlyoom -m 10 -M 1048576
