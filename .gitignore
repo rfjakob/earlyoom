@@ -1,6 +1,7 @@
 *~
 /earlyoom
 /earlyoom.profile
+/.*
 
 # generated from MANPAGE.md
 /earlyoom.1
