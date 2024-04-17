@@ -278,6 +278,10 @@ Implementation Notes
 Changelog
 ---------
 
+* v1.8.1, 2024-04-17
+  * Fix trivial test failures caused by message rewording
+    ([commit](https://github.com/rfjakob/earlyoom/commit/bfde82c001c6e5ec11dfd6e5d13dcee9a9f01229))
+
 * v1.8, 2024-04-15
   * Introduce `user mem total` / `meminfo_t.UserMemTotal` and calculate MemAvailablePercent based on it
     ([commit](https://github.com/rfjakob/earlyoom/commit/459d76296d3d0a0b59ee1e2e48ad2271429de916),
