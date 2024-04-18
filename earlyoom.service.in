@@ -45,7 +45,7 @@ RestrictAddressFamilies=AF_UNIX
 
 SystemCallArchitectures=native
 SystemCallFilter=@system-service
-SystemCallFilter=~@resources @privileged
+SystemCallFilter=~@privileged
 
 [Install]
 WantedBy=multi-user.target
