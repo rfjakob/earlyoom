@@ -38,7 +38,7 @@ RestrictNamespaces=true
 RestrictRealtime=true
 LockPersonality=true
 PrivateNetwork=true
-IPAddressDeny=true
+IPAddressDeny=any
 
 # Unix socket is used by dbus-send.
 RestrictAddressFamilies=AF_UNIX
