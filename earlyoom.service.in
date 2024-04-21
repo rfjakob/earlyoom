@@ -44,7 +44,7 @@ IPAddressDeny=any
 RestrictAddressFamilies=AF_UNIX
 
 SystemCallArchitectures=native
-SystemCallFilter=@system-service
+SystemCallFilter=@system-service process_mrelease
 SystemCallFilter=~@resources @privileged
 
 [Install]
