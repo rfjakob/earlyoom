@@ -278,6 +278,12 @@ Implementation Notes
 Changelog
 ---------
 
+* v1.8.2, 2024-05-07
+  * Fixes in `earlyoom.service` systemd unit file
+    * Add `process_mrelease` to allowed syscalls ([commit](https://github.com/rfjakob/earlyoom/commit/c171b72ba217e923551bdde7e7f00ec5a0488b54))
+    * Fix `IPAddressDeny` syntax ([commit](e6c7978813413f3ee4181b8c8b11ae088d6e92a4))
+    * Allow `-p` ([commit](b41ebb2275e59781a8d55a764863417e1e0da5f1))
+
 * v1.8.1, 2024-04-17
   * Fix trivial test failures caused by message rewording
     ([commit](https://github.com/rfjakob/earlyoom/commit/bfde82c001c6e5ec11dfd6e5d13dcee9a9f01229))
