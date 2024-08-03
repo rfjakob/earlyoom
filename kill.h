@@ -31,6 +31,8 @@ typedef struct {
     regex_t* ignore_regex;
     /* memory report interval, in milliseconds */
     int report_interval_ms;
+        //report when the memory situation has changed, in percentage 
+    int report_change_pc;
     /* Flag --dryrun was passed */
     bool dryrun;
 } poll_loop_args_t;

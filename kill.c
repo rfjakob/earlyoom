@@ -135,7 +135,7 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
 }
 
-#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
+#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease) && !defined(__ANDROID__)
 #define HAVE_MRELEASE
 #else
 #warning process_mrelease is not supported. earlyoom will still work but with degraded performance.
