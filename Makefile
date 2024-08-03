@@ -10,6 +10,8 @@ CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" 
 DESTDIR ?=
 PREFIX ?= /usr/local
 BINDIR ?= /bin
+MANDIR ?= /share/man
+MAN1DIR ?= $(MANDIR)/man1
 SYSCONFDIR ?= /etc
 SYSTEMDUNITDIR ?= $(SYSCONFDIR)/systemd/system
 PANDOC := $(shell command -v pandoc 2> /dev/null)
@@ -59,8 +61,8 @@ install-bin: earlyoom
 
 install-man: earlyoom.1.gz
 ifdef PANDOC
-	install -d $(DESTDIR)$(PREFIX)/share/man/man1/
-	install -m 644 $< $(DESTDIR)$(PREFIX)/share/man/man1/
+	install -d $(DESTDIR) $(PREFIX)$(MAN1DIR)/
+	install -m 644 $< $(DESTDIR)$(PREFIX)$(MAN1DIR)/
 endif
 
 earlyoom.1.gz: earlyoom.1
@@ -73,7 +75,7 @@ uninstall: uninstall-bin uninstall-man
 	rm -f $(DESTDIR)$(SYSTEMDUNITDIR)/earlyoom.service
 
 uninstall-man:
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/earlyoom.1.gz
+	rm -f $(DESTDIR)$(PREFIX)$(MAN1DIR)/earlyoom.1.gz
 
 uninstall-initscript: uninstall-bin
 	rm -f $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
