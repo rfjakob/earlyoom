@@ -9,10 +9,10 @@ CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" 
 
 DESTDIR ?=
 PREFIX ?= /usr/local
-BINDIR ?= /bin
-MANDIR ?= /share/man
+BINDIR ?= $(PREFIX)/bin
+MANDIR ?= $(PREFIX)/share/man
 MAN1DIR ?= $(MANDIR)/man1
-SYSCONFDIR ?= /etc
+SYSCONFDIR ?= $(PREFIX)/etc
 SYSTEMDUNITDIR ?= $(SYSCONFDIR)/systemd/system
 PANDOC := $(shell command -v pandoc 2> /dev/null)
 
@@ -49,20 +49,20 @@ install-initscript: earlyoom.initscript install-bin install-default
 	-update-rc.d earlyoom start 18 2 3 4 5 . stop 20 0 1 6 .
 
 earlyoom.%: earlyoom.%.in
-	sed "s|:TARGET:|$(PREFIX)$(BINDIR)|g;s|:SYSCONFDIR:|$(SYSCONFDIR)|g" $< > $@
+	sed "s|:TARGET:|$(BINDIR)|g;s|:SYSCONFDIR:|$(SYSCONFDIR)|g" $< > $@
 
 install-default: earlyoom.default install-man
 	install -d $(DESTDIR)$(SYSCONFDIR)/default/
 	install -m 644 $< $(DESTDIR)$(SYSCONFDIR)/default/earlyoom
 
 install-bin: earlyoom
-	install -d $(DESTDIR)$(PREFIX)$(BINDIR)/
-	install -m 755 $< $(DESTDIR)$(PREFIX)$(BINDIR)/
+	install -d $(DESTDIR)$(BINDIR)/
+	install -m 755 $< $(DESTDIR)$(BINDIR)/
 
 install-man: earlyoom.1.gz
 ifdef PANDOC
-	install -d $(DESTDIR) $(PREFIX)$(MAN1DIR)/
-	install -m 644 $< $(DESTDIR)$(PREFIX)$(MAN1DIR)/
+	install -d $(DESTDIR) $(MAN1DIR)/
+	install -m 644 $< $(DESTDIR)$(MAN1DIR)/
 endif
 
 earlyoom.1.gz: earlyoom.1
@@ -75,14 +75,14 @@ uninstall: uninstall-bin uninstall-man
 	rm -f $(DESTDIR)$(SYSTEMDUNITDIR)/earlyoom.service
 
 uninstall-man:
-	rm -f $(DESTDIR)$(PREFIX)$(MAN1DIR)/earlyoom.1.gz
+	rm -f $(DESTDIR)$(MAN1DIR)/earlyoom.1.gz
 
 uninstall-initscript: uninstall-bin
 	rm -f $(DESTDIR)$(SYSCONFDIR)/init.d/earlyoom
 	update-rc.d earlyoom remove
 
 uninstall-bin:
-	rm -f $(DESTDIR)$(PREFIX)$(BINDIR)/earlyoom
+	rm -f $(DESTDIR)$(BINDIR)/earlyoom
 
 # Depends on earlyoom compilation to make sure the syntax is ok.
 format: earlyoom
