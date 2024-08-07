@@ -61,7 +61,7 @@ install-bin: earlyoom
 
 install-man: earlyoom.1.gz
 ifdef PANDOC
-	install -d $(DESTDIR) $(MAN1DIR)/
+	install -d $(DESTDIR)$(MAN1DIR)/
 	install -m 644 $< $(DESTDIR)$(MAN1DIR)/
 endif
 
