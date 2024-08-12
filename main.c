@@ -15,11 +15,13 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "globals.h"
 #include "kill.h"
 #include "meminfo.h"
 #include "msg.h"
+#include "oomscore.h"
 
 /* Don't fail compilation if the user has an old glibc that
  * does not define MCL_ONFAULT. The kernel may still be recent
@@ -43,9 +45,9 @@ enum {
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
+    LONG_OPT_OOM_SCORE_ADJ,
 };
 
-static int set_oom_score_adj(int);
 static void poll_loop(const poll_loop_args_t* args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
@@ -156,6 +158,7 @@ int main(int argc, char* argv[])
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
+        { "scoreadj", required_argument, NULL, LONG_OPT_OOM_SCORE_ADJ },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -266,6 +269,9 @@ int main(int argc, char* argv[])
         case LONG_OPT_USE_SYSLOG:
             earlyoom_syslog_init();
             break;
+        case LONG_OPT_OOM_SCORE_ADJ:
+            args.oom_score_adj_arg = optarg;
+            break;
         case LONG_OPT_IGNORE:
             ignore_cmds = optarg;
             break;
@@ -299,6 +305,8 @@ int main(int argc, char* argv[])
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
                 "  --syslog                  use syslog instead of std streams\n"
+                "  --scoreadj                set the oom_score_adj value for existing and\n"
+                "                            new processes.\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);
@@ -366,7 +374,7 @@ int main(int argc, char* argv[])
             warn("Could not set priority: %s. Continuing anyway\n", strerror(errno));
             fail = 1;
         }
-        int ret = set_oom_score_adj(-100);
+        int ret = set_oom_score_adj(getpid(), -100);
         if (ret != 0) {
             warn("Could not set oom_score_adj: %s. Continuing anyway\n", strerror(ret));
             fail = 1;
@@ -397,32 +405,6 @@ int main(int argc, char* argv[])
 
     // Jump into main poll loop
     poll_loop(&args);
-    return 0;
-}
-
-// Returns errno (success = 0)
-static int set_oom_score_adj(int oom_score_adj)
-{
-    char buf[PATH_LEN] = { 0 };
-    pid_t pid = getpid();
-
-    snprintf(buf, sizeof(buf), "%s/%d/oom_score_adj", procdir_path, pid);
-    FILE* f = fopen(buf, "w");
-    if (f == NULL) {
-        return -1;
-    }
-
-    // fprintf returns a negative error code on failure
-    int ret1 = fprintf(f, "%d", oom_score_adj);
-    // fclose returns a non-zero value on failure and errno contains the error code
-    int ret2 = fclose(f);
-
-    if (ret1 < 0) {
-        return -ret1;
-    }
-    if (ret2) {
-        return errno;
-    }
     return 0;
 }
 
@@ -478,6 +460,12 @@ static void poll_loop(const poll_loop_args_t* args)
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.
     int report_countdown_ms = 0;
+    pthread_t oom_score_thread;
+    if (args->oom_score_adj_arg != NULL && strlen(args->oom_score_adj_arg) != 0) {
+        if (pthread_create(&oom_score_thread, NULL, &proc_listen, args->oom_score_adj_arg) != 0) {
+            warn("can't create oom score thread\n");
+        }
+    }
 
     while (1) {
         meminfo_t m = parse_meminfo();
@@ -517,4 +505,7 @@ static void poll_loop(const poll_loop_args_t* args)
             ;
         report_countdown_ms -= (int)sleep_ms;
     }
+
+    if (args->oom_score_adj_arg != NULL && strlen(args->oom_score_adj_arg) != 0)
+        pthread_join(oom_score_thread, NULL);
 }

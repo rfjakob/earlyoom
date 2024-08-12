@@ -5,7 +5,8 @@ ifeq ($(VERSION),)
 VERSION := "(unknown version)"
 $(warning Could not get version from git, setting to $(VERSION))
 endif
-CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" -g -fstack-protector-all -std=gnu99
+CFLAGS += -Wall -Wextra -Wformat-security -Wconversion -DVERSION=\"$(VERSION)\" -g -fstack-protector-all -std=gnu99 \
+	-lpthread
 
 DESTDIR ?=
 PREFIX ?= /usr/local
