@@ -46,7 +46,7 @@ enum {
 };
 
 static int set_oom_score_adj(int);
-static void poll_loop(const poll_loop_args_t* args);
+void poll_loop(const poll_loop_args_t* args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
 // Cgo generates it's own main function.
@@ -64,7 +64,7 @@ double min(double x, double y)
 // Dry-run oom kill to make sure that
 // (1) it works (meaning /proc is accessible)
 // (2) the stack grows to maximum size before calling mlockall()
-static void startup_selftests(poll_loop_args_t* args)
+void startup_selftests(poll_loop_args_t* args)
 {
     {
         debug("%s: dry-running oom kill...\n", __func__);
@@ -110,6 +110,7 @@ int main(int argc, char* argv[])
         .mem_kill_percent = 5,
         .swap_kill_percent = 5,
         .report_interval_ms = 1000,
+        .report_change_pc = 20,
         .ignore_root_user = false,
         .sort_by_rss = false,
         /* omitted fields are set to zero */
@@ -473,11 +474,15 @@ static int lowmem_sig(const poll_loop_args_t* args, const meminfo_t* m)
 }
 
 // poll_loop is the main event loop. Never returns.
-static void poll_loop(const poll_loop_args_t* args)
+void poll_loop(const poll_loop_args_t* args)
 {
     // Print a a memory report when this reaches zero. We start at zero so
     // we print the first report immediately.
     int report_countdown_ms = 0;
+    
+        //last report percent
+    int report_mem_pc = 0;
+    int report_swap_pc = 0;
 
     while (1) {
         meminfo_t m = parse_meminfo();
@@ -509,9 +514,18 @@ static void poll_loop(const poll_loop_args_t* args)
         } else if (args->report_interval_ms && report_countdown_ms <= 0) {
             print_mem_stats(info, m);
             report_countdown_ms = args->report_interval_ms;
+        
+         } else if (args->report_change_pc) {
+        	 int change_mem = abs(m.MemAvailablePercent-report_mem_pc);
+        	 int change_swap = abs(m.SwapFreePercent-report_swap_pc);
+        	 if (change_mem >= args->report_change_pc || change_swap >= args->report_change_pc) {
+        	 	report_mem_pc = m.MemAvailablePercent;
+        	 	report_swap_pc = m.SwapFreePercent;
+        	 	print_mem_stats(info, m);
+        	 }
         }
         unsigned sleep_ms = sleep_time_ms(args, &m);
-        debug("adaptive sleep time: %d ms\n", sleep_ms);
+       // debug("adaptive sleep time: %d ms\n", sleep_ms);
         struct timespec req = { .tv_sec = (time_t)(sleep_ms / 1000), .tv_nsec = (sleep_ms % 1000) * 1000000 };
         while (nanosleep(&req, &req) == -1 && errno == EINTR)
             ;
