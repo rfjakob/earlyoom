@@ -12,8 +12,9 @@ PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 MANDIR ?= $(PREFIX)/share/man
 MAN1DIR ?= $(MANDIR)/man1
-SYSCONFDIR ?= $(PREFIX)/etc
-SYSTEMDUNITDIR ?= $(SYSCONFDIR)/systemd/system
+# Systemd hardcodes its unit path list
+SYSCONFDIR ?= /etc
+SYSTEMDUNITDIR ?= /etc/systemd/system
 PANDOC := $(shell command -v pandoc 2> /dev/null)
 
 .PHONY: all clean install uninstall format test
