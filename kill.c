@@ -18,6 +18,7 @@
 #include "kill.h"
 #include "meminfo.h"
 #include "msg.h"
+#include "utils.h"
 
 // Processes matching "--prefer REGEX" get OOM_SCORE_PREFER added to their oom_score
 #define OOM_SCORE_PREFER 300
@@ -33,25 +34,6 @@
 #define UID_BUFSIZ 128
 // At most 1 notification per second when --dryrun is active
 #define NOTIFY_RATELIMIT 1
-
-static bool isnumeric(char* str)
-{
-    int i = 0;
-
-    // Empty string is not numeric
-    if (str[0] == 0)
-        return false;
-
-    while (1) {
-        if (str[i] == 0) // End of string
-            return true;
-
-        if (isdigit(str[i]) == 0)
-            return false;
-
-        i++;
-    }
-}
 
 static void notify_dbus(const char* summary, const char* body)
 {
