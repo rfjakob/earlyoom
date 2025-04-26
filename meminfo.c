@@ -60,6 +60,65 @@ static long long available_guesstimate(const char* buf)
     return MemFree + Cached + Buffers - Shmem;
 }
 
+/* Parse an integer entry from an OpenZFS stat file, skipping past the 'type' field. */
+static long long get_zfs_int_entry(const char* name, const char* buf)
+{
+    char* hit = strstr(buf, name);
+    if (hit == NULL) {
+        return -ENODATA;
+    }
+
+    // seek past the 'type' field
+    hit += strlen(name);
+    while (*hit++ == ' ');
+    while (*hit++ != ' ');
+
+    errno = 0;
+    long long val = strtoll(hit, NULL, 10);
+    if (errno != 0) {
+        int strtoll_errno = errno;
+        warn("%s: strtol() failed: %s", __func__, strerror(errno));
+        return -strtoll_errno;
+    }
+    return val;
+}
+
+/* Parse /proc/spl/kstat/zfs/arcstats, which may tell us about some additional available memory, since openzfs is holding out. */
+long long zfs_arc_extra_avail_kib() {
+    static FILE* fd = NULL;
+    // Guessing a good size similarly to parse_meminfo()
+    char buf[16384] = { 0 };
+    int zfs_avail = 1;
+
+    if (!zfs_avail) {
+        return 0;
+    }
+    if (fd == NULL) {
+        char buf[PATH_LEN] = "/proc/spl/kstat/zfs/arcstats";
+        fd = fopen(buf, "r");
+    }
+    if (fd == NULL) {
+        zfs_avail = 0;
+        return 0;
+    }
+    rewind(fd);
+
+    size_t len = fread(buf, 1, sizeof(buf) - 1, fd);
+    if (ferror(fd) || len == 0) {
+        // TODO: do something more sensible
+        return 0;
+    }
+
+    long long arcSize = get_zfs_int_entry("size", buf);
+    long long arcMinSize = get_zfs_int_entry("c_min", buf);
+
+    if (arcSize < 0 || arcMinSize < 0 || arcMinSize > arcSize) {
+        return 0;
+    }
+
+    return (arcSize - arcMinSize) / 1024;
+}
+
 /* Parse /proc/meminfo.
  * This function either returns valid data or kills the process
  * with a fatal error.
@@ -99,6 +158,7 @@ meminfo_t parse_meminfo()
     m.SwapFreeKiB = get_entry_fatal("SwapFree:", buf);
 
     m.MemAvailableKiB = get_entry("MemAvailable:", buf);
+    m.MemAvailableKiB += zfs_arc_extra_avail_kib();
     if (m.MemAvailableKiB < 0) {
         m.MemAvailableKiB = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
