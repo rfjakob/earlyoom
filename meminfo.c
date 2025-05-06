@@ -269,6 +269,47 @@ int get_uid(int pid)
     return (int)st.st_uid;
 }
 
+/* Get the memory cgroup that `pid` belongs to.
+ * This may be a docker container or other cgroup
+ * Returns 0 on success and -errno on error.
+ */
+int get_cgroup(int pid, char* out, size_t outlen)
+{
+    char path[PATH_LEN] = { 0 };
+    snprintf(path, sizeof(path), "%s/%d/cgroup", procdir_path, pid);
+    FILE* f = fopen(path, "r");
+    if (f == NULL) {
+        return -errno;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        int id;
+        char cgroup_path[256];
+
+        //  Strip newline and null terminate
+        size_t len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+
+        // return the v1 memory path if present
+        if (sscanf(line, "%d:memory:%255s", &id, cgroup_path) == 2) {
+            strncpy(out, cgroup_path, outlen - 1);
+            break;
+        }
+
+        // otherwise unified v2 path
+        if (sscanf(line, "0::%255s", cgroup_path) == 1) {
+            strncpy(out, cgroup_path, outlen - 1);
+            break;
+        }
+    }
+
+    fclose(f);
+    return 0;
+}
+
 /* Print a status line like
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * as an informational message to stdout (default), or

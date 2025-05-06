@@ -95,6 +95,7 @@ static void notify_ext(const char* script, const procinfo_t* victim)
     setenv("EARLYOOM_UID", uid_str, 1);
     setenv("EARLYOOM_NAME", victim->name, 1);
     setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
+    setenv("EARLYOOM_CGROUP", victim->cgroup, 1);
 
     execl(script, script, NULL);
     warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
@@ -415,6 +416,13 @@ void fill_informative_fields(procinfo_t* cur)
             cur->uid = res;
         }
     }
+
+    if (strlen(cur->cgroup) == 0) {
+        int res = get_cgroup(cur->pid, cur->cgroup, sizeof(cur->cgroup));
+        if (res < 0) {
+            debug("%s: pid %d: error reading cgroup: %s\n", __func__, cur->pid, strerror(-res));
+        }
+    }
 }
 
 // debug_print_procinfo pretty-prints the process information in `cur`.
@@ -425,7 +433,7 @@ void debug_print_procinfo(procinfo_t* cur)
     }
     fill_informative_fields(cur);
     debug("%5d %9d %7lld %5d %13d \"%s\"",
-        cur->pid, cur->oom_score, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name);
+        cur->pid, cur->oom_score, cur->VmRSSkiB, cur->uid, cur->oom_score_adj, cur->name, cur->cgroup);
 }
 
 void debug_print_procinfo_header()
@@ -536,9 +544,9 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     }
     // sig == 0 is used as a self-test during startup. Don't notify the user.
     if (sig != 0 || enable_debug) {
-        warn("sending %s to process %d uid %d \"%s\": oom_score %d, VmRSS %lld MiB, cmdline \"%s\"\n",
+        warn("sending %s to process %d uid %d \"%s\": oom_score %d, VmRSS %lld MiB, cmdline \"%s\", cgroup %s\n",
             sig_name, victim->pid, victim->uid, victim->name, victim->oom_score, victim->VmRSSkiB / 1024,
-            victim->cmdline);
+            victim->cmdline, victim->cgroup);
     }
 
     int res = kill_wait(args, victim->pid, sig);

@@ -106,6 +106,12 @@ func get_cmdline(pid int) (int, string) {
 	return int(res), C.GoString(cstr)
 }
 
+func get_cgroup(pid int) (int, string) {
+	cstr := C.CString(strings.Repeat("\000", 256))
+	res := C.get_cgroup(C.int(pid), cstr, 256)
+	return int(res), C.GoString(cstr)
+}
+
 func procdir_path(str string) string {
 	if str != "" {
 		cstr := C.CString(str)

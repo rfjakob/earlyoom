@@ -201,6 +201,149 @@ func Test_get_cmdline(t *testing.T) {
 	}
 }
 
+func Test_get_cgroupMockv1(t *testing.T) {
+	// Error case
+	res, _ := get_cgroup(INT32_MAX)
+	if res != -ENOENT {
+		t.Fail()
+	}
+
+	// memory cgroup present
+	mockProcdir, err := ioutil.TempDir("", t.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	procdir_path(mockProcdir)
+	defer procdir_path("/proc")
+
+	if err := os.Mkdir(mockProcdir+"/101", 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	template := "%sdocker/foo"
+	content := []string{
+		fmt.Sprintf(template, "13:devices:/"),
+		fmt.Sprintf(template, "12:hugetlb:/"),
+		"11:memory:/docker/theexpectedmemorycgroupid",
+		fmt.Sprintf(template, "10:rdma:/"),
+		fmt.Sprintf(template, "9:pids:/"),
+		fmt.Sprintf(template, "8:misc:/"),
+		fmt.Sprintf(template, "7:perf_event:/"),
+		fmt.Sprintf(template, "6:net_cls,net_prio:/"),
+		fmt.Sprintf(template, "5:cpuset:/"),
+		fmt.Sprintf(template, "4:freezer:/"),
+		fmt.Sprintf(template, "3:blkio:/"),
+		fmt.Sprintf(template, "2:cpu,cpuacct:/"),
+		fmt.Sprintf(template, "1:name=systemd:/"),
+		"0::/asdf",
+	}
+
+	cgroupFile := mockProcdir + "/101/cgroup"
+	fullContent := strings.Join(content, "\n") + "\n"
+	if err := ioutil.WriteFile(cgroupFile, []byte(fullContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, cgroup := get_cgroup(101)
+	if res != 0 {
+		t.Fatalf("v1 error %d", res)
+	}
+
+	if cgroup != "/docker/theexpectedmemorycgroupid" {
+		t.Fatalf("memory cgroup incorrect: %q", cgroup)
+	}
+
+	// No cgroup for memory
+	if err := os.Mkdir(mockProcdir+"/102", 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	content = []string{
+		"2:hugetlb:/system.slice/some.service",
+		"1:memory:/",
+		"0::/",
+	 }
+
+	cgroupFile = mockProcdir + "/102/cgroup"
+	fullContent = strings.Join(content, "\n") + "\n"
+	if err := ioutil.WriteFile(cgroupFile, []byte(fullContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, cgroup = get_cgroup(102)
+	if res != 0 {
+		t.Fatalf("error %d", res)
+	}
+
+	if cgroup != "/" {
+		t.Fatalf("memory cgroup incorrect: %q", cgroup)
+	}
+}
+
+func Test_get_cgroupMockv2(t *testing.T) {
+	// Error case
+	res, _ := get_cgroup(INT32_MAX)
+	if res != -ENOENT {
+		t.Fail()
+	}
+
+	// test with cgroup present
+	mockProcdir, err := ioutil.TempDir("", t.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	procdir_path(mockProcdir)
+	defer procdir_path("/proc")
+
+	if err := os.Mkdir(mockProcdir+"/103", 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	content := []string{
+		"0::/docker/theexpectedmemorycgroup",
+	 }
+
+	cgroupFile := mockProcdir + "/103/cgroup"
+	fullContent := strings.Join(content, "\n") + "\n"
+	if err := ioutil.WriteFile(cgroupFile, []byte(fullContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, cgroup := get_cgroup(103)
+	if res != 0 {
+		t.Fatalf("error %d", res)
+	}
+
+	if cgroup != "/docker/theexpectedmemorycgroup" {
+		t.Fatalf("memory cgroup incorrect: %q", cgroup)
+	}
+
+	// test when no cgroup present
+	if err := os.Mkdir(mockProcdir+"/104", 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	content = []string{
+		"0::/",
+	 }
+
+	cgroupFile = mockProcdir + "/104/cgroup"
+	fullContent = strings.Join(content, "\n") + "\n"
+	if err := ioutil.WriteFile(cgroupFile, []byte(fullContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, cgroup = get_cgroup(104)
+	if res != 0 {
+		t.Fatalf("error %d", res)
+	}
+
+	if cgroup != "/" {
+		t.Fatalf("memory cgroup incorrect: %q", cgroup)
+	}
+}
+
+
 func Test_parse_proc_pid_stat_buf(t *testing.T) {
 	should_error_out := []string{
 		"",
@@ -403,5 +546,14 @@ func Benchmark_parse_proc_pid_stat(b *testing.B) {
 		if !res {
 			b.Fatal("failed")
 		}
+	}
+}
+
+func Benchmark_get_cgroup(b *testing.B) {
+	enable_debug(false)
+
+	pid := os.Getpid()
+	for n := 0; n < b.N; n++ {
+		get_cgroup(pid)
 	}
 }

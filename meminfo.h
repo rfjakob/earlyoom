@@ -32,6 +32,7 @@ typedef struct procinfo {
     pid_stat_t stat;
     char name[PATH_LEN];
     char cmdline[PATH_LEN];
+    char cgroup[PATH_LEN];
 } procinfo_t;
 
 // placeholder value for numeric fields
@@ -45,5 +46,6 @@ int get_oom_score_adj(const int pid, int* out);
 int get_comm(int pid, char* out, size_t outlen);
 int get_uid(int pid);
 int get_cmdline(int pid, char* out, size_t outlen);
+int get_cgroup(int pid, char* out, size_t outlen);
 
 #endif
