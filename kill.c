@@ -13,6 +13,7 @@
 #include <sys/syscall.h> /* Definition of SYS_* constants */
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "globals.h"
 #include "kill.h"
@@ -74,6 +75,20 @@ static void notify_dbus(const char* summary, const char* body)
     exit(1);
 }
 
+static int is_script_safe(const char *path) {
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return 0;
+    }
+    if (!S_ISREG(st.st_mode) || st.st_uid != 0 || (st.st_mode & 002)) {
+        return 0;
+    }
+    if (strncmp(path, "/tmp/", 5) == 0) {
+        return 0;
+    }
+    return 1;
+}
+
 static void notify_ext(const char* script, const procinfo_t* victim)
 {
     pid_t pid1 = fork();
@@ -96,6 +111,11 @@ static void notify_ext(const char* script, const procinfo_t* victim)
     setenv("EARLYOOM_NAME", victim->name, 1);
     setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
 
+    if (!is_script_safe(script)) {
+        warn("notify_ext: unsecure script %s", script);
+        return;
+    }
+    
     execl(script, script, NULL);
     warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
     exit(1);
