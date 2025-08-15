@@ -66,9 +66,11 @@ static void notify_dbus(const char* summary, const char* body)
     if (body != NULL) {
         snprintf(body2, sizeof(body2), "string:%s", body);
     }
+    const char* dbus_send_path = "/usr/bin/dbus-send";
+    debug("%s: exec %s\n", __func__, dbus_send_path);
     // Complete command line looks like this:
     // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
-    execl("/usr/bin/dbus-send", "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
+    execl(dbus_send_path, "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
         summary2, body2, NULL);
     warn("%s: exec failed: %s\n", __func__, strerror(errno));
     exit(1);
@@ -96,6 +98,7 @@ static void notify_ext(const char* script, const procinfo_t* victim)
     setenv("EARLYOOM_NAME", victim->name, 1);
     setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
 
+    debug("%s: exec %s\n", __func__, script);
     execl(script, script, NULL);
     warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
     exit(1);
