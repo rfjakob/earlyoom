@@ -17,7 +17,7 @@
 void* eat_all_memory_thread(__attribute__((__unused__)) void* arg)
 {
     printf("sub  thread = pid %d\n", gettid());
-    eat_all_memory();
+    eat_all_memory(EAT_MALLOC);
     return NULL;
 }
 

@@ -13,6 +13,6 @@
 
 int main()
 {
-    printf("Using malloc\n");
-    eat_all_memory(EAT_MALLOC);
+    printf("Using mmap MAP_ANONYMOUS\n");
+    eat_all_memory(EAT_MMAP_ANON);
 }

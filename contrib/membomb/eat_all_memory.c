@@ -5,6 +5,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "eat_all_memory.h"
+
 #define NUM_PAGES 10
 
 static void handle_sigterm(int sig)
@@ -12,7 +14,7 @@ static void handle_sigterm(int sig)
     printf("blocking SIGTERM %d\n", sig);
 }
 
-void eat_all_memory()
+void eat_all_memory(eat_how_enum eat_how)
 {
     long page_size = sysconf(_SC_PAGESIZE);
     long bs = page_size * NUM_PAGES;
@@ -21,10 +23,25 @@ void eat_all_memory()
     signal(SIGTERM, handle_sigterm);
     gettimeofday(&tv1, NULL);
     while (1) {
-        char* p = malloc(bs);
-        if (!p) {
-            printf("malloc failed\n");
-            continue;
+        char* p = NULL;
+        switch (eat_how) {
+        case EAT_MALLOC:
+            p = malloc(bs);
+            if (!p) {
+                perror("malloc failed");
+                continue;
+            }
+            break;
+        case EAT_MMAP_ANON:
+            p = mmap(NULL, bs, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if (p == MAP_FAILED) {
+                perror("mmap failed");
+                continue;
+            }
+            break;
+        default:
+            fprintf(stderr, "BUG: unknown eat_how=%d\n", eat_how);
+            exit(1);
         }
         for (int i = 0; i < NUM_PAGES; i++) {
             // Write to each page so the kernel really has to allocate it.
