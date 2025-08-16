@@ -12,3 +12,7 @@ membomb.subthread: $(wildcard *.c *.h) Makefile
 .PHONY: format
 format:
 	clang-format --style=file -i *.c
+
+.PHONY: clean
+clean:
+	rm -f membomb membomb.subthread
