@@ -11,11 +11,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "globals.h"
 #include "meminfo.h"
 #include "msg.h"
 #include "proc_pid.h"
+#include "utils.h"
 
 /* Parse the contents of /proc/meminfo (in buf), return value of "name"
  * (example: "MemTotal:")
@@ -269,6 +271,101 @@ int get_uid(int pid)
     return (int)st.st_uid;
 }
 
+static int get_process_statm(char *buf, size_t buf_size, int pid)
+{
+    char path[PATH_LEN] = { 0 };
+    snprintf(path, sizeof(path), "%s/%d/statm", procdir_path, pid);
+
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        debug("%s: failed to open file '%s': %s\n", __func__, path, strerror(errno));
+        return -EINVAL;
+    }
+
+    char *res = fgets(buf, (int)buf_size, f);
+    fclose(f);
+    if (!res) {
+        debug("%s: failed to read statm info for pid=%d\n", __func__, pid);
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
+static void dump_all_process_meminfo(int __attribute__((format(printf, 1, 2))) (*out_func)(const char* fmt, ...))
+{
+    DIR *procdir = opendir(procdir_path);
+    if (procdir == NULL) {
+        fatal(5, "%s: could not open /proc: %s", __func__, strerror(errno));
+    }
+
+    static size_t page_size;
+    if (page_size == 0) {
+        page_size = (size_t)sysconf(_SC_PAGESIZE);
+        if (page_size == 0) {
+            fatal(1, "could not read page size\n");
+        }
+    }
+
+    char *statm = calloc(1, page_size);
+    if (!statm) {
+        debug("%s: failed to allocate memory\n", __func__);
+        return;
+    }
+
+    out_func("===========================\n");
+    out_func("Dump all processes statm info. More details: Documentation/filesystems/proc.txt\n");
+    out_func("%%proc (%%pid): %%size %%resident %%shared %%trs %%trs %%drs %%dt\n");
+
+    while (1) {
+        errno = 0;
+        struct dirent *d = readdir(procdir);
+        if (d == NULL) {
+            if (errno != 0)
+                warn("%s: readdir error: %s\n", __func__, strerror(errno));
+            break;
+        }
+
+        // proc contains lots of directories not related to processes,
+        // skip them
+        if (!isnumeric(d->d_name))
+            continue;
+
+        errno = 0;
+        int pid = (int)strtol(d->d_name, NULL, 10);
+        if (errno != 0) {
+            warn("%s: strtol() failed: %s\n", __func__, strerror(errno));
+            continue;
+        }
+
+        // Skip kthreads
+        pid_stat_t stat;
+        if (!parse_proc_pid_stat(&stat, pid))
+            continue;
+
+        if (stat.rss <= 0)
+            continue;
+
+        int ret = get_process_statm(statm, page_size, pid);
+        if (ret < 0)
+            continue;
+
+        char name[PATH_LEN] = { 0 };
+        ret = get_comm(pid, name, sizeof(name));
+        if (ret < 0) {
+            debug("pid %d: error reading process name: %s\n", pid, strerror(-ret));
+            continue;
+        }
+
+        out_func("%s (%d): %s", name, pid, statm);
+    }
+
+    free(statm);
+    closedir(procdir);
+
+    out_func("===========================\n");
+}
+
 /* Print a status line like
  *   mem avail: 5259 MiB (67 %), swap free: 0 MiB (0 %)"
  * as an informational message to stdout (default), or
@@ -283,4 +380,6 @@ void print_mem_stats(int __attribute__((format(printf, 1, 2))) (*out_func)(const
         m.SwapFreeKiB / 1024,
         m.SwapTotalKiB / 1024,
         m.SwapFreePercent);
+
+    dump_all_process_meminfo(out_func);
 }
