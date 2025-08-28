@@ -16,8 +16,10 @@ typedef struct {
     double swap_kill_percent;
     /* send d-bus notifications? */
     bool notify;
-    /* Path to script for programmatic notifications (or NULL) */
+    /* Path to script for programmatic notifications after killing (or NULL) */
     char* notify_ext;
+    /* Path to script/binary for to execute before killing (or NULL) */
+    char* kill_process_prehook;
     /* kill all processes within a process group */
     bool kill_process_group;
     /* do not kill processes owned by root */

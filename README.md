@@ -196,7 +196,8 @@ running as your user.
 
 Additionally, earlyoom can execute a script for each process killed, providing
 information about the process via the `EARLYOOM_PID`, `EARLYOOM_UID` and
-`EARLYOOM_NAME` environment variables. Pass `-N /path/to/script` to enable.
+`EARLYOOM_NAME` environment variables. Pass `-N /path/to/script` to enable
+after the process is killed, or `-P /path/to/script` to be invoked before.
 
 Warning: In case of dryrun mode, the script will be executed in rapid
 succession, ensure you have some sort of rate-limit implemented.
@@ -241,6 +242,7 @@ Usage: ./earlyoom [OPTION]...
   -S SIZE[,KILL_SIZE]       set free swap minimum to SIZE KiB
   -n                        enable d-bus notifications
   -N /PATH/TO/SCRIPT        call script after oom kill
+  -P /PATH/TO/SCRIPT        call script before oom kill
   -g                        kill all processes within a process group
   -d, --debug               enable debugging messages
   -v                        print version information and exit

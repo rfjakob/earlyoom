@@ -34,6 +34,10 @@
 // At most 1 notification per second when --dryrun is active
 #define NOTIFY_RATELIMIT 1
 
+// Sleep for this amount of milliseconds when invoking the pre-hook (otherwise
+// when the pre-hook gets spawned, it doesn't have time to act)
+#define PREHOOK_STARTUP_SLEEP_MS 200U
+
 static bool isnumeric(char* str)
 {
     int i = 0;
@@ -135,6 +139,15 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
     }
     if (args->notify_ext) {
         notify_ext(args->notify_ext, victim);
+    }
+}
+
+static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t* victim)
+{
+    if (args->kill_process_prehook) {
+        // reuse notify_ext() to invoke, functionally it's the same as invoking
+        // for notification
+        notify_ext(args->kill_process_prehook, victim);
     }
 }
 
@@ -542,6 +555,17 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
         warn("sending %s to process %d uid %d \"%s\": oom_score %d, VmRSS %lld MiB, cmdline \"%s\"\n",
             sig_name, victim->pid, victim->uid, victim->name, victim->oom_score, victim->VmRSSkiB / 1024,
             victim->cmdline);
+    }
+
+    // Invoke program BEFORE killing a process. There is a small risk that there
+    // is not enough memory to spawn it, warn; and a brief period of sleep to
+    // let the program be able to start and do something meaningful.
+    if (sig != 0) {
+        warn("going to invoke program before killing: %s\n", args->kill_process_prehook);
+        kill_process_prehook(args, victim);
+
+        warn("sleeping for %ums to allow the prehook to act\n", PREHOOK_STARTUP_SLEEP_MS);
+        usleep(PREHOOK_STARTUP_SLEEP_MS * 1000);
     }
 
     int res = kill_wait(args, victim->pid, sig);

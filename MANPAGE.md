@@ -125,7 +125,7 @@ To actually see the notifications in your GUI session, you need to have
 running as your user.
 
 #### -N /PATH/TO/SCRIPT
-Run the given script for each process killed. Must be an absolute path.
+Run the given script for each process killed, afterwards. Must be an absolute path.
 
 Within the script, information about the killed process can be obtained via the
 following environment variables:
@@ -138,6 +138,20 @@ following environment variables:
 WARNING: `EARLYOOM_NAME` can contain spaces, newlines, special characters
 and is controlled by the user, or it can be empty! Make sure that your
 notification script can handle that!
+
+#### -P /PATH/TO/SCRIPT
+Run the given script for each process killed, beforehand. Must be an absolute path.
+
+See `-N`, it behaves in the same way except being run before the process is killed.
+
+Note that there is a small delay (200 milliseconds) in killing the chosen victim
+to give some room for this program to be spawned and do something meaningful.
+The invoked program has to be very fast to gather information from the running
+process before it gets killed.
+
+Any such delay, and the extra resources taken by the spawned process, always
+take some toll and further stress the already stressed system.  Therefore, the
+invoked process should be as lean and fast as possible.
 
 #### -g
 Kill all processes that have same process group id (PGID) as the process
