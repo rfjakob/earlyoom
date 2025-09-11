@@ -126,9 +126,6 @@ int main(int argc, char* argv[])
      * may lag behind stderr */
     setlinebuf(stdout);
 
-    /* clean up dbus-send zombies */
-    signal(SIGCHLD, SIG_IGN);
-
     fprintf(stderr, "earlyoom " VERSION "\n");
 
     if (chdir(procdir_path) != 0) {

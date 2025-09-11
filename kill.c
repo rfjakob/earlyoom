@@ -13,6 +13,7 @@
 #include <sys/syscall.h> /* Definition of SYS_* constants */
 #include <time.h>
 #include <unistd.h>
+#include <wait.h>
 
 #include "globals.h"
 #include "kill.h"
@@ -53,55 +54,84 @@ static bool isnumeric(char* str)
     }
 }
 
-static void notify_dbus(const char* summary, const char* body)
+// Spawn a process handling notifications (-n or -N option) in the background
+// by double-forking.
+// The new process will have init as the parent and init will clean up the zombies.
+static void notify_spawn_background(const char* path, char* const argv[], const procinfo_t* victim)
 {
-    int pid = fork();
-    if (pid > 0) {
-        // parent
+    pid_t child_pid = fork();
+    if (child_pid == 0) {
+        // Inside child
+        int grandchild_pid = fork();
+        if (grandchild_pid == 0) {
+            // Inside grandchild
+            if (victim) {
+                // Pass victim info via env
+                char pid_str[UID_BUFSIZ] = { 0 };
+                char uid_str[UID_BUFSIZ] = { 0 };
+
+                snprintf(pid_str, UID_BUFSIZ, "%d", victim->pid);
+                snprintf(uid_str, UID_BUFSIZ, "%d", victim->uid);
+
+                setenv("EARLYOOM_PID", pid_str, 1);
+                setenv("EARLYOOM_UID", uid_str, 1);
+                setenv("EARLYOOM_NAME", victim->name, 1);
+                setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
+            }
+
+            debug("%s: exec %s\n", __func__, path);
+            execv(path, argv);
+            warn("%s: exec %s failed: %s\n", __func__, path, strerror(errno));
+            exit(1);
+        } else if (grandchild_pid == -1) {
+            warn("%s: grandchild fork failed: %s\n", __func__, strerror(errno));
+        }
+        // Child exits immediately
+        exit(0);
+    } else if (child_pid > 0) {
+        // Inside parent
+        // Reap the child
+        int ret = waitpid(child_pid, NULL, 0);
+        if (ret == -1) {
+            warn("%s: waitpid: %s\n", __func__, strerror(errno));
+        }
+    } else {
+        warn("%s: child fork failed: %s\n", __func__, strerror(errno));
         return;
     }
-    char summary2[1024] = { 0 };
-    snprintf(summary2, sizeof(summary2), "string:%s", summary);
+}
+
+// "-n" option
+static void notify_dbus(const char* body)
+{
     char body2[1024] = "string:";
     if (body != NULL) {
         snprintf(body2, sizeof(body2), "string:%s", body);
     }
-    const char* dbus_send_path = "/usr/bin/dbus-send";
-    debug("%s: exec %s\n", __func__, dbus_send_path);
+
     // Complete command line looks like this:
-    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
-    execl(dbus_send_path, "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
-        summary2, body2, NULL);
-    warn("%s: exec failed: %s\n", __func__, strerror(errno));
-    exit(1);
+    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:earlyoom' 'string:and body text'
+    char* const argv[] = {
+        "dbus-send",
+        "--system",
+        "/",
+        "net.nuetzlich.SystemNotifications.Notify",
+        "string:earlyoom",
+        body2,
+        NULL
+    };
+    const char* dbus_send_path = "/usr/bin/dbus-send";
+    notify_spawn_background(dbus_send_path, argv, NULL);
 }
 
-static void notify_ext(const char* script, const procinfo_t* victim)
+// "-N" option
+static void notify_ext(char* const script, const procinfo_t* victim)
 {
-    pid_t pid1 = fork();
-
-    if (pid1 == -1) {
-        warn("notify_ext: fork() returned -1: %s\n", strerror(errno));
-        return;
-    } else if (pid1 != 0) {
-        return;
-    }
-
-    char pid_str[UID_BUFSIZ] = { 0 };
-    char uid_str[UID_BUFSIZ] = { 0 };
-
-    snprintf(pid_str, UID_BUFSIZ, "%d", victim->pid);
-    snprintf(uid_str, UID_BUFSIZ, "%d", victim->uid);
-
-    setenv("EARLYOOM_PID", pid_str, 1);
-    setenv("EARLYOOM_UID", uid_str, 1);
-    setenv("EARLYOOM_NAME", victim->name, 1);
-    setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
-
-    debug("%s: exec %s\n", __func__, script);
-    execl(script, script, NULL);
-    warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
-    exit(1);
+    char* const argv[] = {
+        script,
+        NULL
+    };
+    notify_spawn_background(script, argv, victim);
 }
 
 static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t* victim)
@@ -131,7 +161,7 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
         char notif_args[PATH_MAX + 1000];
         snprintf(notif_args, sizeof(notif_args),
             "Low memory! Killing process %d %s", victim->pid, victim->name);
-        notify_dbus("earlyoom", notif_args);
+        notify_dbus(notif_args);
     }
     if (args->notify_ext) {
         notify_ext(args->notify_ext, victim);
@@ -523,7 +553,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (victim->pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         if (args->notify) {
-            notify_dbus("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
+            notify_dbus("Error: Could not find a process to kill. Sleeping 1 second.");
         }
         sleep(1);
         return;
@@ -560,7 +590,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (res != 0) {
         warn("kill failed: %s\n", strerror(saved_errno));
         if (args->notify) {
-            notify_dbus("earlyoom", "Error: Failed to kill process");
+            notify_dbus("Error: Failed to kill process");
         }
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
