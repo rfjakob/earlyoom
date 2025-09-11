@@ -1,3 +1,6 @@
 /membomb
 /membomb.subthread
 /membomb.mmap
+/keep_active
+/membomb.mmap_anon
+/membomb.mmap_file
