@@ -6,11 +6,13 @@
 #include <dirent.h>
 #include <errno.h>
 #include <limits.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/syscall.h> /* Definition of SYS_* constants */
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -34,9 +36,9 @@
 // At most 1 notification per second when --dryrun is active
 #define NOTIFY_RATELIMIT 1
 
-// Sleep for this amount of milliseconds when invoking the pre-hook (otherwise
+// Wait for at most this amount of milliseconds when invoking the pre-hook (otherwise
 // when the pre-hook gets spawned, it doesn't have time to act)
-#define PREHOOK_STARTUP_SLEEP_MS 200U
+#define PREHOOK_STARTUP_SLEEP_MS 200
 
 static bool isnumeric(char* str)
 {
@@ -80,16 +82,67 @@ static void notify_dbus(const char* summary, const char* body)
     exit(1);
 }
 
-static void notify_ext(const char* script, const procinfo_t* victim)
+static int
+pidfd_open(pid_t pid, unsigned int flags)
 {
+    return (int)syscall(SYS_pidfd_open, pid, flags);
+}
+
+static void notify_ext(const char* script, const procinfo_t* victim, int timeout_ms)
+{
+    // Prevent our SIGCHLD handler from reaping
+    // children before we can
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &set, NULL);
+
     pid_t pid1 = fork();
 
     if (pid1 == -1) {
-        warn("notify_ext: fork() returned -1: %s\n", strerror(errno));
+        warn("%s: fork error: %s\n", __func__, strerror(errno));
         return;
     } else if (pid1 != 0) {
+        // we are the parent
+        int pidfd = pidfd_open(pid1, 0);
+        if (pidfd == -1) {
+            warn("%s: pidfd_open error: %s\n", __func__, strerror(errno));
+            return;
+        }
+        struct pollfd pollfd = { 0 };
+        pollfd.fd = pidfd;
+        pollfd.events = POLLIN;
+
+        int ready = poll(&pollfd, 1, timeout_ms);
+        if (ready == -1) {
+            warn("%s: poll error: %s\n", __func__, strerror(errno));
+        } else if (ready == 0) {
+            // child is still running. Ignore unless a timeout was set.
+            if (timeout_ms > 0)
+                warn("%s: timeout waiting for process\n", __func__);
+        } else {
+            // child has exited
+            int ret = 0, wstatus = 0;
+            ret = waitpid(pid1, &wstatus, WNOHANG);
+            if (ret <= 0) {
+                warn("%s: waitpid error: %s\n", __func__, strerror(errno));
+            } else {
+                if (WIFEXITED(wstatus)) {
+                    debug("%s: child exited, status=%d\n", __func__, WEXITSTATUS(wstatus));
+                } else if (WIFSIGNALED(wstatus)) {
+                    debug("%s: child killed by signal %d\n", __func__, WTERMSIG(wstatus));
+                } else {
+                    warn("%s: unknown child status 0x%x\n", __func__, wstatus);
+                }
+            }
+        }
+        close(pidfd);
+        sigprocmask(SIG_UNBLOCK, &set, NULL);
         return;
     }
+
+    // we are the child
+    sigprocmask(SIG_UNBLOCK, &set, NULL);
 
     char pid_str[UID_BUFSIZ] = { 0 };
     char uid_str[UID_BUFSIZ] = { 0 };
@@ -138,7 +191,7 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
         notify_dbus("earlyoom", notif_args);
     }
     if (args->notify_ext) {
-        notify_ext(args->notify_ext, victim);
+        notify_ext(args->notify_ext, victim, 0);
     }
 }
 
@@ -147,7 +200,7 @@ static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t*
     if (args->kill_process_prehook) {
         // reuse notify_ext() to invoke, functionally it's the same as invoking
         // for notification
-        notify_ext(args->kill_process_prehook, victim);
+        notify_ext(args->kill_process_prehook, victim, PREHOOK_STARTUP_SLEEP_MS);
     }
 }
 
@@ -563,9 +616,6 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (sig != 0) {
         warn("going to invoke program before killing: %s\n", args->kill_process_prehook);
         kill_process_prehook(args, victim);
-
-        warn("sleeping for %ums to allow the prehook to act\n", PREHOOK_STARTUP_SLEEP_MS);
-        usleep(PREHOOK_STARTUP_SLEEP_MS * 1000);
     }
 
     int res = kill_wait(args, victim->pid, sig);
