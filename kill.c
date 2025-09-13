@@ -78,13 +78,13 @@ static void notify_spawn_subprocess(const char* script, char* const argv[], cons
 
     if (pid1 == -1) {
         warn("%s: fork error: %s\n", __func__, strerror(errno));
-        return;
+        goto out_unblock;
     } else if (pid1 != 0) {
         // we are the parent
         int pidfd = pidfd_open(pid1, 0);
         if (pidfd == -1) {
             warn("%s: pidfd_open error: %s\n", __func__, strerror(errno));
-            return;
+            goto out_unblock;
         }
         struct pollfd pollfd = { 0 };
         pollfd.fd = pidfd;
@@ -114,6 +114,7 @@ static void notify_spawn_subprocess(const char* script, char* const argv[], cons
             }
         }
         close(pidfd);
+out_unblock:
         sigprocmask(SIG_UNBLOCK, &set, NULL);
         return;
     }
