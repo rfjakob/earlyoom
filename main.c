@@ -110,6 +110,27 @@ static void startup_selftests(poll_loop_args_t* args)
 #endif
 }
 
+static void
+handle_sigchld(__attribute__((unused)) int sig)
+{
+    pid_t pid;
+    int wstatus;
+
+    while (true) {
+        pid = waitpid(-1, &wstatus, WNOHANG);
+        if (pid <= 0) {
+            return;
+        }
+        if (WIFEXITED(wstatus)) {
+            debug("%s: pid %d exited, status=%d\n", __func__, pid, WEXITSTATUS(wstatus));
+        } else if (WIFSIGNALED(wstatus)) {
+            debug("%s: pid %d killed by signal %d\n", __func__, pid, WTERMSIG(wstatus));
+        } else {
+            debug("%s: pid %d status 0x%x\n", __func__, pid, wstatus);
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
     poll_loop_args_t args = {
@@ -135,7 +156,7 @@ int main(int argc, char* argv[])
     setlinebuf(stdout);
 
     /* clean up dbus-send zombies */
-    signal(SIGCHLD, SIG_IGN);
+    signal(SIGCHLD, handle_sigchld);
 
     fprintf(stderr, "earlyoom " VERSION "\n");
 
