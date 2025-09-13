@@ -111,7 +111,7 @@ static void notify_spawn_subprocess(const char* script, char* const argv[], cons
         } else if (ready == 0) {
             // child is still running. Ignore unless a timeout was set.
             if (timeout_ms > 0)
-                warn("%s: timeout waiting for process\n", __func__);
+                warn("%s: timeout waiting for process %s\n", __func__, script);
         } else {
             // child has exited
             int ret = 0, wstatus = 0;
@@ -630,10 +630,10 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     }
 
     // Invoke program BEFORE killing a process. There is a small risk that there
-    // is not enough memory to spawn it, warn; and a brief period of sleep to
+    // is not enough memory to spawn it, warn; and a brief period of waiting to
     // let the program be able to start and do something meaningful.
     if (sig != 0 && args->kill_process_prehook) {
-        warn("going to invoke program before killing: %s\n", args->kill_process_prehook);
+        debug("going to invoke program before killing: %s\n", args->kill_process_prehook);
         kill_process_prehook(args, victim);
     }
 
