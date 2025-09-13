@@ -38,8 +38,6 @@ jobs:
           cd /work
           make
           make test
-      # Fails because kernel is too old for SYS_pidfd_open
-      continue-on-error: true
     - run: git clean -dxff
 
     - name: Build and test in Amazon Linux 2
@@ -54,6 +52,8 @@ jobs:
           git config --global --add safe.directory /work # Fix for: fatal: detected dubious ownership in repository at '/work'
           make
           make test
+      # Fails because kernel is too old for SYS_pidfd_open
+      continue-on-error: true
     - run: git clean -dxff
 
     - name: Build in Oracle Linux 7 (similar to RHEL 7, CentOS 7)
