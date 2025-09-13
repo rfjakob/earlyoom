@@ -210,9 +210,6 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
 // "-P" option
 static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t* victim)
 {
-    if (!args->kill_process_prehook) {
-        return;
-    }
     char* const argv[] = {
         args->kill_process_prehook,
         NULL,
@@ -629,7 +626,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     // Invoke program BEFORE killing a process. There is a small risk that there
     // is not enough memory to spawn it, warn; and a brief period of sleep to
     // let the program be able to start and do something meaningful.
-    if (sig != 0) {
+    if (sig != 0 && args->kill_process_prehook) {
         warn("going to invoke program before killing: %s\n", args->kill_process_prehook);
         kill_process_prehook(args, victim);
     }
