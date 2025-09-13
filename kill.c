@@ -59,10 +59,25 @@ static bool isnumeric(char* str)
     }
 }
 
-static int
-pidfd_open(pid_t pid, unsigned int flags)
+#ifndef SYS_pidfd_open
+// It's 434 on all architectures except Alpha. Sorry, Alpha users.
+#warning SYS_pidfd_open is not defined. Assuming 434.
+#define SYS_pidfd_open 434
+#endif
+
+static int pidfd_open(pid_t pid, unsigned int flags)
 {
     return (int)syscall(SYS_pidfd_open, pid, flags);
+}
+
+#ifndef SYS_process_mrelease
+// It's 448 on all architectures except Alpha. Sorry, Alpha users.
+#warning SYS_process_mrelease is not defined. Assuming 448.
+#define SYS_process_mrelease 448
+#endif
+
+static int process_mrelease(int pidfd, unsigned int flags) {
+    return (int)syscall(SYS_process_mrelease, pidfd, flags);
 }
 
 static void notify_spawn_subprocess(const char* script, char* const argv[], const procinfo_t* victim, int timeout_ms)
@@ -218,12 +233,6 @@ static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t*
     notify_spawn_subprocess(args->kill_process_prehook, argv, victim, PREHOOK_STARTUP_SLEEP_MS);
 }
 
-#if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
-#define HAVE_MRELEASE
-#else
-#warning process_mrelease is not supported. earlyoom will still work but with degraded performance.
-#endif
-
 // kill_release kills a process and calls process_mrelease to
 // release the memory as quickly as possible.
 //
@@ -238,14 +247,14 @@ int kill_release(const pid_t pid, const int pidfd, const int sig)
     if (pidfd < 0) {
         return 0;
     }
-#if defined(HAVE_MRELEASE)
-    res = (int)syscall(__NR_process_mrelease, pidfd, 0);
+
+    res = process_mrelease(pidfd, 0);
     if (res != 0) {
         warn("%s: pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
     } else {
         info("%s: pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
     }
-#endif
+
     // Return 0 regardless of process_mrelease outcome
     return 0;
 }
@@ -273,17 +282,13 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
         warn("killing whole process group %d (-g flag is active)\n", res);
     }
 
-#if defined(HAVE_MRELEASE)
     // Open the pidfd *before* calling kill().
     if (!args->kill_process_group && sig != 0) {
-        pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
+        pidfd = pidfd_open(pid, 0);
         if (pidfd < 0) {
             warn("%s pid %d: error opening pidfd: %s\n", __func__, pid, strerror(errno));
         }
     }
-#else
-    warn("%s pid %d: system does not support process_mrelease, skipping\n", __func__, pid);
-#endif
 
     int res = kill_release(pid, pidfd, sig);
     if (res != 0) {
