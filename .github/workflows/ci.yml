@@ -38,6 +38,8 @@ jobs:
           cd /work
           make
           make test
+      # Fails because kernel is too old for SYS_pidfd_open
+      continue-on-error: true
     - run: git clean -dxff
 
     - name: Build and test in Amazon Linux 2
