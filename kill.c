@@ -59,36 +59,13 @@ static bool isnumeric(char* str)
     }
 }
 
-static void notify_dbus(const char* summary, const char* body)
-{
-    int pid = fork();
-    if (pid > 0) {
-        // parent
-        return;
-    }
-    char summary2[1024] = { 0 };
-    snprintf(summary2, sizeof(summary2), "string:%s", summary);
-    char body2[1024] = "string:";
-    if (body != NULL) {
-        snprintf(body2, sizeof(body2), "string:%s", body);
-    }
-    const char* dbus_send_path = "/usr/bin/dbus-send";
-    debug("%s: exec %s\n", __func__, dbus_send_path);
-    // Complete command line looks like this:
-    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:summary text' 'string:and body text'
-    execl(dbus_send_path, "dbus-send", "--system", "/", "net.nuetzlich.SystemNotifications.Notify",
-        summary2, body2, NULL);
-    warn("%s: exec failed: %s\n", __func__, strerror(errno));
-    exit(1);
-}
-
 static int
 pidfd_open(pid_t pid, unsigned int flags)
 {
     return (int)syscall(SYS_pidfd_open, pid, flags);
 }
 
-static void notify_ext(const char* script, const procinfo_t* victim, int timeout_ms)
+static void notify_spawn_subprocess(const char* script, char* const argv[], const procinfo_t* victim, int timeout_ms)
 {
     // Prevent our SIGCHLD handler from reaping
     // children before we can
@@ -144,21 +121,56 @@ static void notify_ext(const char* script, const procinfo_t* victim, int timeout
     // we are the child
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 
-    char pid_str[UID_BUFSIZ] = { 0 };
-    char uid_str[UID_BUFSIZ] = { 0 };
+    if (victim) {
+        char pid_str[UID_BUFSIZ] = { 0 };
+        char uid_str[UID_BUFSIZ] = { 0 };
 
-    snprintf(pid_str, UID_BUFSIZ, "%d", victim->pid);
-    snprintf(uid_str, UID_BUFSIZ, "%d", victim->uid);
+        snprintf(pid_str, UID_BUFSIZ, "%d", victim->pid);
+        snprintf(uid_str, UID_BUFSIZ, "%d", victim->uid);
 
-    setenv("EARLYOOM_PID", pid_str, 1);
-    setenv("EARLYOOM_UID", uid_str, 1);
-    setenv("EARLYOOM_NAME", victim->name, 1);
-    setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
+        setenv("EARLYOOM_PID", pid_str, 1);
+        setenv("EARLYOOM_UID", uid_str, 1);
+        setenv("EARLYOOM_NAME", victim->name, 1);
+        setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
+    }
 
     debug("%s: exec %s\n", __func__, script);
-    execl(script, script, NULL);
+    execv(script, argv);
     warn("%s: exec %s failed: %s\n", __func__, script, strerror(errno));
     exit(1);
+}
+
+// "-n" option
+static void notify_dbus(const char* body)
+{
+    char body2[1024] = "string:";
+    if (body != NULL) {
+        snprintf(body2, sizeof(body2), "string:%s", body);
+    }
+
+    // Complete command line looks like this:
+    // dbus-send --system / net.nuetzlich.SystemNotifications.Notify 'string:earlyoom' 'string:and body text'
+    char* const argv[] = {
+        "dbus-send",
+        "--system",
+        "/",
+        "net.nuetzlich.SystemNotifications.Notify",
+        "string:earlyoom",
+        body2,
+        NULL
+    };
+    const char* dbus_send_path = "/usr/bin/dbus-send";
+    notify_spawn_subprocess(dbus_send_path, argv, NULL, 0);
+}
+
+// "-N" option
+static void notify_ext(char* const script, const procinfo_t* victim)
+{
+    char* const argv[] = {
+        script,
+        NULL
+    };
+    notify_spawn_subprocess(script, argv, victim, 0);
 }
 
 static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t* victim)
@@ -188,20 +200,24 @@ static void notify_process_killed(const poll_loop_args_t* args, const procinfo_t
         char notif_args[PATH_MAX + 1000];
         snprintf(notif_args, sizeof(notif_args),
             "Low memory! Killing process %d %s", victim->pid, victim->name);
-        notify_dbus("earlyoom", notif_args);
+        notify_dbus(notif_args);
     }
     if (args->notify_ext) {
-        notify_ext(args->notify_ext, victim, 0);
+        notify_ext(args->notify_ext, victim);
     }
 }
 
+// "-P" option
 static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t* victim)
 {
-    if (args->kill_process_prehook) {
-        // reuse notify_ext() to invoke, functionally it's the same as invoking
-        // for notification
-        notify_ext(args->kill_process_prehook, victim, PREHOOK_STARTUP_SLEEP_MS);
+    if (!args->kill_process_prehook) {
+        return;
     }
+    char* const argv[] = {
+        args->kill_process_prehook,
+        NULL,
+    };
+    notify_spawn_subprocess(args->kill_process_prehook, argv, victim, PREHOOK_STARTUP_SLEEP_MS);
 }
 
 #if defined(__NR_pidfd_open) && defined(__NR_process_mrelease)
@@ -589,7 +605,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (victim->pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         if (args->notify) {
-            notify_dbus("earlyoom", "Error: Could not find a process to kill. Sleeping 1 second.");
+            notify_dbus("Error: Could not find a process to kill. Sleeping 1 second.");
         }
         sleep(1);
         return;
@@ -634,7 +650,7 @@ void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victi
     if (res != 0) {
         warn("kill failed: %s\n", strerror(saved_errno));
         if (args->notify) {
-            notify_dbus("earlyoom", "Error: Failed to kill process");
+            notify_dbus("Error: Failed to kill process");
         }
         // Killing the process may have failed because we are not running as root.
         // In that case, trying again in 100ms will just yield the same error.
