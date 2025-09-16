@@ -280,6 +280,12 @@ Implementation Notes
 Changelog
 ---------
 
+* v1.9.0, 2025-09-16
+  * Add `-P /path/to/script` option to execute before killing something
+    ([#348](https://github.com/rfjakob/earlyoom/pull/348))
+  * More debug logging for `-n` and `-N`
+  * Also log oom_score_adj when killing something
+
 * v1.8.2, 2024-05-07
   * Fixes in `earlyoom.service` systemd unit file
     * Add `process_mrelease` to allowed syscalls ([commit](https://github.com/rfjakob/earlyoom/commit/c171b72ba217e923551bdde7e7f00ec5a0488b54))
