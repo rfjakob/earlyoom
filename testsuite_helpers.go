@@ -190,6 +190,9 @@ func mockProc(t *testing.T, procs []mockProcProcess) {
 		if p.num_threads == 0 {
 			p.num_threads = 1
 		}
+		if p.comm == "" {
+			p.comm = "foo"
+		}
 
 		pidDir := fmt.Sprintf("%s/%d", mockProcdir, int(p.pid))
 		if err := os.Mkdir(pidDir, 0755); err != nil {
