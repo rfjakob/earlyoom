@@ -147,6 +147,9 @@ func TestCli(t *testing.T) {
 		{args: []string{"-w", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		// Test --use-kernel-oom option
+		{args: []string{"--kernel-oom"}, code: -1, stderrContains: "Using kernel OOM killer", stdoutContains: memReport},
+		{args: []string{"--kernel-oom", "--dryrun"}, code: -1, stderrContains: "dryrun", stdoutContains: memReport},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled

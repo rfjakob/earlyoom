@@ -37,10 +37,13 @@ typedef struct {
     int kill_wait_timeout_secs;
     /* Flag --dryrun was passed */
     bool dryrun;
+    /* Flag --kernel-oom was passed, use kernel oom killer via /proc/sysrq-trigger */
+    bool kernel_oom;
 } poll_loop_args_t;
 
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim);
 procinfo_t find_largest_process(const poll_loop_args_t* args);
 bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur);
+int trigger_kernel_oom(const poll_loop_args_t* args);
 
 #endif

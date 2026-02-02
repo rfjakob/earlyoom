@@ -405,3 +405,37 @@ func Benchmark_parse_proc_pid_stat(b *testing.B) {
 		}
 	}
 }
+
+func TestTriggerKernelOomKiller_Dryrun(t *testing.T) {
+	// Test dryrun mode - should check permission and return 0 if has permission
+	// or -1 if no permission (even in dryrun mode)
+	args := poll_loop_args_t_with_kernel_oom(false, true, true)
+
+	res := trigger_kernel_oom_killer(args)
+
+	// In containers, we may be root but not have access to /proc/sysrq-trigger.
+	// Use syscall.Access to check if the file is writable (W_OK=2).
+	if err := syscall.Access("/proc/sysrq-trigger", 2); err == nil {
+		if res != 0 {
+			t.Errorf("dryrun mode with access should return 0, got %d", res)
+		}
+		// pass the access check, NOP
+	} else if res != -1 {
+		t.Errorf("dryrun mode without access should return -1 (permission denied), got %d", res)
+	}
+}
+
+func TestTriggerKernelOomKiller_WithNoAccessToSysrq(t *testing.T) {
+	// test should skip if we have access to /proc/sysrq-trigger
+	if err := syscall.Access("/proc/sysrq-trigger", 2); err == nil {
+		t.Skip("Skipping test that requires no access to /proc/sysrq-trigger")
+	}
+
+	args := poll_loop_args_t_with_kernel_oom(false, true, false)
+
+	res := trigger_kernel_oom_killer(args)
+	// Expect -1 (permission denied, cannot write to /proc/sysrq-trigger)
+	if res != -1 {
+		t.Errorf("Expected -1 for non-root user, got %d", res)
+	}
+}

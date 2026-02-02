@@ -61,6 +61,14 @@ func poll_loop_args_t(sort_by_rss bool) (args C.poll_loop_args_t) {
 	return
 }
 
+// Wrapper with use_kernel_oom_killer and dryrun support
+func poll_loop_args_t_with_kernel_oom(sort_by_rss bool, kernel_oom bool, dryrun bool) (args C.poll_loop_args_t) {
+	args.sort_by_rss = C.bool(sort_by_rss)
+	args.kernel_oom = C.bool(kernel_oom)
+	args.dryrun = C.bool(dryrun)
+	return
+}
+
 func procinfo_t() C.procinfo_t {
 	return C.procinfo_t{}
 }
@@ -123,4 +131,8 @@ func parse_proc_pid_stat_buf(buf string) (res bool, out C.pid_stat_t) {
 func parse_proc_pid_stat(pid int) (res bool, out C.pid_stat_t) {
 	res = bool(C.parse_proc_pid_stat(&out, C.int(pid)))
 	return res, out
+}
+
+func trigger_kernel_oom_killer(args C.poll_loop_args_t) int {
+	return int(C.trigger_kernel_oom(&args))
 }

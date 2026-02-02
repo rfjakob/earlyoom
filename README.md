@@ -64,9 +64,11 @@ the kernel (`/proc/*/oom_score`).
 
 Why not trigger the kernel oom killer?
 --------------------------------------
-earlyoom does not use `echo f > /proc/sysrq-trigger` because:
 
-In some kernel versions (tested on v4.0.5), triggering the kernel
+You can make earlyoom trigger the kernel oom killer (`echo f > /proc/sysrq-trigger`)
+by passing the `--kernel-oom` flag. However, be aware of the following:
+
+In some Linux kernel versions (tested on v4.0.5), triggering the kernel
 oom killer manually does not work at all.
 That is, it may only free some graphics
 memory (that will be allocated immediately again) and not actually kill
@@ -78,7 +80,8 @@ in Linux v5.17
 ([commit f530243a](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f530243a172d2ff03f88d0056f838928d6445c6d))
 .
 
-Like the Linux kernel would, earlyoom finds its victim by reading through `/proc/*/oom_score`.
+Like the Linux kernel would, per default,
+earlyoom finds its victim by reading through `/proc/*/oom_score`.
 
 How much memory does earlyoom use?
 ----------------------------------
