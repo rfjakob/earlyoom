@@ -35,6 +35,8 @@ typedef struct {
     int report_interval_ms;
     /* Flag --dryrun was passed */
     bool dryrun;
+    /* Flag --use-kernel-oom was passed, use kernel oom killer via /proc/sysrq-trigger */
+    bool use_kernel_oom_killer;
 } poll_loop_args_t;
 
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim);

@@ -43,6 +43,7 @@ enum {
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
+    LONG_OPT_USE_KERNEL_OOM,
 };
 
 static int set_oom_score_adj(int);
@@ -66,7 +67,7 @@ double min(double x, double y)
 // (2) the stack grows to maximum size before calling mlockall()
 static void startup_selftests(poll_loop_args_t* args)
 {
-    {
+    if (!args->use_kernel_oom_killer){
         debug("%s: dry-running oom kill...\n", __func__);
         procinfo_t victim = find_largest_process(args);
         kill_process(args, 0, &victim);
@@ -185,6 +186,7 @@ int main(int argc, char* argv[])
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
+        { "use-kernel-oom", no_argument, NULL, LONG_OPT_USE_KERNEL_OOM },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -298,6 +300,10 @@ int main(int argc, char* argv[])
         case LONG_OPT_USE_SYSLOG:
             earlyoom_syslog_init();
             break;
+        case LONG_OPT_USE_KERNEL_OOM:
+            args.use_kernel_oom_killer = true;
+            fprintf(stderr, "Using kernel OOM killer (requires Linux v5.17+)\n");
+            break;
         case LONG_OPT_IGNORE:
             ignore_cmds = optarg;
             break;
@@ -331,6 +337,9 @@ int main(int argc, char* argv[])
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
                 "  --syslog                  use syslog instead of std streams\n"
+                "  --use-kernel-oom          use kernel OOM killer via /proc/sysrq-trigger\n"
+                "                            instead of killing processes directly. Requires\n"
+                "                            Linux v5.17+ to work correctly.\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);
@@ -524,6 +533,13 @@ static void poll_loop(const poll_loop_args_t* args)
                 args->mem_term_percent, args->swap_term_percent);
         }
         if (sig) {
+            if (args->use_kernel_oom_killer) {
+                trigger_kernel_oom_killer(args);
+                // Sleep a bit to give the kernel OOM killer time to do its work
+                struct timespec req = { .tv_sec = 0, .tv_nsec = 500 * 1000000 };
+                nanosleep(&req, NULL);
+                continue;
+            }
             procinfo_t victim = find_largest_process(args);
             /* The run time of find_largest_process is proportional to the number
              * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").
