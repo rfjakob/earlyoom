@@ -42,5 +42,6 @@ typedef struct {
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim);
 procinfo_t find_largest_process(const poll_loop_args_t* args);
 bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_t* cur);
+int trigger_kernel_oom_killer(const poll_loop_args_t* args);
 
 #endif

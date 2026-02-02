@@ -69,7 +69,17 @@ double min(double x, double y)
 // (2) the stack grows to maximum size before calling mlockall()
 static void startup_selftests(poll_loop_args_t* args)
 {
-    if (!args->use_kernel_oom_killer){
+    if (args->use_kernel_oom_killer) {
+        // Check if we have permission to use kernel OOM killer
+        // Use a dummy dryrun arg to avoid actually triggering kernel OOM killer
+        debug("%s: checking kernel OOM killer permissions...\n", __func__);
+        poll_loop_args_t dummy_args = *args;
+        dummy_args.dryrun = true;
+        if (trigger_kernel_oom_killer(&dummy_args) != 0) {
+            warn("%s: kernel OOM killer permission check failed, use user mode instead\n", __func__);
+            args->use_kernel_oom_killer = false;
+        }
+    } else {
         debug("%s: dry-running oom kill...\n", __func__);
         procinfo_t victim = find_largest_process(args);
         kill_process(args, 0, &victim);
@@ -341,7 +351,7 @@ int main(int argc, char* argv[])
                 "  --syslog                  use syslog instead of std streams\n"
                 "  --use-kernel-oom          use kernel OOM killer via /proc/sysrq-trigger\n"
                 "                            instead of killing processes directly. Requires\n"
-                "                            Linux v5.17+ to work correctly.\n"
+                "                            Linux v5.17+ and root to work correctly.\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);

@@ -244,13 +244,23 @@ static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t*
 */
 int trigger_kernel_oom_killer(const poll_loop_args_t* args)
 {
-    if (args->dryrun) {
-        warn("dryrun, not actually triggering kernel OOM killer\n");
-        return 0;
-    }
-
     const char* sysrq_path = "/proc/sysrq-trigger";
     const char trigger = 'f';
+
+    // Check if we have permission to write to /proc/sysrq-trigger
+    // This check is also done in dryrun mode to warn about permission issues early
+    if (access(sysrq_path, W_OK) != 0) {
+        warn("%s: no permission to write to %s: %s\n", __func__, sysrq_path, strerror(errno));
+        if (args->dryrun) {
+            warn("dryrun: would fail to trigger kernel OOM killer due to permission denied\n");
+        }
+        return -1;
+    }
+
+    if (args->dryrun) {
+        warn("dryrun: not actually triggering kernel OOM killer\n");
+        return 0;
+    }
 
     int fd = open(sysrq_path, O_WRONLY);
     if (fd < 0) {
