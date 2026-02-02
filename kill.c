@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
 #include <signal.h>
@@ -76,7 +77,8 @@ static int pidfd_open(pid_t pid, unsigned int flags)
 #define SYS_process_mrelease 448
 #endif
 
-static int process_mrelease(int pidfd, unsigned int flags) {
+static int process_mrelease(int pidfd, unsigned int flags)
+{
     return (int)syscall(SYS_process_mrelease, pidfd, flags);
 }
 
@@ -129,7 +131,7 @@ static void notify_spawn_subprocess(const char* script, char* const argv[], cons
             }
         }
         close(pidfd);
-out_unblock:
+    out_unblock:
         sigprocmask(SIG_UNBLOCK, &set, NULL);
         return;
     }
@@ -231,6 +233,53 @@ static void kill_process_prehook(const poll_loop_args_t* args, const procinfo_t*
         NULL,
     };
     notify_spawn_subprocess(args->kill_process_prehook, argv, victim, PREHOOK_STARTUP_SLEEP_MS);
+}
+
+/*
+ * Trigger the kernel OOM killer via /proc/sysrq-trigger
+ * This requires Linux v5.17+ to work correctly. OOM sysrq will always kill a process
+ * The victim passed to hooks is dummy. OOM killer will select its own victim
+ *
+ * See https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f530243a172d2ff03f88d0056f838928d6445c6d
+ * for details about this feature.
+ */
+int trigger_kernel_oom(const poll_loop_args_t* args)
+{
+    const char* sysrq_path = "/proc/sysrq-trigger";
+    const char trigger = 'f';
+
+    // Check if we have permission to write to /proc/sysrq-trigger
+    // This check is also done in dryrun mode to warn about permission issues early
+    if (access(sysrq_path, W_OK) != 0) {
+        warn("%s: no permission to write to %s: %s\n", __func__, sysrq_path, strerror(errno));
+        return -1;
+    }
+
+    if (args->dryrun) {
+        return 0;
+    }
+
+    int fd = open(sysrq_path, O_WRONLY);
+    if (fd < 0) {
+        warn("%s: failed to open %s: %s\n", __func__, sysrq_path, strerror(errno));
+        return -1;
+    }
+
+    ssize_t written = write(fd, &trigger, 1);
+    if (written != 1) {
+        warn("%s: failed to write to %s: %s\n", __func__, sysrq_path, strerror(errno));
+        close(fd);
+        return -1;
+    }
+
+    close(fd);
+    info("%s: successfully triggered kernel OOM killer\n", __func__);
+
+    if (args->notify) {
+        notify_dbus("Low memory! Triggered kernel OOM killer");
+    }
+
+    return 0;
 }
 
 // kill_release kills a process and calls process_mrelease to
