@@ -43,10 +43,13 @@ enum {
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
+    LONG_OPT_USE_KERNEL_OOM,
 };
 
 static int set_oom_score_adj(int);
 static void poll_loop(const poll_loop_args_t* args);
+
+extern int trigger_kernel_oom(const poll_loop_args_t* args);
 
 // Prevent Golang / Cgo name collision when the test suite runs -
 // Cgo generates it's own main function.
@@ -66,7 +69,17 @@ double min(double x, double y)
 // (2) the stack grows to maximum size before calling mlockall()
 static void startup_selftests(poll_loop_args_t* args)
 {
-    {
+    if (args->kernel_oom) {
+        // Check if we have permission to use kernel OOM killer
+        // Use a dummy dryrun arg to avoid actually triggering kernel OOM killer
+        debug("%s: checking kernel OOM killer permissions...\n", __func__);
+        poll_loop_args_t dummy_args = *args;
+        dummy_args.dryrun = true;
+        if (trigger_kernel_oom(&dummy_args) != 0) {
+            warn("%s: kernel OOM killer permission check failed, use user mode instead\n", __func__);
+            args->kernel_oom = false;
+        }
+    } else {
         debug("%s: dry-running oom kill...\n", __func__);
         procinfo_t victim = find_largest_process(args);
         kill_process(args, 0, &victim);
@@ -185,6 +198,7 @@ int main(int argc, char* argv[])
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
+        { "kernel-oom", no_argument, NULL, LONG_OPT_USE_KERNEL_OOM },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -298,6 +312,10 @@ int main(int argc, char* argv[])
         case LONG_OPT_USE_SYSLOG:
             earlyoom_syslog_init();
             break;
+        case LONG_OPT_USE_KERNEL_OOM:
+            args.kernel_oom = true;
+            fprintf(stderr, "Using kernel OOM killer (requires Linux v5.17+)\n");
+            break;
         case LONG_OPT_IGNORE:
             ignore_cmds = optarg;
             break;
@@ -331,6 +349,9 @@ int main(int argc, char* argv[])
                 "  --ignore REGEX            ignore processes matching REGEX\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
                 "  --syslog                  use syslog instead of std streams\n"
+                "  --kernel-oom              use kernel OOM killer via /proc/sysrq-trigger\n"
+                "                            instead of killing processes directly. Requires\n"
+                "                            Linux v5.17+ and root to work correctly.\n"
                 "  -h, --help                this help text\n",
                 argv[0]);
             exit(0);
@@ -408,15 +429,20 @@ int main(int argc, char* argv[])
         }
     }
 
+    startup_selftests(&args);
+
     // Print memory limits
     fprintf(stderr, "mem total: %4lld MiB, user mem total: %4lld MiB, swap total: %4lld MiB\n",
         m.MemTotalKiB / 1024, m.UserMemTotalKiB / 1024, m.SwapTotalKiB / 1024);
-    fprintf(stderr, "sending SIGTERM when mem avail <= " PRIPCT " and swap free <= " PRIPCT ",\n",
-        args.mem_term_percent, args.swap_term_percent);
-    fprintf(stderr, "        SIGKILL when mem avail <= " PRIPCT " and swap free <= " PRIPCT "\n",
-        args.mem_kill_percent, args.swap_kill_percent);
-
-    startup_selftests(&args);
+    if (args.kernel_oom) {
+        fprintf(stderr, "triggering kernel oom when mem avail <= " PRIPCT " and swap free <= " PRIPCT ",\n",
+            args.mem_term_percent, args.swap_term_percent);
+    } else {
+        fprintf(stderr, "sending SIGTERM when mem avail <= " PRIPCT " and swap free <= " PRIPCT ",\n",
+            args.mem_term_percent, args.swap_term_percent);
+        fprintf(stderr, "        SIGKILL when mem avail <= " PRIPCT " and swap free <= " PRIPCT "\n",
+            args.mem_kill_percent, args.swap_kill_percent);
+    }
 
     int err = mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT);
     // kernels older than 4.4 don't support MCL_ONFAULT. Retry without it.
@@ -524,6 +550,13 @@ static void poll_loop(const poll_loop_args_t* args)
                 args->mem_term_percent, args->swap_term_percent);
         }
         if (sig) {
+            if (args->kernel_oom) {
+                trigger_kernel_oom(args);
+                // Sleep a bit to give the kernel OOM killer time to do its work
+                struct timespec req = { .tv_sec = 0, .tv_nsec = 500 * 1000000 };
+                nanosleep(&req, NULL);
+                continue;
+            }
             procinfo_t victim = find_largest_process(args);
             /* The run time of find_largest_process is proportional to the number
              * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").

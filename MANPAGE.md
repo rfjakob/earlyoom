@@ -83,6 +83,12 @@ to a percentage. If you pass both `-S` and `-s`, the lower value is used.
 
 Send SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
 
+#### --kernel-oom
+
+Use kernel OOM killer via /proc/sysrq-trigger
+instead of killing processes directly. Requires
+Linux v5.17+ and root to work correctly.
+
 #### -k
 removed in earlyoom v1.2, ignored for compatibility
 
@@ -251,16 +257,19 @@ this help text
 
 # Why not trigger the kernel oom killer?
 
-Earlyoom does not use `echo f > /proc/sysrq-trigger` because the Chrome people
+You can make earlyoom trigger the kernel oom killer (`echo f > /proc/sysrq-trigger`)
+by passing the `--kernel-oom` flag. However, be aware of the following:
+
+Earlyoom does not use the kernel oom killer per default because the Chrome people
 made their browser always be the first (innocent!)  victim by setting
 `oom_score_adj` very high. Instead, earlyoom finds out itself by reading through
 `/proc/*/status` (actually `/proc/*/statm`, which contains the same information
 but is easier to parse programmatically).
 
-Additionally, in recent kernels (tested on 4.0.5), triggering the kernel oom
-killer manually may not work at all. That is, it may only free some graphics
+Additionally, in some Linux kernels (tested on 4.0.5), triggering the kernel oom
+killer manually does not work at all. That is, it may only free some graphics
 memory (that will be allocated immediately again) and not actually kill any
-process.
+process. This bug was fixed in Linux 5.17.
 
 # MEMORY USAGE
 
