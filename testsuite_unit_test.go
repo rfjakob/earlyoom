@@ -410,25 +410,22 @@ func TestTriggerKernelOomKiller_Dryrun(t *testing.T) {
 	// Test dryrun mode - should check permission and return 0 if has permission
 	// or -1 if no permission (even in dryrun mode)
 	args := poll_loop_args_t_with_kernel_oom(false, true, true)
-
-	res := trigger_kernel_oom_killer(args)
 	
-	// If running as root, should have permission and return 0
-	// If not root, should return -1 (permission denied)
-	if os.Getuid() == 0 {
+	res := trigger_kernel_oom_killer(args)
+
+	if err := syscall.Access("/proc/sysrq-trigger", 2); err == nil {
 		if res != 0 {
-			t.Errorf("dryrun mode as root should return 0, got %d", res)
+			t.Errorf("dryrun mode with access should return 0, got %d", res)
 		}
-	} else {
-		if res != -1 {
-			t.Errorf("dryrun mode as non-root should return -1 (permission denied), got %d", res)
-		}
+		// pass the access check, NOP
+	} else if res != -1 {
+		t.Errorf("dryrun mode without access should return -1 (permission denied), got %d", res)
 	}
 }
 
 func TestTriggerKernelOomKiller_NonRoot(t *testing.T) {
 	// Non-root user test should fail (permission denied)
-	if os.Getuid() == 0 {
+	if err := syscall.Access("/proc/sysrq-trigger", 2); err == nil {
 		t.Skip("Skipping test that requires non-root user")
 	}
 
