@@ -151,11 +151,14 @@ func TestCli(t *testing.T) {
 		{args: []string{"--kernel-oom"}, code: -1, stderrContains: "Using kernel OOM killer", stdoutContains: memReport},
 		{args: []string{"--kernel-oom", "--dryrun"}, code: -1, stderrContains: "dryrun", stdoutContains: memReport},
 		// Test -w and --kill-wait-timeout flags
+		// Test -w and --wait flags
 		{args: []string{"-w", "20"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
-		{args: []string{"--kill-wait-timeout", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"--wait", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		{args: []string{"-w", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"--kill-wait-timeout", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"--wait", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled
