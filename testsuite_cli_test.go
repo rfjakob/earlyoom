@@ -140,6 +140,13 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "12.34"}, code: -1, stderrContains: "swap free <= 12.34%", stdoutContains: memReport},
 		// Use both -m/-M
 		{args: []string{"-m", "10", "-M", mem1percent}, code: -1, stderrContains: "SIGTERM when mem avail <=  1.00%", stdoutContains: memReport},
+		// Test -w flag
+		{args: []string{"-w", "20"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"-w", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"-w", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled

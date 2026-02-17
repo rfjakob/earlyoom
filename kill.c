@@ -261,11 +261,21 @@ int kill_release(const pid_t pid, const int pidfd, const int sig)
 
 /*
  * Send the selected signal to "pid" and wait for the process to exit
- * (max 10 seconds)
+ * (max kill_wait_timeout_secs)
  */
 int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 {
     const unsigned poll_ms = 100;
+    // Calculate max_poll_iterations safely to avoid overflow
+    // With poll_ms = 100, we get 10 iterations per second
+    // Max safe value: UINT_MAX / 10 = ~429496729 seconds (~13.6 years)
+    unsigned max_poll_iterations;
+    if ((unsigned)args->kill_wait_timeout_secs > UINT_MAX / 10u) {
+        // Cap at maximum to avoid overflow (should never happen in practice)
+        max_poll_iterations = UINT_MAX;
+    } else {
+        max_poll_iterations = (unsigned)args->kill_wait_timeout_secs * 10u;
+    }
     int pidfd = -1;
 
     if (args->dryrun && sig != 0) {
@@ -303,7 +313,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
     struct timespec t0 = { 0 };
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    for (unsigned i = 0; i < 100; i++) {
+    for (unsigned i = 0; i < max_poll_iterations; i++) {
         struct timespec t1 = { 0 };
         clock_gettime(CLOCK_MONOTONIC, &t1);
         float secs = (float)(t1.tv_sec - t0.tv_sec) + (float)(t1.tv_nsec - t0.tv_nsec) / (float)1e9;
