@@ -140,12 +140,12 @@ func TestCli(t *testing.T) {
 		{args: []string{"-s", "12.34"}, code: -1, stderrContains: "swap free <= 12.34%", stdoutContains: memReport},
 		// Use both -m/-M
 		{args: []string{"-m", "10", "-M", mem1percent}, code: -1, stderrContains: "SIGTERM when mem avail <=  1.00%", stdoutContains: memReport},
-		// Test -w and --kill-wait-timeout flags
+		// Test -w and --wait flags
 		{args: []string{"-w", "20"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
-		{args: []string{"--kill-wait-timeout", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"--wait", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		{args: []string{"-w", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"--kill-wait-timeout", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"--wait", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 	}

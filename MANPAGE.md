@@ -117,7 +117,7 @@ When earlyoom is run through its default systemd service, the `-p` switch doesn'
     OOMScoreAdjust=-100
     Nice=-20
 
-#### -w SECONDS, --kill-wait-timeout SECONDS
+#### -w SECONDS, --wait SECONDS
 Set the maximum time (in seconds) to wait for a process to die after being
 sent a kill signal (default: 10). Some processes may take longer than the
 default 10 seconds to terminate. Increase this value if you see warnings

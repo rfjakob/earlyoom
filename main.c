@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
-        { "kill-wait-timeout", required_argument, NULL, LONG_OPT_KILL_WAIT_TIMEOUT },
+        { "wait", required_argument, NULL, LONG_OPT_KILL_WAIT_TIMEOUT },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -341,8 +341,7 @@ int main(int argc, char* argv[])
                 "                            to 0 to disable completely\n"
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -100\n"
-                "  -w SECONDS,\n"
-                "  --kill-wait-timeout SECONDS\n"
+                "  -w SECONDS, --wait SECONDS\n"
                 "                            max seconds to wait for a process to die (default 10)\n"
                 "  --ignore-root-user        do not kill processes owned by root\n"
                 "  --sort-by-rss             find process with the largest rss (default oom_score)\n"
