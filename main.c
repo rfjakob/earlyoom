@@ -48,6 +48,7 @@ enum {
     LONG_OPT_SORT_BY_RSS,
     LONG_OPT_KILL_WAIT_TIMEOUT,
     LONG_OPT_USE_KERNEL_OOM,
+    LONG_OPT_KILL_WAIT_TIMEOUT,
 };
 
 static int set_oom_score_adj(int);
@@ -204,6 +205,7 @@ int main(int argc, char* argv[])
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "kernel-oom", no_argument, NULL, LONG_OPT_USE_KERNEL_OOM },
+        { "kill-wait-timeout", required_argument, NULL, LONG_OPT_KILL_WAIT_TIMEOUT },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -293,14 +295,13 @@ int main(int argc, char* argv[])
             }
             args.report_interval_ms = (int)(report_interval_f * 1000);
             break;
-        case 'w': {
-            char* endptr;
-            long timeout_secs = strtol(optarg, &endptr, 10);
-            // Check for invalid input, negative values, or values that are too large
-            if (*endptr != '\0' || timeout_secs <= 0 || timeout_secs > MAX_KILL_WAIT_TIMEOUT) {
-                fatal(14, "-w: invalid timeout '%s' (must be 1-%d)\n", optarg, MAX_KILL_WAIT_TIMEOUT);
+        case 'w':
+        case LONG_OPT_KILL_WAIT_TIMEOUT: {
+            int timeout_secs = atoi(optarg);
+            if (timeout_secs <= 0) {
+                fatal(14, "kill-wait-timeout: invalid timeout '%s' (must be > 0)\n", optarg);
             }
-            args.kill_wait_timeout_secs = (int)timeout_secs;
+            args.kill_wait_timeout_secs = timeout_secs;
             break;
         }
         case 'p':
@@ -357,7 +358,9 @@ int main(int argc, char* argv[])
                 "                            to 0 to disable completely\n"
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -100\n"
-                "  -w SECONDS                max seconds to wait for a process to die (default 10)\n"
+                "  -w SECONDS,\n"
+                "  --kill-wait-timeout SECONDS\n"
+                "                            max seconds to wait for a process to die (default 10)\n"
                 "  --ignore-root-user        do not kill processes owned by root\n"
                 "  --sort-by-rss             find process with the largest rss (default oom_score)\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"

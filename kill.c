@@ -315,16 +315,7 @@ int kill_release(const pid_t pid, const int pidfd, const int sig)
 int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
 {
     const unsigned poll_ms = 100;
-    // Calculate max_poll_iterations safely to avoid overflow
-    // With poll_ms = 100, we get 10 iterations per second
-    // Max safe value: UINT_MAX / 10 = ~429496729 seconds (~13.6 years)
-    unsigned max_poll_iterations;
-    if ((unsigned)args->kill_wait_timeout_secs > UINT_MAX / 10u) {
-        // Cap at maximum to avoid overflow (should never happen in practice)
-        max_poll_iterations = UINT_MAX;
-    } else {
-        max_poll_iterations = (unsigned)args->kill_wait_timeout_secs * 10u;
-    }
+    const unsigned max_poll_iterations = (unsigned)((unsigned)args->kill_wait_timeout_secs * 1000u / poll_ms);
     int pidfd = -1;
 
     if (args->dryrun && sig != 0) {
