@@ -279,11 +279,13 @@ int main(int argc, char* argv[])
             break;
         case 'w':
         case LONG_OPT_KILL_WAIT_TIMEOUT: {
-            int timeout_secs = atoi(optarg);
-            if (timeout_secs <= 0) {
-                fatal(14, "kill-wait-timeout: invalid timeout '%s' (must be > 0)\n", optarg);
+            char* endptr;
+            long timeout_secs = strtol(optarg, &endptr, 10);
+            // Check for invalid input, negative values, or values that are too large
+            if (*endptr != '\0' || timeout_secs <= 0 || timeout_secs > 86400) {
+                fatal(14, "kill-wait-timeout: invalid timeout '%s' (must be 1-86400)\n", optarg);
             }
-            args.kill_wait_timeout_secs = timeout_secs;
+            args.kill_wait_timeout_secs = (int)timeout_secs;
             break;
         }
         case 'p':

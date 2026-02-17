@@ -146,6 +146,8 @@ func TestCli(t *testing.T) {
 		{args: []string{"-w", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"--kill-wait-timeout", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-w", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled
