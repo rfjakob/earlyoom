@@ -43,6 +43,7 @@ enum {
     LONG_OPT_IGNORE_ROOT,
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
+    LONG_OPT_KILL_WAIT_TIMEOUT,
 };
 
 static int set_oom_score_adj(int);
@@ -141,6 +142,7 @@ int main(int argc, char* argv[])
         .report_interval_ms = 1000,
         .ignore_root_user = false,
         .sort_by_rss = false,
+        .kill_wait_timeout_secs = 10,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
     meminfo_t m = parse_meminfo();
 
     int c;
-    const char* short_opt = "m:s:M:S:kingN:P:dvr:ph";
+    const char* short_opt = "m:s:M:S:kingN:P:dvr:phw:";
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
@@ -185,6 +187,7 @@ int main(int argc, char* argv[])
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
+        { "kill-wait-timeout", required_argument, NULL, LONG_OPT_KILL_WAIT_TIMEOUT },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -274,6 +277,15 @@ int main(int argc, char* argv[])
             }
             args.report_interval_ms = (int)(report_interval_f * 1000);
             break;
+        case 'w':
+        case LONG_OPT_KILL_WAIT_TIMEOUT: {
+            int timeout_secs = atoi(optarg);
+            if (timeout_secs <= 0) {
+                fatal(14, "kill-wait-timeout: invalid timeout '%s' (must be > 0)\n", optarg);
+            }
+            args.kill_wait_timeout_secs = timeout_secs;
+            break;
+        }
         case 'p':
             set_my_priority = 1;
             break;
@@ -324,6 +336,9 @@ int main(int argc, char* argv[])
                 "                            to 0 to disable completely\n"
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -100\n"
+                "  -w SECONDS,\n"
+                "  --kill-wait-timeout SECONDS\n"
+                "                            max seconds to wait for a process to die (default 10)\n"
                 "  --ignore-root-user        do not kill processes owned by root\n"
                 "  --sort-by-rss             find process with the largest rss (default oom_score)\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
