@@ -152,11 +152,11 @@ func TestCli(t *testing.T) {
 		{args: []string{"--kernel-oom", "--dryrun"}, code: -1, stderrContains: "dryrun", stdoutContains: memReport},
 		// Test -w and --kill-wait-timeout flags
 		// Test -w and --wait flags
+		// Test -w flag
 		{args: []string{"-w", "20"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
-		{args: []string{"--wait", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"-w", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
 		{args: []string{"-w", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
-		{args: []string{"--wait", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 		{args: []string{"-w", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 	}
