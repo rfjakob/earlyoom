@@ -27,7 +27,7 @@ jobs:
 # And also build in a number of docker containers of older
 # distributions
     - name: Build and test in Debian Bullseye
-      uses: addnab/docker-run-action@v3
+      uses: maus007/docker-run-action-fork@207a4e2a8ebf7e4b985656ba990b1e53715dce2a
       with:
         image: debian:bullseye
         options: -v ${{ github.workspace }}:/work
@@ -41,7 +41,7 @@ jobs:
     - run: git clean -dxff
 
     - name: Build and test in Amazon Linux 2
-      uses: addnab/docker-run-action@v3
+      uses: maus007/docker-run-action-fork@207a4e2a8ebf7e4b985656ba990b1e53715dce2a
       with:
         image: amazonlinux:2
         options: -v ${{ github.workspace }}:/work
@@ -55,7 +55,7 @@ jobs:
     - run: git clean -dxff
 
     - name: Build in Oracle Linux 7 (similar to RHEL 7, CentOS 7)
-      uses: addnab/docker-run-action@v3
+      uses: maus007/docker-run-action-fork@207a4e2a8ebf7e4b985656ba990b1e53715dce2a
       with:
         image: oraclelinux:7
         options: -v ${{ github.workspace }}:/work
@@ -67,7 +67,7 @@ jobs:
     - run: git clean -dxff
 
     - name: Build in Oracle Linux 8 (similar to RHEL 8, CentOS 8)
-      uses: addnab/docker-run-action@v3
+      uses: maus007/docker-run-action-fork@207a4e2a8ebf7e4b985656ba990b1e53715dce2a
       with:
         image: oraclelinux:8
         options: -v ${{ github.workspace }}:/work
