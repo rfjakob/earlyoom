@@ -143,6 +143,13 @@ func TestCli(t *testing.T) {
 		// Test --use-kernel-oom option
 		{args: []string{"--kernel-oom"}, code: -1, stderrContains: "Using kernel OOM killer", stdoutContains: memReport},
 		{args: []string{"--kernel-oom", "--dryrun"}, code: -1, stderrContains: "dryrun", stdoutContains: memReport},
+		// Test --kill-wait flags
+		{args: []string{"--kill-wait", "20"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"--kill-wait", "15"}, code: -1, stderrContains: startupMsg, stdoutContains: memReport},
+		{args: []string{"--kill-wait", "0"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"--kill-wait", "-1"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"--kill-wait", "100000"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"--kill-wait", "abc"}, code: 14, stderrContains: "fatal", stdoutEmpty: true},
 	}
 	if swapTotal > 0 {
 		// Tests that cannot work when there is no swap enabled
