@@ -33,9 +33,6 @@
 #define VERSION "*** unknown version ***"
 #endif
 
-// Maximum kill_wait timeout in seconds (24 hours)
-#define MAX_KILL_WAIT_TIMEOUT 86400
-
 /* Arbitrary identifiers for long options that do not have a short
  * version */
 enum {
@@ -194,7 +191,7 @@ int main(int argc, char* argv[])
     meminfo_t m = parse_meminfo();
 
     int c;
-    const char* short_opt = "m:s:M:S:kingN:P:dvr:phw:";
+    const char* short_opt = "m:s:M:S:kingN:P:dvr:ph";
     struct option long_opt[] = {
         { "prefer", required_argument, NULL, LONG_OPT_PREFER },
         { "avoid", required_argument, NULL, LONG_OPT_AVOID },
