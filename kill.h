@@ -33,6 +33,8 @@ typedef struct {
     regex_t* ignore_regex;
     /* memory report interval, in milliseconds */
     int report_interval_ms;
+    /* kill_wait timeout in seconds (default 10) */
+    int kill_wait_timeout_secs;
     /* Flag --dryrun was passed */
     bool dryrun;
     /* Flag --kernel-oom was passed, use kernel oom killer via /proc/sysrq-trigger */
