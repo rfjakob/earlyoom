@@ -205,6 +205,11 @@ that might have occurred due to the processes attaining a high oom_score.
 Use this option with caution as other processes might be sacrificed in place of the ignored
 processes when earlyoom determines to kill processes.
 
+#### \-\-vmrss-adjust-percent PERCENT
+Set the VMRSS adjustment for processes matched by \-\-prefer and \-\-avoid to PERCENT of total memory.
+For \-\-prefer, the adjustment is positive. For \-\-avoid, the adjustment is negative.
+Only applies when using \-\-sort-by-rss. Defaults to 3 GiB (or -3 GiB for avoid) if not specified.
+
 ### \-\-sort-by-rss
 find process with the largest rss (default oom_score)
 

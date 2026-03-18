@@ -37,6 +37,10 @@ typedef struct {
     bool dryrun;
     /* Flag --kernel-oom was passed, use kernel oom killer via /proc/sysrq-trigger */
     bool kernel_oom;
+    /* VMRSS adjustment value as percentage of total memory (0 = use fixed defaults) */
+    double vmrss_adjust_percent;
+    /* Total memory in KiB, used for dynamic VMRSS calculation */
+    long long total_memory_kib;
 } poll_loop_args_t;
 
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim);

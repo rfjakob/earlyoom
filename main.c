@@ -44,6 +44,7 @@ enum {
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
     LONG_OPT_USE_KERNEL_OOM,
+    LONG_OPT_VMRSS_ADJUST_PERCENT,
 };
 
 static int set_oom_score_adj(int);
@@ -154,6 +155,8 @@ int main(int argc, char* argv[])
         .report_interval_ms = 1000,
         .ignore_root_user = false,
         .sort_by_rss = false,
+        .vmrss_adjust_percent = 0,
+        .total_memory_kib = 0,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
@@ -199,6 +202,7 @@ int main(int argc, char* argv[])
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "kernel-oom", no_argument, NULL, LONG_OPT_USE_KERNEL_OOM },
+        { "vmrss-adjust-percent", required_argument, NULL, LONG_OPT_VMRSS_ADJUST_PERCENT },
         { "help", no_argument, NULL, 'h' },
         { "debug", no_argument, NULL, 'd' },
         { 0, 0, NULL, 0 } /* end-of-array marker */
@@ -319,6 +323,12 @@ int main(int argc, char* argv[])
         case LONG_OPT_IGNORE:
             ignore_cmds = optarg;
             break;
+        case LONG_OPT_VMRSS_ADJUST_PERCENT:
+            args.vmrss_adjust_percent = strtod(optarg, NULL);
+            if (args.vmrss_adjust_percent <= 0 || args.vmrss_adjust_percent > 100) {
+                fatal(20, "--vmrss-adjust-percent: invalid percentage '%s'\n", optarg);
+            }
+            break;
         case 'h':
             fprintf(stderr,
                 "Usage: %s [OPTION]...\n"
@@ -347,6 +357,7 @@ int main(int argc, char* argv[])
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"
                 "  --ignore REGEX            ignore processes matching REGEX\n"
+                "  --vmrss-adjust-percent PERCENT  set VMRSS adjustment to PERCENT of total memory\n"
                 "  --dryrun                  dry run (do not kill any processes)\n"
                 "  --syslog                  use syslog instead of std streams\n"
                 "  --kernel-oom              use kernel OOM killer via /proc/sysrq-trigger\n"
@@ -412,6 +423,10 @@ int main(int argc, char* argv[])
             fatal(6, "could not compile regexp '%s'\n", ignore_cmds);
         }
         fprintf(stderr, "Will ignore process names that match regex '%s'\n", ignore_cmds);
+    }
+    args.total_memory_kib = m.MemTotalKiB;
+    if (args.vmrss_adjust_percent > 0) {
+        fprintf(stderr, "VMRSS adjustment: %.2f%% of total memory\n", args.vmrss_adjust_percent);
     }
     if (set_my_priority) {
         bool fail = 0;
