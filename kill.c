@@ -27,9 +27,10 @@
 // Processes matching "--avoid REGEX" get OOM_SCORE_AVOID added to their oom_score
 #define OOM_SCORE_AVOID -300
 
-// Default fixed values for VMRSS adjustments (3 GiB)
-#define VMRSS_PREFER_DEFAULT 3145728LL
-#define VMRSS_AVOID_DEFAULT -3145728LL
+// Processes matching "--prefer REGEX" get VMRSS_PREFER added to their VmRSSkiB
+#define VMRSS_PREFER 3145728
+// Processes matching "--avoid REGEX" get VMRSS_AVOID added to their VmRSSkiB
+#define VMRSS_AVOID -3145728
 
 // Buffer size for UID/GID/PID string conversion
 #define UID_BUFSIZ 128
@@ -457,9 +458,9 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
-                long long vmrss_prefer = VMRSS_PREFER_DEFAULT;
-                if (args->vmrss_adjust_percent > 0 && args->total_memory_kib > 0) {
-                    vmrss_prefer = (long long)(args->total_memory_kib * args->vmrss_adjust_percent / 100);
+                long long vmrss_prefer = VMRSS_PREFER;
+                if (args->total_memory_kib > 0) {
+                    vmrss_prefer = (long long)(args->total_memory_kib * OOM_SCORE_PREFER / 1000);
                 }
                 cur->VmRSSkiB += vmrss_prefer;
             } else {
@@ -468,9 +469,9 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
-                long long vmrss_avoid = VMRSS_AVOID_DEFAULT;
-                if (args->vmrss_adjust_percent > 0 && args->total_memory_kib > 0) {
-                    vmrss_avoid = -(long long)(args->total_memory_kib * args->vmrss_adjust_percent / 100);
+                long long vmrss_avoid = VMRSS_AVOID;
+                if (args->total_memory_kib > 0) {
+                    vmrss_avoid = (long long)(args->total_memory_kib * OOM_SCORE_AVOID / 1000);
                 }
                 cur->VmRSSkiB += vmrss_avoid;
             } else {

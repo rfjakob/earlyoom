@@ -258,7 +258,6 @@ Usage: ./earlyoom [OPTION]...
   --prefer REGEX            prefer to kill processes matching REGEX
   --avoid REGEX             avoid killing processes matching REGEX
   --ignore REGEX            ignore processes matching REGEX
-  --vmrss-adjust-percent PERCENT  set VMRSS adjustment to PERCENT of total memory
   --dryrun                  dry run (do not kill any processes)
   --syslog                  use syslog instead of std streams
   -h, --help                this help text
