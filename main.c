@@ -33,6 +33,9 @@
 #define VERSION "*** unknown version ***"
 #endif
 
+// Maximum kill_wait timeout in seconds (24 hours)
+#define MAX_KILL_WAIT_TIMEOUT 86400
+
 /* Arbitrary identifiers for long options that do not have a short
  * version */
 enum {
@@ -293,8 +296,8 @@ int main(int argc, char* argv[])
             break;
         case LONG_OPT_KILL_WAIT_TIMEOUT: {
             int timeout_secs = atoi(optarg);
-            if (timeout_secs <= 0) {
-                fatal(14, "kill-wait-timeout: invalid timeout '%s' (must be > 0)\n", optarg);
+            if (timeout_secs <= 0 || timeout_secs > MAX_KILL_WAIT_TIMEOUT) {
+                fatal(14, "kill-wait-timeout: invalid timeout '%s' (must be > 0 and <= %d)\n", optarg, MAX_KILL_WAIT_TIMEOUT);
             }
             args.kill_wait_timeout_secs = timeout_secs;
             break;
