@@ -122,7 +122,7 @@ sudo dnf install earlyoom
 sudo systemctl enable --now earlyoom
 ```
 
-For Arch Linux, there's an [Arch Linux package](https://www.archlinux.org/packages/community/x86_64/earlyoom/):
+For Arch Linux, there's an [Arch Linux package](https://archlinux.org/packages/extra/x86_64/earlyoom/):
 ```bash
 sudo pacman -S earlyoom
 sudo systemctl enable --now earlyoom
