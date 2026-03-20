@@ -460,7 +460,10 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             if (args->sort_by_rss) {
                 long long vmrss_prefer = VMRSS_PREFER;
                 if (args->total_memory_kib > 0) {
-                    vmrss_prefer = (long long)(args->total_memory_kib * OOM_SCORE_PREFER / 1000);
+                    long long dynamic_vmrss_prefer = (long long)(args->total_memory_kib * OOM_SCORE_PREFER / 1000);
+                    if (dynamic_vmrss_prefer > vmrss_prefer) {
+                        vmrss_prefer = dynamic_vmrss_prefer;
+                    }
                 }
                 cur->VmRSSkiB += vmrss_prefer;
             } else {
@@ -471,7 +474,10 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
             if (args->sort_by_rss) {
                 long long vmrss_avoid = VMRSS_AVOID;
                 if (args->total_memory_kib > 0) {
-                    vmrss_avoid = (long long)(args->total_memory_kib * OOM_SCORE_AVOID / 1000);
+                    long long dynamic_vmrss_avoid = (long long)(args->total_memory_kib * OOM_SCORE_AVOID / 1000);
+                    if (dynamic_vmrss_avoid < vmrss_avoid) {
+                        vmrss_avoid = dynamic_vmrss_avoid;
+                    }
                 }
                 cur->VmRSSkiB += vmrss_avoid;
             } else {
