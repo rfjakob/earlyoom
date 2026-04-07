@@ -198,8 +198,8 @@ To actually see the notifications in your GUI session, you need to have
 running as your user.
 
 Additionally, earlyoom can execute a script for each process killed, providing
-information about the process via the `EARLYOOM_PID`, `EARLYOOM_UID` and
-`EARLYOOM_NAME` environment variables. Pass `-N /path/to/script` to enable
+information about the process via the `EARLYOOM_PID`, `EARLYOOM_UID` ,
+`EARLYOOM_NAME`, `EARLYOOM_CMDLINE`, `EARLYOOM_VM_RSS_MB` environment variables. Pass `-N /path/to/script` to enable
 after the process is killed, or `-P /path/to/script` to be invoked before.
 
 Warning: In case of dryrun mode, the script will be executed in rapid
