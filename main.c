@@ -154,6 +154,7 @@ int main(int argc, char* argv[])
         .report_interval_ms = 1000,
         .ignore_root_user = false,
         .sort_by_rss = false,
+        .total_memory_kib = 0,
         /* omitted fields are set to zero */
     };
     int set_my_priority = 0;
@@ -413,6 +414,7 @@ int main(int argc, char* argv[])
         }
         fprintf(stderr, "Will ignore process names that match regex '%s'\n", ignore_cmds);
     }
+    args.total_memory_kib = m.MemTotalKiB;
     if (set_my_priority) {
         bool fail = 0;
         if (setpriority(PRIO_PROCESS, 0, -20) != 0) {

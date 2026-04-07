@@ -34,6 +34,8 @@
 
 // Buffer size for UID/GID/PID string conversion
 #define UID_BUFSIZ 128
+// Buffer size for VMRSS string conversion
+#define VMRSS_BUFSIZ 128
 // At most 1 notification per second when --dryrun is active
 #define NOTIFY_RATELIMIT 1
 
@@ -142,14 +144,17 @@ static void notify_spawn_subprocess(const char* script, char* const argv[], cons
     if (victim) {
         char pid_str[UID_BUFSIZ] = { 0 };
         char uid_str[UID_BUFSIZ] = { 0 };
+        char vm_rss_mb_str[VMRSS_BUFSIZ] = { 0 };
 
         snprintf(pid_str, UID_BUFSIZ, "%d", victim->pid);
         snprintf(uid_str, UID_BUFSIZ, "%d", victim->uid);
+        snprintf(vm_rss_mb_str, VMRSS_BUFSIZ, "%lld", victim->VmRSSkiB / 1024);
 
         setenv("EARLYOOM_PID", pid_str, 1);
         setenv("EARLYOOM_UID", uid_str, 1);
         setenv("EARLYOOM_NAME", victim->name, 1);
         setenv("EARLYOOM_CMDLINE", victim->cmdline, 1);
+        setenv("EARLYOOM_VM_RSS_MB", vm_rss_mb_str, 1);
     }
 
     debug("%s: exec %s\n", __func__, script);
@@ -458,14 +463,28 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         if (args->prefer_regex && regexec(args->prefer_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
-                cur->VmRSSkiB += VMRSS_PREFER;
+                long long vmrss_prefer = VMRSS_PREFER;
+                if (args->total_memory_kib > 0) {
+                    long long dynamic_vmrss_prefer = (long long)(args->total_memory_kib * OOM_SCORE_PREFER / 1000);
+                    if (dynamic_vmrss_prefer > vmrss_prefer) {
+                        vmrss_prefer = dynamic_vmrss_prefer;
+                    }
+                }
+                cur->VmRSSkiB += vmrss_prefer;
             } else {
                 cur->oom_score += OOM_SCORE_PREFER;
             }
         }
         if (args->avoid_regex && regexec(args->avoid_regex, cur->name, (size_t)0, NULL, 0) == 0) {
             if (args->sort_by_rss) {
-                cur->VmRSSkiB += VMRSS_AVOID;
+                long long vmrss_avoid = VMRSS_AVOID;
+                if (args->total_memory_kib > 0) {
+                    long long dynamic_vmrss_avoid = (long long)(args->total_memory_kib * OOM_SCORE_AVOID / 1000);
+                    if (dynamic_vmrss_avoid < vmrss_avoid) {
+                        vmrss_avoid = dynamic_vmrss_avoid;
+                    }
+                }
+                cur->VmRSSkiB += vmrss_avoid;
             } else {
                 cur->oom_score += OOM_SCORE_AVOID;
             }
