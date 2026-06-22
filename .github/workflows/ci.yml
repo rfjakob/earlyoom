@@ -16,7 +16,7 @@ jobs:
     - run: ls -l /proc/self/fd
 
 # Build and test in Ubuntu VM provided by Github CI
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0 # Make "git describe" work
     - run: sudo apt-get install -qq pandoc cppcheck
