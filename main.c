@@ -5,7 +5,6 @@
 
 #include <errno.h>
 #include <getopt.h>
-#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +49,40 @@ enum {
 
 static int set_oom_score_adj(int);
 static void poll_loop(const poll_loop_args_t* args);
+
+// Resolve a username to a UID by reading /etc/passwd directly.
+// Returns the UID on success, -1 on failure.
+// This avoids getpwnam() which depends on NSS dynamic modules
+// and does not work reliably in statically linked binaries.
+static int lookup_user_uid(const char* name)
+{
+    FILE* f = fopen("/etc/passwd", "r");
+    if (!f) {
+        return -1;
+    }
+    char line[1024];
+    int uid = -1;
+    while (fgets(line, sizeof(line), f)) {
+        // Format: name:password:uid:gid:gecos:home:shell
+        char* colon = strchr(line, ':');
+        if (!colon)
+            continue;
+        *colon = '\0';
+        if (strcmp(line, name) != 0)
+            continue;
+        // Found matching username, parse UID (third field)
+        char* rest = colon + 1;
+        // skip password field
+        colon = strchr(rest, ':');
+        if (!colon)
+            continue;
+        rest = colon + 1;
+        uid = (int)strtol(rest, NULL, 10);
+        break;
+    }
+    fclose(f);
+    return uid;
+}
 
 extern int trigger_kernel_oom(const poll_loop_args_t* args);
 
@@ -310,14 +343,14 @@ int main(int argc, char* argv[])
                 args.ignore_uids[args.ignore_uids_count++] = (int)uid_val;
                 fprintf(stderr, "Processes owned by uid %ld will not be killed\n", uid_val);
             } else {
-                // Username
-                struct passwd* pw = getpwnam(optarg);
-                if (pw == NULL) {
-                    fatal(17, "--ignore-user: user '%s' not found\n", optarg);
+                // Username - read /etc/passwd directly (works with static builds)
+                int uid = lookup_user_uid(optarg);
+                if (uid < 0) {
+                    fatal(17, "--ignore-user: user '%s' not found in /etc/passwd\n", optarg);
                 }
-                args.ignore_uids[args.ignore_uids_count++] = (int)pw->pw_uid;
+                args.ignore_uids[args.ignore_uids_count++] = uid;
                 fprintf(stderr, "Processes owned by user '%s' (uid %d) will not be killed\n",
-                    optarg, (int)pw->pw_uid);
+                    optarg, uid);
             }
             break;
         }
