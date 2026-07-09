@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <getopt.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +42,7 @@ enum {
     LONG_OPT_DRYRUN,
     LONG_OPT_IGNORE,
     LONG_OPT_IGNORE_ROOT,
+    LONG_OPT_IGNORE_USER,
     LONG_OPT_USE_SYSLOG,
     LONG_OPT_SORT_BY_RSS,
     LONG_OPT_USE_KERNEL_OOM,
@@ -196,6 +198,7 @@ int main(int argc, char* argv[])
         { "ignore", required_argument, NULL, LONG_OPT_IGNORE },
         { "dryrun", no_argument, NULL, LONG_OPT_DRYRUN },
         { "ignore-root-user", no_argument, NULL, LONG_OPT_IGNORE_ROOT },
+        { "ignore-user", required_argument, NULL, LONG_OPT_IGNORE_USER },
         { "sort-by-rss", no_argument, NULL, LONG_OPT_SORT_BY_RSS },
         { "syslog", no_argument, NULL, LONG_OPT_USE_SYSLOG },
         { "kernel-oom", no_argument, NULL, LONG_OPT_USE_KERNEL_OOM },
@@ -295,6 +298,29 @@ int main(int argc, char* argv[])
             args.ignore_root_user = true;
             fprintf(stderr, "Processes owned by root will not be killed\n");
             break;
+        case LONG_OPT_IGNORE_USER: {
+            if (args.ignore_uids_count >= (int)(sizeof(args.ignore_uids) / sizeof(args.ignore_uids[0]))) {
+                fatal(17, "--ignore-user: too many users specified (max %zu)\n",
+                    sizeof(args.ignore_uids) / sizeof(args.ignore_uids[0]));
+            }
+            char* endptr = NULL;
+            long uid_val = strtol(optarg, &endptr, 10);
+            if (endptr != optarg && *endptr == '\0') {
+                // Numeric UID
+                args.ignore_uids[args.ignore_uids_count++] = (int)uid_val;
+                fprintf(stderr, "Processes owned by uid %ld will not be killed\n", uid_val);
+            } else {
+                // Username
+                struct passwd* pw = getpwnam(optarg);
+                if (pw == NULL) {
+                    fatal(17, "--ignore-user: user '%s' not found\n", optarg);
+                }
+                args.ignore_uids[args.ignore_uids_count++] = (int)pw->pw_uid;
+                fprintf(stderr, "Processes owned by user '%s' (uid %d) will not be killed\n",
+                    optarg, (int)pw->pw_uid);
+            }
+            break;
+        }
         case LONG_OPT_SORT_BY_RSS:
             args.sort_by_rss = true;
             fprintf(stderr, "Find process with the largest rss\n");
@@ -343,6 +369,8 @@ int main(int argc, char* argv[])
                 "  -p                        set niceness of earlyoom to -20 and oom_score_adj to\n"
                 "                            -100\n"
                 "  --ignore-root-user        do not kill processes owned by root\n"
+                "  --ignore-user USER        do not kill processes owned by USER\n"
+                "                            (can be a username or numeric UID, repeatable)\n"
                 "  --sort-by-rss             find process with the largest rss (default oom_score)\n"
                 "  --prefer REGEX            prefer to kill processes matching REGEX\n"
                 "  --avoid REGEX             avoid killing processes matching REGEX\n"

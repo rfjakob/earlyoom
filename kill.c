@@ -422,6 +422,23 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
     }
 
+    // Ignore processes owned by specific users?
+    if (args->ignore_uids_count > 0) {
+        if (cur->uid == PROCINFO_FIELD_NOT_SET) {
+            int res = get_uid(cur->pid);
+            if (res < 0) {
+                debug("%s: pid %d: error reading uid: %s\n", __func__, cur->pid, strerror(-res));
+                return false;
+            }
+            cur->uid = res;
+        }
+        for (int i = 0; i < args->ignore_uids_count; i++) {
+            if (cur->uid == args->ignore_uids[i]) {
+                return false;
+            }
+        }
+    }
+
     {
         bool res = parse_proc_pid_stat(&cur->stat, cur->pid);
         if (!res) {
