@@ -15,7 +15,7 @@ EARLYOOM_ARGS="-r 3600"
 # Available minimum memory 15% and free minimum swap 5%
 # EARLYOOM_ARGS="-m 15 -s 5"
 
-# Avoid killing processes whose name matches this regexp.
+# Avoid killing processes whose name matches the following regexp.
 #
 # Do NOT quote the regexp. earlyoom.service uses
 #     ExecStart=/usr/bin/earlyoom $EARLYOOM_ARGS
