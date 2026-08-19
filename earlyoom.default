@@ -15,7 +15,15 @@ EARLYOOM_ARGS="-r 3600"
 # Available minimum memory 15% and free minimum swap 5%
 # EARLYOOM_ARGS="-m 15 -s 5"
 
-# Avoid killing processes whose name matches this regexp
-# EARLYOOM_ARGS="--avoid '(^|/)(init|X|sshd|firefox)$'"
+# Avoid killing processes whose name matches this regexp.
+#
+# Do NOT quote the regexp. earlyoom.service uses
+#     ExecStart=/usr/bin/earlyoom $EARLYOOM_ARGS
+# and systemd splits $EARLYOOM_ARGS on whitespace WITHOUT performing shell
+# quote removal, so any quotes you add arrive as literal characters and the
+# regexp then matches nothing. For the same reason the regexp must not contain
+# a literal space; use the POSIX character class [[:space:]] where you need one,
+# e.g. Isolated[[:space:]]Web[[:space:]]Co to match Firefox's "Isolated Web Co".
+# EARLYOOM_ARGS="--avoid (^|/)(init|X|sshd|firefox)$"
 
 # See more at `earlyoom -h'

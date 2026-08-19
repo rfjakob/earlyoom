@@ -217,8 +217,17 @@ Configuration file
 If you are running earlyoom as a system service (through systemd or init.d), you can adjust its configuration via the file provided in `/etc/default/earlyoom`. The file already contains some examples in the comments, which you can use to build your own set of configuration based on the supported command line options, for example:
 
 ```
-EARLYOOM_ARGS="-m 5 -r 60 --avoid '(^|/)(init|Xorg|ssh)$' --prefer '(^|/)(java|chromium)$'"
+EARLYOOM_ARGS="-m 5 -r 60 --avoid (^|/)(init|Xorg|ssh)$ --prefer (^|/)(java|chromium)$"
 ```
+
+Note that the regexps must not be quoted, and must not contain spaces. The
+service file uses `ExecStart=/usr/bin/earlyoom $EARLYOOM_ARGS`, and systemd
+splits `$EARLYOOM_ARGS` on whitespace *without* performing shell quote removal.
+Quotes would therefore be passed to earlyoom as literal characters, and a
+regexp containing a space would be split into two arguments. Where you need to
+match a space, use the POSIX character class `[[:space:]]`, for example
+`Isolated[[:space:]]Web[[:space:]]Co` to match Firefox's `Isolated Web Co`.
+
 After adjusting the file, simply restart the service to apply the changes. For example, for systemd:
 
 ```bash
