@@ -478,8 +478,9 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
     // find process with the largest rss
     if (args->sort_by_rss) {
         // Case 1: neither victim nor cur have rss=0 (zombie main thread).
-        // This is the usual case.
-        if (cur->VmRSSkiB > 0 && victim->VmRSSkiB > 0) {
+        // This is the usual case. Look at stat.rss for that, VmRSSkiB
+        // carries the --prefer/--avoid adjustment and can be anything.
+        if (cur->stat.rss > 0 && victim->stat.rss > 0) {
             if (cur->VmRSSkiB < victim->VmRSSkiB) {
                 return false;
             }
@@ -489,7 +490,7 @@ bool is_larger(const poll_loop_args_t* args, const procinfo_t* victim, procinfo_
         }
         // Case 2: one (or both) have rss=0 (zombie main thread)
         else {
-            if (cur->VmRSSkiB == 0) {
+            if (cur->stat.rss == 0) {
                 // only print the warning when the zombie is first seen, i.e. as "cur"
                 get_comm(cur->pid, cur->name, sizeof(cur->name));
                 warn("%s: pid %d \"%s\": rss=0 but oom_score=%d. Zombie main thread? Using oom_score for this process.\n",
