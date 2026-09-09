@@ -2,10 +2,14 @@ package earlyoom_testsuite
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"unsafe"
 )
 
 // #cgo CFLAGS: -std=gnu99 -DCGO
+// #include <regex.h>
+// #include <stdlib.h>
 // #include "meminfo.h"
 // #include "kill.h"
 // #include "msg.h"
@@ -61,6 +65,22 @@ func poll_loop_args_t(sort_by_rss bool) (args C.poll_loop_args_t) {
 	return
 }
 
+// The struct type under a name that _test.go code can use for
+// function parameters.
+type pollLoopArgs = C.poll_loop_args_t
+
+// Same as poll_loop_args_t, plus an --avoid regex.
+func poll_loop_args_t_with_avoid(sort_by_rss bool, avoid string) (args C.poll_loop_args_t) {
+	args.sort_by_rss = C.bool(sort_by_rss)
+	args.avoid_regex = (*C.regex_t)(C.malloc(C.sizeof_regex_t))
+	cs := C.CString(avoid)
+	defer C.free(unsafe.Pointer(cs))
+	if C.regcomp(args.avoid_regex, cs, C.REG_EXTENDED|C.REG_NOSUB) != 0 {
+		log.Panicf("could not compile regex %q", avoid)
+	}
+	return
+}
+
 // Wrapper with use_kernel_oom_killer and dryrun support
 func poll_loop_args_t_with_kernel_oom(sort_by_rss bool, kernel_oom bool, dryrun bool) (args C.poll_loop_args_t) {
 	args.sort_by_rss = C.bool(sort_by_rss)
@@ -74,7 +94,12 @@ func procinfo_t() C.procinfo_t {
 }
 
 func is_larger(args *C.poll_loop_args_t, victim mockProcProcess, cur mockProcProcess) bool {
+	// In find_largest_process() the victim is a process that went through
+	// is_larger() as "cur" before, which is where --prefer and --avoid
+	// adjust VmRSSkiB. Give the victim the same treatment here.
 	cVictim := victim.toProcinfo_t()
+	cNone := C.procinfo_t{}
+	C.is_larger(args, &cNone, &cVictim)
 	cCur := cur.toProcinfo_t()
 	return bool(C.is_larger(args, &cVictim, &cCur))
 }

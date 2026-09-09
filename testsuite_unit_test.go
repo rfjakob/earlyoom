@@ -284,11 +284,15 @@ func Test_parse_proc_pid_stat_Mock(t *testing.T) {
 
 func permute_is_larger(t *testing.T, sort_by_rss bool, procs []mockProcProcess) {
 	args := poll_loop_args_t(sort_by_rss)
+	permute_is_larger_args(t, &args, procs)
+}
+
+func permute_is_larger_args(t *testing.T, args *pollLoopArgs, procs []mockProcProcess) {
 	for i := range procs {
 		for j := range procs {
 			// If the entry is later in the list, is_larger should return true.
 			want := j > i
-			have := is_larger(&args, procs[i], procs[j])
+			have := is_larger(args, procs[i], procs[j])
 			if want != have {
 				t.Errorf("j%d/pid%d larger than i%d/pid%d? want=%v have=%v", j, procs[j].pid, i, procs[i].pid, want, have)
 			}
@@ -331,6 +335,29 @@ func Test_is_larger_by_rss(t *testing.T) {
 	t.Logf("procdir_path=%q", procdir_path(""))
 
 	permute_is_larger(t, true, procs)
+}
+
+// --avoid takes 3 GiB off VmRSSkiB, which makes it negative for anything
+// smaller than that and exactly zero for a 3 GiB process. Both used to
+// send the comparison down the zombie path, where an avoided process
+// with a high oom_score could beat a big one
+// (https://github.com/rfjakob/earlyoom/issues/377).
+func Test_is_larger_by_rss_avoid(t *testing.T) {
+	procs := []mockProcProcess{
+		// smallest
+		{pid: 100, oom_score: 900, VmRSSkiB: 4, comm: "avoidme"},
+		{pid: 101, oom_score: 800, VmRSSkiB: 8, comm: "avoidme"},
+		{pid: 102, oom_score: 700, VmRSSkiB: 3 * 1024 * 1024, comm: "avoidme"},
+		{pid: 103, oom_score: 10, VmRSSkiB: 4},
+		{pid: 104, oom_score: 5, VmRSSkiB: 1024 * 1024},
+		// largest
+	}
+
+	mockProc(t, procs)
+	defer procdir_path("/proc")
+
+	args := poll_loop_args_t_with_avoid(true, "^avoidme$")
+	permute_is_larger_args(t, &args, procs)
 }
 
 func Benchmark_parse_meminfo(b *testing.B) {
