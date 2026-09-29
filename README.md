@@ -180,7 +180,7 @@ sudo journalctl -u earlyoom | grep sending
 Example output for above test command (`tail /dev/zero`) will look like: 
 
 ```
-Feb 20 10:59:34 debian earlyoom[10231]: sending SIGTERM to process 7378 uid 1000 "tail": oom_score 156, VmRSS 4962 MiB
+Feb 20 10:59:34 debian earlyoom[10231]: sending SIGTERM to process 7378 uid 1000 "tail": oom_score 156, oom_score_adj 0, VmRSS 4962 MiB, cmdline "tail /dev/zero"
 ```
 
 > For older versions of `earlyoom`, use: 
