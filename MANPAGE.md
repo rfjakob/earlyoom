@@ -45,6 +45,8 @@ It sends SIGKILL once **both** are below their respective
 KILL_PERCENT setting (default PERCENT/2).
 
 Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKILL.
+`-K` / `--always-sigkill` sends SIGKILL at PERCENT and ignores KILL_PERCENT
+for both memory and swap.
 
 Examples:
 
@@ -61,6 +63,8 @@ Processes are killed once available memory drops below the configured
 minimum, no matter how much swap is free.
 
 Use the same value for PERCENT and KILL_PERCENT if you always want to use SIGKILL.
+`-K` / `--always-sigkill` sends SIGKILL at PERCENT and ignores KILL_PERCENT
+for both memory and swap.
 
 #### -M SIZE[,KILL_SIZE]
 As an alternative to specifying a percentage of total memory, `-M` sets
@@ -75,6 +79,7 @@ Example: Reserve 10% of RAM but at most 1 GiB:
     earlyoom -m 10 -M 1048576
 
 earlyoom sends SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
+With `-K`, SIGKILL is sent at SIZE and KILL_SIZE is ignored.
 
 #### -S SIZE[,KILL_SIZE]
 As an alternative to specifying a percentage of total swap, `-S` sets
@@ -82,6 +87,22 @@ the free swap minimum to SIZE KiB. The value is internally converted
 to a percentage. If you pass both `-S` and `-s`, the lower value is used.
 
 Send SIGKILL if at or below KILL_SIZE (default SIZE/2), otherwise SIGTERM.
+With `-K`, SIGKILL is sent at SIZE and KILL_SIZE is ignored.
+
+#### -K, \-\-always-sigkill
+Always send SIGKILL when available memory and free swap are at or below
+the PERCENT / SIZE limits. earlyoom does not send SIGTERM first.
+
+KILL_PERCENT and KILL_SIZE are ignored. Killing starts at the same limits
+that would otherwise send SIGTERM.
+
+Examples:
+
+    earlyoom -K
+    earlyoom --always-sigkill -m 10 -s 10
+
+You can set `EARLYOOM_ARGS="-K"` in `/etc/default/earlyoom` when earlyoom
+is started by systemd or the init script.
 
 #### -k
 removed in earlyoom v1.2, ignored for compatibility

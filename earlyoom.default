@@ -12,6 +12,9 @@ EARLYOOM_ARGS="-r 3600"
 # Available minimum memory 5%
 # EARLYOOM_ARGS="-m 5"
 
+# Always send SIGKILL. Do not send SIGTERM first.
+# EARLYOOM_ARGS="-K"
+
 # Available minimum memory 15% and free minimum swap 5%
 # EARLYOOM_ARGS="-m 15 -s 5"
 

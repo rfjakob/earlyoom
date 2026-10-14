@@ -517,6 +517,10 @@ procinfo_t find_largest_process(const poll_loop_args_t* args)
  */
 void kill_process(const poll_loop_args_t* args, int sig, const procinfo_t* victim)
 {
+    if (args->always_sigkill && sig == SIGTERM) {
+        sig = SIGKILL;
+    }
+
     if (victim->pid <= 0) {
         warn("Could not find a process to kill. Sleeping 1 second.\n");
         if (args->notify) {

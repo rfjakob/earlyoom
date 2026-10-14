@@ -107,6 +107,11 @@ func TestCli(t *testing.T) {
 		{args: []string{"--prefer", "MyProcess2"}, code: -1, stderrContains: "Preferring to kill", stdoutContains: memReport},
 		{args: []string{"--ignore-root-user"}, code: -1, stderrContains: "Processes owned by root will not be killed", stdoutContains: memReport},
 		{args: []string{"--sort-by-rss"}, code: -1, stderrContains: "Find process with the largest rss", stdoutContains: memReport},
+		// -K / --always-sigkill: SIGKILL at the SIGTERM limit; KILL_PERCENT is ignored
+		{args: []string{"-K"}, code: -1, stderrContains: "sending SIGKILL when mem avail <= 10.00% and swap free <= 10.00%", stdoutContains: memReport},
+		{args: []string{"--always-sigkill"}, code: -1, stderrContains: "always sending SIGKILL (no SIGTERM)", stdoutContains: memReport},
+		{args: []string{"-K", "-m", "20,4"}, code: -1, stderrContains: "sending SIGKILL when mem avail <= 20.00%", stdoutContains: memReport},
+		{args: []string{"-h"}, code: 0, stderrContains: "--always-sigkill", stdoutEmpty: true},
 		{args: []string{"-i"}, code: -1, stderrContains: "Option -i is ignored"},
 		// Extra arguments should error out
 		{args: []string{"xyz"}, code: 13, stderrContains: "extra argument not understood", stdoutEmpty: true},

@@ -242,6 +242,7 @@ Usage: ./earlyoom [OPTION]...
   -n                        enable d-bus notifications
   -N /PATH/TO/SCRIPT        call script after oom kill
   -g                        kill all processes within a process group
+  -K, --always-sigkill      always send SIGKILL instead of SIGTERM, then SIGKILL
   -d, --debug               enable debugging messages
   -v                        print version information and exit
   -r INTERVAL               memory report interval in seconds (default 1), set
