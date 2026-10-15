@@ -378,7 +378,7 @@ int kill_wait(const poll_loop_args_t* args, pid_t pid, int sig)
             warn("process %d exited after %.3f seconds\n", pid, secs);
             goto out_close;
         }
-        struct timespec req = { .tv_sec = (time_t)(poll_ms / 1000), .tv_nsec = (poll_ms % 1000) * 1000000 };
+        struct timespec req = { .tv_sec = (time_t)(poll_ms / 1000), .tv_nsec = (long)(poll_ms % 1000) * 1000000 };
         nanosleep(&req, NULL);
     }
 
