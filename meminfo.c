@@ -243,6 +243,11 @@ int get_cmdline(int pid, char* out, size_t outlen)
         return -fread_errno;
     }
     fclose(f);
+    // An empty cmdline is legitimate: zombies and kernel threads have one.
+    if (n == 0) {
+        out[0] = 0;
+        return 0;
+    }
     /* replace null character with space */
     for (size_t i = 0; i < n; i++) {
         if (out[i] == '\0') {
