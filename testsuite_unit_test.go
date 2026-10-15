@@ -201,6 +201,43 @@ func Test_get_cmdline(t *testing.T) {
 	}
 }
 
+// An empty /proc/[pid]/cmdline (zombies and kernel threads have one) used to
+// make get_cmdline() write a null byte before the buffer
+// (https://github.com/rfjakob/earlyoom/issues/386).
+func Test_get_cmdline_Mock(t *testing.T) {
+	mockProcdir, err := ioutil.TempDir("", t.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	procdir_path(mockProcdir)
+	defer procdir_path("/proc")
+
+	if err := os.Mkdir(mockProcdir+"/100", 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	testCases := []struct {
+		content string
+		want    string
+	}{
+		{"", ""},
+		{"foo\000", "foo"},
+		{"foo\000-bar\000-baz\000", "foo -bar -baz"},
+	}
+	for _, tc := range testCases {
+		if err := ioutil.WriteFile(mockProcdir+"/100/cmdline", []byte(tc.content), 0600); err != nil {
+			t.Fatal(err)
+		}
+		res, have := get_cmdline(100)
+		if res != 0 {
+			t.Errorf("/proc/100/cmdline=%q: error %d", tc.content, res)
+		}
+		if have != tc.want {
+			t.Errorf("/proc/100/cmdline=%q: have=%q want=%q", tc.content, have, tc.want)
+		}
+	}
+}
+
 func Test_parse_proc_pid_stat_buf(t *testing.T) {
 	should_error_out := []string{
 		"",

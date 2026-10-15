@@ -137,10 +137,20 @@ func get_comm(pid int) (int, string) {
 	return int(res), C.GoString(cstr)
 }
 
+// get_cmdline passes a buffer with a canary byte in front of it to
+// get_cmdline() and panics if the canary was overwritten
+// (https://github.com/rfjakob/earlyoom/issues/386).
 func get_cmdline(pid int) (int, string) {
-	cstr := C.CString(strings.Repeat("\000", 256))
-	res := C.get_cmdline(C.int(pid), cstr, 256)
-	return int(res), C.GoString(cstr)
+	const outlen = 256
+	const canary = C.char(0x7f)
+	buf := (*[outlen + 1]C.char)(C.calloc(outlen+1, 1))
+	defer C.free(unsafe.Pointer(buf))
+	buf[0] = canary
+	res := C.get_cmdline(C.int(pid), &buf[1], outlen)
+	if buf[0] != canary {
+		log.Panicf("get_cmdline wrote before the buffer")
+	}
+	return int(res), C.GoString(&buf[1])
 }
 
 func procdir_path(str string) string {
