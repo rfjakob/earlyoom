@@ -299,7 +299,15 @@ int kill_release(const pid_t pid, const int pidfd, const int sig)
 
     res = process_mrelease(pidfd, 0);
     if (res != 0) {
-        warn("%s: pid=%d: process_mrelease pidfd=%d failed: %s\n", __func__, pid, pidfd, strerror(errno));
+        // process_mrelease() can only reap a process that is already exiting.
+        // After SIGTERM, EINVAL usually means the process catches, blocks or
+        // ignores it. It can also mean the address space is shared with a
+        // live process, or that a core dump is in progress.
+        const char* hint = "";
+        if (errno == EINVAL && sig != SIGKILL) {
+            hint = " (process memory is not releasable yet - does it catch, block or ignore the signal?)";
+        }
+        warn("%s: pid=%d: process_mrelease pidfd=%d failed: %s%s\n", __func__, pid, pidfd, strerror(errno), hint);
     } else {
         info("%s: pid=%d: process_mrelease pidfd=%d success\n", __func__, pid, pidfd);
     }
