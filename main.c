@@ -562,12 +562,13 @@ static void poll_loop(const poll_loop_args_t* args)
             /* The run time of find_largest_process is proportional to the number
              * of processes, and takes 2.5ms on my box with a running Gnome desktop (try "make bench").
              * This is long enough that the situation may have changed in the meantime,
-             * so we double-check if we still need to kill anything.
+             * so we double-check if we still need to kill anything, and which signal to send.
              * The run time of parse_meminfo is only 6us on my box and independent of the number
              * of processes (try "make bench").
              */
             m = parse_meminfo();
-            if (lowmem_sig(args, &m) == 0) {
+            sig = lowmem_sig(args, &m);
+            if (sig == 0) {
                 warn("memory situation has recovered while selecting victim\n");
             } else {
                 kill_process(args, sig, &victim);
