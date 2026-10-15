@@ -53,6 +53,17 @@ func TestParseTuple(t *testing.T) {
 		{arg: "1x,2x", limit: 100, shouldFail: true},
 		{arg: "1.1.", limit: 100, shouldFail: true},
 		{arg: "1,2..", limit: 100, shouldFail: true},
+		// NaN compares false against everything, so it used to slip through
+		// the range checks (https://github.com/rfjakob/earlyoom/issues/387)
+		{arg: "nan", limit: 100, shouldFail: true},
+		{arg: "NaN", limit: 100, shouldFail: true},
+		{arg: "-nan", limit: 100, shouldFail: true},
+		{arg: "nan(123)", limit: 100, shouldFail: true},
+		{arg: "1,nan", limit: 100, shouldFail: true},
+		{arg: "nan,1", limit: 100, shouldFail: true},
+		{arg: "inf", limit: 100, shouldFail: true},
+		{arg: "-inf", limit: 100, shouldFail: true},
+		{arg: "1,inf", limit: 100, shouldFail: true},
 	}
 	for _, tc := range tcs {
 		err, term, kill := parse_term_kill_tuple(tc.arg, tc.limit)

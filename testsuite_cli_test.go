@@ -138,6 +138,11 @@ func TestCli(t *testing.T) {
 		{args: []string{"-m", "3.14"}, code: -1, stderrContains: "SIGTERM when mem avail <=  3.14%", stdoutContains: memReport},
 		{args: []string{"-m", "7,3.14"}, code: -1, stderrContains: "SIGKILL when mem avail <=  3.14%", stdoutContains: memReport},
 		{args: []string{"-s", "12.34"}, code: -1, stderrContains: "swap free <= 12.34%", stdoutContains: memReport},
+		// NaN must be rejected (https://github.com/rfjakob/earlyoom/issues/387)
+		{args: []string{"-m", "nan"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-m", "5,nan"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-s", "nan"}, code: 16, stderrContains: "fatal", stdoutEmpty: true},
+		{args: []string{"-M", "nan"}, code: 15, stderrContains: "fatal", stdoutEmpty: true},
 		// Use both -m/-M
 		{args: []string{"-m", "10", "-M", mem1percent}, code: -1, stderrContains: "SIGTERM when mem avail <=  1.00%", stdoutContains: memReport},
 		// Test --use-kernel-oom option

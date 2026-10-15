@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <errno.h>
+#include <math.h> // need isnan()
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,6 +147,11 @@ static double parse_part(term_kill_tuple_t* tuple, const char* part, long long u
     if (errno) {
         snprintf(tuple->err, sizeof(tuple->err),
             "conversion error: %s", strerror(errno));
+        return 0;
+    }
+    if (isnan(val)) {
+        snprintf(tuple->err, sizeof(tuple->err),
+            "value is not a number");
         return 0;
     }
     if (val > (double)upper_limit) {
