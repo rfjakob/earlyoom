@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -55,18 +54,23 @@ void eat_all_memory(eat_how_enum eat_how)
             if (ret) {
                 perror("unlink failed");
             }
+            ret = ftruncate(fd, bs);
             if (ret) {
-                errno = ret;
                 perror("ftruncate failed");
+                close(fd);
                 sleep(1);
                 continue;
             }
             p = mmap(NULL, bs, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
             if (p == MAP_FAILED) {
                 perror("mmap failed");
+                close(fd);
                 sleep(1);
                 continue;
             }
+            // The mapping keeps the file alive, and we would run out of
+            // file descriptors otherwise.
+            close(fd);
             break;
         default:
             fprintf(stderr, "BUG: unknown eat_how=%d\n", eat_how);
