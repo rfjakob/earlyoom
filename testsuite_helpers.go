@@ -201,7 +201,7 @@ func mockProc(t *testing.T, procs []mockProcProcess) {
 		// statm
 		//
 		// rss = 2nd field, in pages. The other fields are not used by earlyoom.
-		rss := p.VmRSSkiB * 1024 / os.Getpagesize()
+		rss := int64(p.VmRSSkiB) * 1024 / int64(os.Getpagesize())
 		content := []byte(fmt.Sprintf("1 %d 3 4 5 6 7\n", rss))
 		if err := ioutil.WriteFile(pidDir+"/statm", content, 0444); err != nil {
 			t.Fatal(err)
