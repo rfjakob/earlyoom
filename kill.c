@@ -437,7 +437,7 @@ bool is_larger(const poll_loop_args_t* args, const meminfo_t* m, const procinfo_
             return false;
         }
         const long page_size = sysconf(_SC_PAGESIZE);
-        cur->VmRSSkiB = cur->stat.rss * page_size / 1024;
+        cur->VmRSSkiB = (long long)cur->stat.rss * page_size / 1024;
     }
 
     // A pid is a kernel thread if it's pid or ppid is 2.
