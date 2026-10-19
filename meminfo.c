@@ -31,7 +31,7 @@ static long long get_entry(const char* name, const char* buf)
     long long val = strtoll(hit + strlen(name), NULL, 10);
     if (errno != 0) {
         int strtoll_errno = errno;
-        warn("%s: strtol() failed: %s", __func__, strerror(errno));
+        warn("%s %s: strtoll() failed: val=%lld errno=%s\n", __func__, name, val, strerror(errno));
         return -strtoll_errno;
     }
     return val;
@@ -96,8 +96,14 @@ meminfo_t parse_meminfo()
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
     m.SwapTotalKiB = get_entry_fatal("SwapTotal:", buf);
     m.AnonPagesKiB = get_entry_fatal("AnonPages:", buf);
-    m.SwapFreeKiB = get_entry_fatal("SwapFree:", buf);
-
+    // Let's not crash when SwapFree glitches (underflows?) in lxc
+    // https://github.com/rfjakob/earlyoom/issues/214
+    // https://github.com/lxc/lxcfs/issues/695
+    m.SwapFreeKiB = get_entry("SwapFree:", buf);
+    if (m.SwapFreeKiB < 0) {
+        warn("%s: ignoring bogous SwapFree value. Is this https://github.com/lxc/lxcfs/issues/695 ?", __func__);
+        m.SwapFreeKiB = 0;
+    }
     m.MemAvailableKiB = get_entry("MemAvailable:", buf);
     if (m.MemAvailableKiB < 0) {
         m.MemAvailableKiB = available_guesstimate(buf);
