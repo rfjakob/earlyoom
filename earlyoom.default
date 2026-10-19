@@ -16,6 +16,6 @@ EARLYOOM_ARGS="-r 3600"
 # EARLYOOM_ARGS="-m 15 -s 5"
 
 # Avoid killing processes whose name matches this regexp
-# EARLYOOM_ARGS="--avoid '(^|/)(init|X|sshd|firefox)$'"
+# EARLYOOM_ARGS="--avoid '(^|/)(supertuxcart|soffice.bin)$'"
 
 # See more at `earlyoom -h'
