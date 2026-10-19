@@ -7,11 +7,17 @@
 #include "msg.h"
 #include "proc_pid.h"
 
-// Parse a buffer that contains the text from /proc/$pid/stat. Example:
+// Parse a buffer that contains the text from /proc/$pid/stat.
+// The format is documented in "man proc_pid_stat"
+//
+// Example:
 // $ cat /proc/self/stat
 // 551716 (cat) R 551087 551716 551087 34816 551716 4194304 94 0 0 0 0 0 0 0 20 0 1 0 5017160 227065856 448 18446744073709551615 94898152189952 94898152206609 140721104501216 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 94898152221328 94898152222824 94898185641984 140721104505828 140721104505848 140721104505848 140721104510955 0
+//
+// Returns true on success and false on parse error.
 bool parse_proc_pid_stat_buf(pid_stat_t* out, char* buf)
 {
+    // Find last ')'
     char* closing_bracket = strrchr(buf, ')');
     if (!closing_bracket) {
         return false;
@@ -31,7 +37,7 @@ bool parse_proc_pid_stat_buf(pid_stat_t* out, char* buf)
         "%*d %*d " // priority, nice
         "%ld " // num_threads
         "%*d %*d %*d" // itrealvalue, starttime, vsize
-        "%ld ", // rss
+        "%ld ", // rss (in pages)
         &out->state,
         &out->ppid,
         &out->num_threads,
