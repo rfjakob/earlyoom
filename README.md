@@ -253,6 +253,7 @@ Usage: ./earlyoom [OPTION]...
                             to 0 to disable completely
   -p                        set niceness of earlyoom to -20 and oom_score_adj to
                             -100
+  --kill-wait SECONDS       max seconds to wait for a process to die (default 10)
   --ignore-root-user        do not kill processes owned by root
   --sort-by-rss             find process with the largest rss (default oom_score)
   --prefer REGEX            prefer to kill processes matching REGEX
