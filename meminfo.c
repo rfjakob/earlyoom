@@ -114,6 +114,17 @@ meminfo_t parse_meminfo()
         }
     }
 
+    // Recent kernels report GPU driver page pools (amdgpu/TTM) as "GPUReclaim":
+    // freed pages kept for reuse that the shrinker releases on demand. The kernel's
+    // MemAvailable does not include them (si_mem_available() only counts free memory,
+    // file page cache and reclaimable slab/misc), so add them here. Otherwise we
+    // would kill processes while GBs are still reclaimable.
+    m.GPUReclaimKiB = get_entry("GPUReclaim:", buf);
+    if (m.GPUReclaimKiB < 0) {
+        m.GPUReclaimKiB = 0; // not reported by this kernel
+    }
+    m.MemAvailableKiB += m.GPUReclaimKiB;
+
     // Calculated values
     m.UserMemTotalKiB = m.MemAvailableKiB + m.AnonPagesKiB;
 

@@ -31,7 +31,8 @@ If there is a failure when trying to kill a process, **earlyoom** sleeps for
 set available memory minimum to PERCENT of `user mem total` (default 10 %).
 
 `user mem total`, introduced in earlyoom v1.8, is the memory accessible by userspace
-(`MemAvailable`+`AnonPages` as reported in `/proc/meminfo`).
+(`MemAvailable`+`GPUReclaim`+`AnonPages` as reported in `/proc/meminfo`;
+`GPUReclaim`, the reclaimable GPU driver page pool, is only present on recent kernels).
 When a tmpfs ramdisk fills up, `user mem total` shrinks accordingly.
 
 By using a percentage of `user mem total` as opposed to total memory,
