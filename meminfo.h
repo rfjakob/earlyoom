@@ -14,6 +14,9 @@ typedef struct {
     long long SwapTotalKiB;
     long long SwapFreeKiB;
     long long AnonPagesKiB;
+    // Reclaimable GPU driver page pool (0 if the kernel does not report it).
+    // Already included in MemAvailableKiB.
+    long long GPUReclaimKiB;
     // Calculated values
     // UserMemTotalKiB = MemAvailableKiB + AnonPagesKiB.
     // Represents the total amount of memory that may be used by user processes.

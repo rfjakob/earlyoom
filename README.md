@@ -45,6 +45,10 @@ else.
 The "available" memory accounts for that. It sums up all memory that
 is unused or can be freed immediately.
 
+earlyoom also adds the `GPUReclaim` value from `/proc/meminfo` (if your kernel
+reports it). This is memory held in GPU driver page pools (for example amdgpu)
+that the kernel frees on demand, but that `MemAvailable` does not count.
+
 Note that you need a recent version of
 `free` and Linux kernel 3.14+ to see the "available" column. If you have
 a recent kernel, but an old version of `free`, you can get the value
